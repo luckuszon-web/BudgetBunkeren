@@ -70,6 +70,10 @@ Hvis din `.pem`-fil starter med `-----BEGIN RSA PRIVATE KEY-----` i stedet for `
 
 ---
 
+## Prøv siden med demodata (valgfrit)
+Vil du se siden i brug, før banken er forbundet? Kør `supabase/demo-data.sql` i **SQL Editor**. Så får du ca. et halvt års opdigtede posteringer på en "Demokonto".
+Fjern dem igen med: `delete from public.accounts where uid = 'demo-konto';`
+
 ## Daglig brug
 - **Ret en kategori:** Vælg den rigtige i menuen under posteringen. Du bliver spurgt, om fremtidige posteringer med samme tekst også skal have den kategori. Det er sådan, systemet lærer.
 - **Tjek AI'ens forslag:** Vælg filteret *Sat af AI* og ret de forkerte.
