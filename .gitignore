@@ -1,0 +1,11 @@
+# Hemmeligheder – må ALDRIG på GitHub
+*.pem
+*.key
+.env
+.env.*
+# Bankdata/eksporter
+*.csv
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+.DS_Store

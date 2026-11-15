@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1115">
+<title>Forbrug</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #181b22; --line: #262a33; --text: #e9ebef; --muted: #8b93a1;
+    --accent: #6ea8fe; --red: #ff7b7b; --green: #5fd39a; --warn: #f5c451;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 14px 60px; }
+  h1 { font-size: 20px; margin: 4px 0 12px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  button, select, input { font: inherit; color: var(--text); background: #222632; border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px 12px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); color: #0b1020; border: 0; font-weight: 600; }
+  button.ghost { background: transparent; }
+  input { width: 100%; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat .v { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .neg { color: var(--red); } .pos { color: var(--green); }
+  .bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+  .bar:hover, .bar.active { background: #1f2330; }
+  .bar .track { grid-column: 1 / -1; height: 6px; background: #232836; border-radius: 4px; overflow: hidden; }
+  .bar .fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .months { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
+  .months .m { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .months .col { width: 100%; background: #2b3242; border-radius: 6px 6px 2px 2px; min-height: 2px; }
+  .months .m.cur .col { background: var(--accent); }
+  .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .tx:first-child { border-top: 0; }
+  .tx .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx select { grid-column: 1 / -1; padding: 5px 8px; font-size: 13px; max-width: 100%; }
+  .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+  .banner { border-color: var(--warn); }
+  .hidden { display: none !important; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222632;
+    border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; max-width: 90vw; }
+  @media (max-width: 480px) { .stat .v { font-size: 15px; } }
+</style>
+</head>
+<body>
+<main>
+  <!-- Login -->
+  <section id="login" class="hidden">
+    <h1>Forbrug</h1>
+    <div class="card">
+      <form id="loginForm">
+        <p><input id="email" type="email" placeholder="E-mail" autocomplete="username" required></p>
+        <p><input id="password" type="password" placeholder="Adgangskode" autocomplete="current-password" required></p>
+        <p id="mfaRow" class="hidden"><input id="mfaCode" inputmode="numeric" placeholder="6-cifret kode fra din authenticator-app"></p>
+        <button class="primary" type="submit">Log ind</button>
+        <p id="loginError" class="neg small"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- App -->
+  <section id="app" class="hidden">
+    <div class="row between">
+      <h1>Forbrug</h1>
+      <div class="row">
+        <button class="ghost small" id="syncBtn" title="Hent nye posteringer">↻ Opdater</button>
+        <button class="ghost small" id="logoutBtn">Log ud</button>
+      </div>
+    </div>
+
+    <div id="consentCard" class="card banner hidden">
+      <div class="row between">
+        <span id="consentText"></span>
+        <button class="primary" id="connectBtn">Forbind Nordea</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row between">
+        <button class="ghost" id="prevMonth">‹</button>
+        <strong id="monthLabel"></strong>
+        <button class="ghost" id="nextMonth">›</button>
+      </div>
+      <div class="stats" style="margin-top:12px">
+        <div class="stat"><div class="muted small">Udgifter</div><div class="v neg" id="sumOut"></div></div>
+        <div class="stat"><div class="muted small">Indtægter</div><div class="v pos" id="sumIn"></div></div>
+        <div class="stat"><div class="muted small">Tilbage</div><div class="v" id="sumNet"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Udgifter de sidste 6 måneder</h2>
+      <div class="months" id="months"></div>
+    </div>
+
+    <div class="card">
+      <div class="row between"><h2>Kategorier</h2><span class="small muted" id="catHint">Tryk for at filtrere</span></div>
+      <div id="bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="row between">
+        <h2 id="txTitle">Posteringer</h2>
+        <select id="txFilter" class="small">
+          <option value="all">Alle</option>
+          <option value="none">Uden kategori</option>
+          <option value="ai">Sat af AI (tjek dem)</option>
+        </select>
+      </div>
+      <div id="txList"></div>
+    </div>
+
+    <p class="small muted" id="footer"></p>
+  </section>
+</main>
+<div id="toast" class="toast hidden"></div>
+
+<script src="config.js"></script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(n);
+const monthName = (d) => d.toLocaleDateString("da-DK", { month: "long", year: "numeric" });
+const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+let state = { cats: [], txs: [], month: new Date(), catFilter: null };
+state.month.setDate(1);
+
+function toast(msg, ms = 3500) {
+  const t = $("toast"); t.textContent = msg; t.classList.remove("hidden");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("hidden"), ms);
+}
+
+async function callFn(name, body) {
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify(body ?? {}),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  return data;
+}
+
+// ---------- Login (inkl. totrinsbekræftelse, hvis slået til) ----------
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("loginError").textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email: $("email").value, password: $("password").value });
+  if (error) { $("loginError").textContent = "Login fejlede: " + error.message; return; }
+  if (await needsMfa()) return;
+  start();
+});
+
+async function needsMfa() {
+  const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+    const code = $("mfaCode").value.trim();
+    $("mfaRow").classList.remove("hidden");
+    if (!code) { $("loginError").textContent = "Indtast koden fra din authenticator-app og tryk Log ind igen."; return true; }
+    const { data: f } = await sb.auth.mfa.listFactors();
+    const factor = f?.totp?.[0];
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+    if (error) { $("loginError").textContent = "Forkert kode."; return true; }
+  }
+  return false;
+}
+
+$("logoutBtn").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+// ---------- Bankforbindelse ----------
+$("connectBtn").onclick = async () => {
+  try { const { url } = await callFn("bank-connect", { action: "start" }); location.href = url; }
+  catch (e) { toast("Kunne ikke starte bank-login: " + e.message, 6000); }
+};
+
+async function handleBankCallback() {
+  const p = new URLSearchParams(location.search);
+  if (!p.has("code") && !p.has("error")) return;
+  history.replaceState(null, "", location.pathname);
+  if (p.has("error")) { toast("Bank-login blev afbrudt: " + (p.get("error_description") ?? p.get("error")), 6000); return; }
+  toast("Forbinder konti og henter posteringer… det kan tage et minut.", 60000);
+  try {
+    const r = await callFn("bank-connect", { action: "finish", code: p.get("code"), state: p.get("state") });
+    toast(`Forbundet: ${r.accounts} konto(er).`);
+  } catch (e) { toast("Fejl ved forbindelse: " + e.message, 8000); }
+}
+
+$("syncBtn").onclick = async () => {
+  $("syncBtn").disabled = true; toast("Henter nye posteringer…", 60000);
+  try { await callFn("sync"); toast("Opdateret."); await load(); }
+  catch (e) { toast("Fejl: " + e.message, 8000); }
+  $("syncBtn").disabled = false;
+};
+
+// ---------- Data ----------
+async function load() {
+  await sb.rpc("ensure_defaults");
+  const since = new Date(state.month.getFullYear(), state.month.getMonth() - 5, 1);
+  const [cats, txs, sessions, accounts] = await Promise.all([
+    sb.from("categories").select("id, name, kind").order("name"),
+    sb.from("transactions").select("id, booking_date, amount, description, counterparty, category_id, category_source")
+      .gte("booking_date", ym(since) + "-01").order("booking_date", { ascending: false }).limit(5000),
+    sb.from("bank_sessions").select("valid_until").order("valid_until", { ascending: false }).limit(1),
+    sb.from("accounts").select("last_synced_at").order("last_synced_at", { ascending: false }).limit(1),
+  ]);
+  state.cats = cats.data ?? [];
+  state.txs = (txs.data ?? []).map((t) => ({ ...t, amount: Number(t.amount) }));
+  renderConsent(sessions.data?.[0]);
+  const last = accounts.data?.[0]?.last_synced_at;
+  $("footer").textContent = last ? `Senest hentet ${new Date(last).toLocaleString("da-DK")}` : "";
+  render();
+}
+
+function renderConsent(s) {
+  const card = $("consentCard");
+  if (!s) { card.classList.remove("hidden"); $("consentText").textContent = "Ingen bank forbundet endnu."; return; }
+  const days = Math.ceil((new Date(s.valid_until) - Date.now()) / 864e5);
+  if (days <= 14) {
+    card.classList.remove("hidden");
+    $("consentText").textContent = days > 0 ? `Bankadgangen udløber om ${days} dag(e) – forny med MitID.` : "Bankadgangen er udløbet – forny med MitID.";
+    $("connectBtn").textContent = "Forny adgang";
+  } else card.classList.add("hidden");
+}
+
+const catById = (id) => state.cats.find((c) => c.id === id);
+const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
+
+function render() {
+  const key = ym(state.month);
+  const inMonth = state.txs.filter((t) => t.booking_date.startsWith(key));
+  $("monthLabel").textContent = monthName(state.month);
+  $("nextMonth").disabled = key >= ym(new Date());
+
+  // Overførsler mellem egne konti og opsparing tælles ikke som forbrug
+  const real = inMonth.filter((t) => kindOf(t) !== "transfer");
+  const out = -real.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0);
+  const inc = real.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  $("sumOut").textContent = kr(out);
+  $("sumIn").textContent = kr(inc);
+  $("sumNet").textContent = kr(inc - out);
+  $("sumNet").className = "v " + (inc - out >= 0 ? "pos" : "neg");
+
+  // 6 måneders udgifter
+  const months = [];
+  for (let i = 5; i >= 0; i--) months.push(new Date(state.month.getFullYear(), state.month.getMonth() - i, 1));
+  const totals = months.map((m) => -state.txs.filter((t) => t.booking_date.startsWith(ym(m)) && t.amount < 0 && kindOf(t) !== "transfer")
+    .reduce((s, t) => s + t.amount, 0));
+  const max = Math.max(1, ...totals);
+  $("months").innerHTML = months.map((m, i) => `
+    <div class="m ${ym(m) === key ? "cur" : ""}" title="${kr(totals[i])}">
+      <span class="small muted num">${Math.round(totals[i] / 1000)}k</span>
+      <div class="col" style="height:${(totals[i] / max) * 80}%"></div>
+      <span class="small muted">${m.toLocaleDateString("da-DK", { month: "short" })}</span>
+    </div>`).join("");
+
+  // Udgifter pr. kategori
+  const byCat = new Map();
+  for (const t of real.filter((t) => t.amount < 0)) {
+    const k = t.category_id ?? "none";
+    byCat.set(k, (byCat.get(k) ?? 0) - t.amount);
+  }
+  const rows = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
+  const top = rows[0]?.[1] ?? 1;
+  $("bars").innerHTML = rows.length ? rows.map(([k, v]) => `
+    <div class="bar ${String(state.catFilter) === String(k) ? "active" : ""}" data-cat="${k}">
+      <span>${k === "none" ? "<em>Uden kategori</em>" : esc(catById(k)?.name ?? "?")}</span>
+      <span class="num">${kr(v)} <span class="muted small">${Math.round((v / out) * 100)}%</span></span>
+      <div class="track"><div class="fill" style="width:${(v / top) * 100}%"></div></div>
+    </div>`).join("") : `<p class="muted">Ingen udgifter i ${monthName(state.month)}.</p>`;
+  document.querySelectorAll(".bar").forEach((el) => el.onclick = () => {
+    state.catFilter = String(state.catFilter) === el.dataset.cat ? null : el.dataset.cat;
+    render();
+  });
+
+  // Posteringer
+  const f = $("txFilter").value;
+  let list = inMonth;
+  if (state.catFilter) list = list.filter((t) => String(t.category_id ?? "none") === state.catFilter);
+  if (f === "none") list = list.filter((t) => !t.category_id);
+  if (f === "ai") list = list.filter((t) => t.category_source === "ai");
+  $("txTitle").textContent = state.catFilter
+    ? (state.catFilter === "none" ? "Uden kategori" : catById(Number(state.catFilter))?.name ?? "Posteringer")
+    : "Posteringer";
+
+  const options = (sel) => `<option value="">– vælg kategori –</option>` +
+    state.cats.map((c) => `<option value="${c.id}" ${c.id === sel ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
+    `<option value="__new">+ Ny kategori…</option>`;
+  $("txList").innerHTML = list.length ? list.map((t) => `
+    <div class="tx">
+      <span class="desc">${esc(t.counterparty && !t.description.includes(t.counterparty) ? t.counterparty + " · " + t.description : t.description)}
+        ${t.category_source === "ai" ? '<span class="tag">AI</span>' : ""}</span>
+      <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
+      <span class="small muted">${new Date(t.booking_date).toLocaleDateString("da-DK", { day: "numeric", month: "short" })}</span>
+      <span></span>
+      <select data-id="${t.id}">${options(t.category_id)}</select>
+    </div>`).join("") : `<p class="muted">Ingen posteringer.</p>`;
+  document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
+}
+
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+// ---------- Ret kategori + lær en regel ----------
+async function setCategory(txId, value) {
+  let catId = value ? Number(value) : null;
+  if (value === "__new") {
+    const name = prompt("Navn på ny kategori:");
+    if (!name) return render();
+    const kind = confirm(`Er "${name}" en udgift? (Annuller = indtægt/overførsel)`) ? "expense" : "income";
+    const { data, error } = await sb.from("categories").insert({ name, kind }).select().single();
+    if (error) return toast("Fejl: " + error.message);
+    state.cats.push(data); catId = data.id;
+  }
+  const tx = state.txs.find((t) => t.id === txId);
+  const { error } = await sb.from("transactions").update({ category_id: catId, category_source: "manual" }).eq("id", txId);
+  if (error) return toast("Fejl: " + error.message);
+  tx.category_id = catId; tx.category_source = "manual";
+
+  if (catId) {
+    const suggestion = (tx.counterparty || tx.description).toLowerCase().replace(/[0-9*#]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
+    const pattern = prompt(
+      `Skal fremtidige posteringer, der indeholder denne tekst, også være "${catById(catId).name}"?\n` +
+      `Ret teksten om nødvendigt, eller tryk Annuller for kun at rette denne ene.`, suggestion);
+    if (pattern && pattern.trim().length >= 3) {
+      const p = pattern.trim().toLowerCase();
+      await sb.from("rules").insert({ pattern: p, category_id: catId, priority: 200 });
+      // Opdater også eksisterende posteringer, du ikke selv har rettet
+      const matches = state.txs.filter((t) => t.category_source !== "manual" &&
+        `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(p));
+      for (const m of matches) {
+        await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).eq("id", m.id);
+        m.category_id = catId; m.category_source = "rule";
+      }
+      toast(`Regel gemt – ${matches.length} andre posteringer opdateret.`);
+    }
+  }
+  render();
+}
+
+$("prevMonth").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); state.catFilter = null; load(); };
+$("nextMonth").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1); state.catFilter = null; load(); };
+$("txFilter").onchange = render;
+
+// ---------- Start ----------
+async function start() {
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  await handleBankCallback();
+  await load();
+}
+
+const { data: { session } } = await sb.auth.getSession();
+const { data: aal } = session ? await sb.auth.mfa.getAuthenticatorAssuranceLevel() : { data: null };
+if (session && !(aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2")) start();
+else $("login").classList.remove("hidden");
+</script>
+</body>
+</html>

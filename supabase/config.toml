@@ -1,0 +1,7 @@
+# Begge funktioner tjekker selv dit login (eller SYNC_SECRET for den natlige kørsel),
+# så gatewayens eget tjek er slået fra. Det undgår også problemer med CORS-forespørgsler.
+[functions.sync]
+verify_jwt = false
+
+[functions.bank-connect]
+verify_jwt = false
