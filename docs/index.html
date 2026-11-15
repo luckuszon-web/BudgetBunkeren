@@ -72,27 +72,74 @@
   .bar .meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
   .up { color: var(--red); } .down { color: var(--green); }
 
+  /* Ikoner */
+  .ico { width: 36px; height: 36px; border-radius: 50%; background: #232836; display: grid; place-items: center;
+    font-size: 18px; flex-shrink: 0; position: relative; }
+  .ico.sm { width: 30px; height: 30px; font-size: 15px; }
+  .ico .dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--card); }
+
+  /* Fordeling: segmenteret bar */
+  .seg-bar { display: flex; gap: 2px; height: 26px; margin: 4px 0 10px; }
+  .seg-bar > div { min-width: 3px; height: 100%; cursor: pointer; }
+  .seg-bar > div:first-child { border-radius: 6px 0 0 6px; } .seg-bar > div:last-child { border-radius: 0 6px 6px 0; }
+  .seg-bar > div:only-child { border-radius: 6px; }
+  .seg-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+  .seg-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .seg-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .seg-legend b { color: var(--text); font-weight: 600; }
+
+  /* Kategori-fliser */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; margin-top: 12px; }
+  .tile { background: #1d212a; border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .tile:hover { border-color: #3a4152; }
+  .tile.active { border-color: var(--accent); background: #1f2a40; }
+  .tile .top { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .tile .name { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile .amt { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .tile .meter { height: 5px; background: #2a2f3b; border-radius: 3px; overflow: hidden; }
+  .tile .meter > div { height: 100%; border-radius: 3px; background: var(--accent); }
+  .tile .meter > div.over { background: var(--red); } .tile .meter > div.inc { background: var(--green); }
+  .tile .meta { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+  .chip { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+
+  /* Måler: andel af indtægter brugt */
+  .meter-row { margin-top: 12px; }
+  .meter-row .track { height: 8px; background: #2a2f3b; border-radius: 4px; overflow: hidden; margin-top: 6px; display: flex; gap: 2px; }
+  .meter-row .track > div { height: 100%; }
+
+  /* Forbrug gennem måneden */
+  .pace svg { width: 100%; height: 190px; display: block; overflow: visible; }
+  .pace text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .tip { position: fixed; pointer-events: none; background: #0b0d12; border: 1px solid #3a4152; border-radius: 8px;
+    padding: 6px 9px; font-size: 12.5px; z-index: 20; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .tip b { font-variant-numeric: tabular-nums; }
+  .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+
   /* Faste udgifter */
-  .fixed { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
-  .fixed > div { padding: 3px 0; }
+  .fixed { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; }
 
   /* Posteringer */
   .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
   .day { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 2px; }
-  .tx { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .tx { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; }
+  .tx .ico { grid-row: span 2; align-self: start; }
   .tx .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tx select { grid-column: 1 / -1; padding: 5px 8px; font-size: 13px; max-width: 100%; }
+  .tx select { grid-column: 2 / -1; padding: 5px 8px; font-size: 13px; max-width: 100%; }
   .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
   .tag.ai { color: var(--warn); border-color: #5a4a1c; }
 
   /* Indstillinger */
-  .set-cat { display: grid; grid-template-columns: 1fr 120px 100px 40px; gap: 6px; align-items: center; padding: 5px 0; }
+  .set-cat { display: grid; grid-template-columns: 52px 1fr 120px 100px 40px; gap: 6px; align-items: center; padding: 5px 0; }
+  .set-cat .icon { text-align: center; font-size: 18px; padding: 4px; }
   .set-cat input, .set-cat select { padding: 6px 8px; font-size: 14px; }
   .set-cat button { padding: 6px 0; }
   .set-rule { display: grid; grid-template-columns: 1fr auto 40px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
   @media (max-width: 520px) {
-    .set-cat { grid-template-columns: 1fr 1fr 40px; }
-    .set-cat .name { grid-column: 1 / -1; }
+    .set-cat { grid-template-columns: 52px 1fr 1fr 40px; border-top: 1px solid var(--line); padding: 8px 0; }
+    .set-cat .name { grid-column: 2 / -1; }
+    .set-cat .kind { grid-column: 1 / 3; }
+    .tiles { grid-template-columns: 1fr 1fr; }
     .stat .v { font-size: 15px; }
   }
 
@@ -142,6 +189,12 @@
     </div>
 
     <div class="card" id="summaryCard">
+      <div class="seg gran" id="granSel" style="display:flex;margin-bottom:10px">
+        <button data-g="year" style="flex:1">År</button>
+        <button data-g="month" style="flex:1" class="on">Måned</button>
+        <button data-g="week" style="flex:1">Uge</button>
+        <button data-g="day" style="flex:1">Dag</button>
+      </div>
       <div class="period">
         <button id="prevPeriod" aria-label="Forrige">‹</button>
         <select id="periodSel" aria-label="Vælg periode"></select>
@@ -152,16 +205,26 @@
         <div class="stat"><div class="muted small">Indtægter</div><div class="v pos" id="sumIn"></div></div>
         <div class="stat"><div class="muted small">Tilbage</div><div class="v" id="sumNet"></div></div>
       </div>
+      <div class="meter-row hidden" id="spendMeter"></div>
       <div class="substat small muted" id="subStat"></div>
+    </div>
+
+    <div class="card pace" id="paceCard">
+      <div class="head">
+        <h2 id="paceTitle">Forbrug gennem måneden</h2>
+        <div class="legend"><span><i style="background:#3987e5"></i><span id="paceLbl">Denne måned</span></span><span><i style="background:#8b93a1"></i><span id="paceAvgLbl">Snit 3 forrige</span></span></div>
+      </div>
+      <svg id="paceSvg" role="img" aria-label="Akkumulerede udgifter dag for dag"></svg>
+      <div class="small muted" id="paceNote" style="margin-top:4px"></div>
     </div>
 
     <div class="card">
       <div class="head">
-        <h2>Seneste 12 måneder</h2>
+        <h2 id="chartTitle">Seneste 12 måneder</h2>
         <div class="legend"><span><i style="background:var(--accent)"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span></div>
       </div>
       <div class="chart" id="chart"></div>
-      <div class="small muted" style="margin-top:6px">Tryk på en måned for at se den.</div>
+      <div class="small muted" style="margin-top:6px" id="chartHint">Tryk på en søjle for at se perioden.</div>
     </div>
 
     <div class="card">
@@ -172,8 +235,10 @@
           <button data-mode="in">Indtægter</button>
         </div>
       </div>
-      <div id="bars"></div>
-      <div class="small muted" id="barsHint" style="margin-top:6px"></div>
+      <div id="segBar" class="seg-bar"></div>
+      <div id="segLegend" class="seg-legend"></div>
+      <div id="bars" class="tiles"></div>
+      <div class="small muted" id="barsHint" style="margin-top:8px"></div>
     </div>
 
     <div class="card" id="fixedCard">
@@ -210,7 +275,7 @@
 
     <div class="card">
       <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
-      <p class="small muted" style="margin-top:0">Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
+      <p class="small muted" style="margin-top:0">Tryk på ikonet for at skifte det til en anden emoji. Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
         <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.</p>
       <div id="catList"></div>
     </div>
@@ -263,6 +328,7 @@
 </dialog>
 
 <div id="toast" class="toast hidden"></div>
+<div id="tip" class="tip hidden"></div>
 
 <script src="config.js"></script>
 <script type="module">
@@ -272,17 +338,77 @@ const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
 const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(n);
-const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-const parseYm = (k) => new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1);
-const addMonths = (k, n) => { const d = parseYm(k); d.setMonth(d.getMonth() + n); return ym(d); };
-const monthLabel = (k) => parseYm(k).toLocaleDateString("da-DK", { month: "long", year: "numeric" });
-const isYear = (p) => p.length === 4;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const PAGE = 150;
 
+// ---------- Datoer og perioder ----------
+// Periodenøgler:  år "2026" · måned "2026-11" · uge "W2026-11-09" (mandagens dato) · dag "2026-11-15"
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+const D = (s) => new Date(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)));
+const addDays = (s, n) => { const d = D(s); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+const todayIso = () => { const n = new Date(); return `${n.getFullYear()}-${pad(n.getMonth() + 1)}-${pad(n.getDate())}`; };
+const mondayOf = (s) => { const d = D(s); return addDays(s, -((d.getUTCDay() + 6) % 7)); };
+const isoWeekNo = (s) => { const d = D(s); d.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7));
+  const y = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d - y) / 864e5 - 3 + ((y.getUTCDay() + 6) % 7)) / 7); };
+const addMonths = (k, n) => { const d = new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7) - 1 + n, 1)); return iso(d).slice(0, 7); };
+const fmt = (s, o) => D(s).toLocaleDateString("da-DK", { timeZone: "UTC", ...o });
+
+const G = {
+  year:  { key: (d) => d.slice(0, 4),           step: (p, n) => String(+p + n),         n: 5,  unit: "år",     units: "år" },
+  month: { key: (d) => d.slice(0, 7),           step: (p, n) => addMonths(p, n),        n: 12, unit: "måned",  units: "måneder" },
+  week:  { key: (d) => "W" + mondayOf(d),       step: (p, n) => "W" + addDays(p.slice(1), 7 * n), n: 12, unit: "uge", units: "uger" },
+  day:   { key: (d) => d,                       step: (p, n) => addDays(p, n),          n: 14, unit: "dag",    units: "dage" },
+};
+const gran = () => state.gran;
+const keyOf = (dateStr) => G[gran()].key(dateStr);
+const stepP = (p, n) => G[gran()].step(p, n);
+function periodLabel(p, short = false) {
+  switch (gran()) {
+    case "year": return short ? p : `Hele ${p}`;
+    case "month": return short ? fmt(p + "-01", { month: "short" }).replace(".", "") : fmt(p + "-01", { month: "long", year: "numeric" });
+    case "week": { const m = p.slice(1), s = addDays(m, 6);
+      return short ? `u${isoWeekNo(m)}` : `Uge ${isoWeekNo(m)} · ${+m.slice(8)}/${+m.slice(5, 7)}–${+s.slice(8)}/${+s.slice(5, 7)}`; }
+    case "day": return short ? fmt(p, { day: "numeric" }) : fmt(p, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
+}
+// Hvor mange "måneder" er perioden? Bruges til at skalere månedsbudgetter
+const budgetFactor = () => ({ year: 12, month: 1, week: 7 / 30.44, day: 1 / 30.44 })[gran()];
+
+// ---------- Kategori-ikoner og farver ----------
+const ICONS = [
+  [/dagligvar|supermarked|mad\b/i, "🛒"], [/restaurant|takeaway|café|cafe/i, "🍔"], [/transport|tog|bus/i, "🚆"],
+  [/bil|benzin|opladning|brændstof/i, "🚗"], [/bolig|husleje|leje/i, "🏠"], [/forsyning|el\b|vand|varme/i, "💡"],
+  [/abonnement|streaming/i, "📺"], [/forsikring/i, "🛡️"], [/shopping|tøj/i, "🛍️"], [/pleje|apotek|sundhed|læge/i, "💊"],
+  [/fritid|oplevelse|sport|fitness/i, "🎟️"], [/rejse|ferie/i, "✈️"], [/gave/i, "🎁"], [/løn/i, "💼"],
+  [/indkomst|indtægt/i, "💰"], [/opsparing|investering/i, "🐷"], [/overførsel|egne konti/i, "🔁"],
+  [/fagforening|a-kasse/i, "🪪"], [/børn|barn/i, "🧸"], [/dyr|hund|kat/i, "🐾"], [/uddannelse|skole/i, "🎓"],
+  [/gebyr|bank|renter|lån/i, "🏦"], [/telefon|mobil|internet/i, "📱"], [/andet/i, "📦"],
+];
+function iconOf(cat) {
+  if (!cat) return "❓";
+  if (cat.icon) return cat.icon;
+  for (const [re, ic] of ICONS) if (re.test(cat.name)) return ic;
+  return { income: "💰", transfer: "🔁" }[cat.kind] ?? "🧾";
+}
+// Kategoriske farver (valideret for farveblindhed på den mørke baggrund). Fast rækkefølge, aldrig genbrugt.
+const PALETTE = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"];
+const OTHER = "#5b6170";
+let colorMap = new Map();  // kategori -> farve; fast pr. kategori, så farven ikke skifter mellem perioder
+function assignColors() {
+  const since = addMonths(todayIso().slice(0, 7), -11);
+  const sums = new Map();
+  for (const t of state.txs) if (t.amount < 0 && counts(t) && t.booking_date.slice(0, 7) >= since) {
+    const k = String(t.category_id ?? "none"); sums.set(k, (sums.get(k) ?? 0) - t.amount);
+  }
+  colorMap = new Map([...sums.entries()].sort((a, b) => b[1] - a[1]).slice(0, PALETTE.length).map(([k], i) => [k, PALETTE[i]]));
+}
+
+// ---------- Tilstand ----------
 const state = {
   cats: [], rules: [], txs: [],
-  period: ym(new Date()),   // "2026-11" (måned) eller "2026" (hele året)
+  gran: "month",
+  period: todayIso().slice(0, 7),
   catFilter: null,          // kategori-id, "none" eller null
   catMode: "out",           // "out" = udgifter, "in" = indtægter
   shown: PAGE,
@@ -292,6 +418,16 @@ function toast(msg, ms = 3500) {
   const t = $("toast"); t.textContent = msg; t.classList.remove("hidden");
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("hidden"), ms);
 }
+
+// Fælles tooltip til graferne
+function showTip(html, x, y) {
+  const t = $("tip"); t.innerHTML = html; t.classList.remove("hidden");
+  const w = t.offsetWidth, h = t.offsetHeight;
+  t.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x - w / 2)) + "px";
+  t.style.top = Math.max(8, y - h - 12) + "px";
+}
+const hideTip = () => $("tip").classList.add("hidden");
+document.addEventListener("scroll", hideTip, { passive: true });
 
 async function callFn(name, body) {
   const { data: { session } } = await sb.auth.getSession();
@@ -370,13 +506,13 @@ async function fetchAll(build) {
 
 async function load() {
   await sb.rpc("ensure_defaults");
-  const since = new Date(); since.setMonth(since.getMonth() - 25); since.setDate(1);
+  const since = addMonths(todayIso().slice(0, 7), -25) + "-01";
   try {
     const [cats, rules, txs, sessions, accounts] = await Promise.all([
       sb.from("categories").select("*").order("name"),
       fetchAll(() => sb.from("rules").select("id, pattern, category_id, priority").order("id")),
       fetchAll(() => sb.from("transactions").select("id, booking_date, amount, description, counterparty, category_id, category_source")
-        .gte("booking_date", ym(since) + "-01").order("booking_date", { ascending: false }).order("id")),
+        .gte("booking_date", since).order("booking_date", { ascending: false }).order("id")),
       sb.from("bank_sessions").select("valid_until").order("valid_until", { ascending: false }).limit(1),
       sb.from("accounts").select("last_synced_at").order("last_synced_at", { ascending: false, nullsFirst: false }).limit(1),
     ]);
@@ -406,8 +542,9 @@ function renderConsent(s) {
 // ---------- Hjælpere ----------
 const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
 const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
-const inPeriod = (t, p) => t.booking_date.startsWith(p);
+const inPeriod = (t, p) => keyOf(t.booking_date) === p;
 const counts = (t) => kindOf(t) !== "transfer";  // overførsler/opsparing tælles ikke som forbrug
+const txsIn = (p) => state.txs.filter((t) => inPeriod(t, p));
 
 function totals(list) {
   const real = list.filter(counts);
@@ -416,51 +553,60 @@ function totals(list) {
   const saved = -list.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
   return { out, inc, saved };
 }
+// De (op til) 3 forrige perioder, der har data
+const prevPeriods = (p) => [1, 2, 3].map((i) => stepP(p, -i)).filter((q) => state.txs.some((t) => inPeriod(t, q)));
 
 function periodsWithData() {
-  const months = new Set(state.txs.map((t) => t.booking_date.slice(0, 7)));
-  months.add(ym(new Date()));
-  const sorted = [...months].sort().reverse();
-  const years = [...new Set(sorted.map((m) => m.slice(0, 4)))];
-  return { months: sorted, years };
+  const keys = new Set(state.txs.map((t) => keyOf(t.booking_date)));
+  keys.add(keyOf(todayIso()));
+  return [...keys].sort().reverse();
 }
 
 // ---------- Visning ----------
 function render() {
+  assignColors();
   renderPeriod();
   renderSummary();
   renderChart();
+  renderPace();
   renderBars();
   renderFixed();
   renderTxs();
 }
 
 function renderPeriod() {
-  const { months, years } = periodsWithData();
+  const keys = periodsWithData();
   const sel = $("periodSel");
-  sel.innerHTML =
-    `<optgroup label="Måneder">${months.map((m) => `<option value="${m}">${monthLabel(m)}</option>`).join("")}</optgroup>` +
-    `<optgroup label="Hele året">${years.map((y) => `<option value="${y}">Hele ${y}</option>`).join("")}</optgroup>`;
+  const list = gran() === "day" ? keys.slice(0, 120) : keys;  // dage: de seneste 120 med posteringer
+  if (!list.includes(state.period)) list.unshift(state.period);
+  sel.innerHTML = list.map((k) => `<option value="${k}">${esc(periodLabel(k))}</option>`).join("");
   sel.value = state.period;
-  const now = ym(new Date());
-  if (isYear(state.period)) {
-    $("nextPeriod").disabled = state.period >= now.slice(0, 4);
-    $("prevPeriod").disabled = !years.includes(String(Number(state.period) - 1));
-  } else {
-    $("nextPeriod").disabled = state.period >= now;
-    $("prevPeriod").disabled = state.period <= months[months.length - 1];
-  }
+  const now = keyOf(todayIso());
+  $("nextPeriod").disabled = state.period >= now;
+  $("prevPeriod").disabled = state.period <= keys[keys.length - 1];
+  document.querySelectorAll("#granSel button").forEach((b) => b.classList.toggle("on", b.dataset.g === gran()));
 }
 
 function setPeriod(p) {
   state.period = p; state.catFilter = null; state.shown = PAGE;
-  render();
+  hideTip(); render();
 }
 $("periodSel").onchange = (e) => setPeriod(e.target.value);
-$("prevPeriod").onclick = () => setPeriod(isYear(state.period) ? String(Number(state.period) - 1) : addMonths(state.period, -1));
-$("nextPeriod").onclick = () => setPeriod(isYear(state.period) ? String(Number(state.period) + 1) : addMonths(state.period, 1));
+$("prevPeriod").onclick = () => setPeriod(stepP(state.period, -1));
+$("nextPeriod").onclick = () => setPeriod(stepP(state.period, 1));
 
-// Swipe til siden på overblikskortet skifter måned
+// Skift mellem år / måned / uge / dag – behold så vidt muligt det tidspunkt, du kigger på
+document.querySelectorAll("#granSel button").forEach((b) => b.onclick = () => {
+  const g = b.dataset.g;
+  if (g === gran()) return;
+  const p = state.period;
+  let anchor = p.startsWith("W") ? p.slice(1) : p.length === 4 ? p + "-01-01" : p.length === 7 ? p + "-01" : p;
+  if (anchor > todayIso() || keyOf(todayIso()) === p) anchor = todayIso();   // er du i "nu", bliv i nu
+  state.gran = g;
+  setPeriod(G[g].key(anchor));
+});
+
+// Swipe til siden på overblikskortet skifter periode
 (() => {
   let x0 = null, y0 = null;
   const el = $("summaryCard");
@@ -476,49 +622,160 @@ $("nextPeriod").onclick = () => setPeriod(isYear(state.period) ? String(Number(s
 })();
 
 function renderSummary() {
-  const list = state.txs.filter((t) => inPeriod(t, state.period));
+  const list = txsIn(state.period);
   const { out, inc, saved } = totals(list);
   $("sumOut").textContent = kr(out);
   $("sumIn").textContent = kr(inc);
   $("sumNet").textContent = kr(inc - out);
   $("sumNet").className = "v " + (inc - out >= 0 ? "pos" : "neg");
+
+  // Måler: hvor stor en del af indtægterne er brugt
+  const m = $("spendMeter");
+  if (inc > 0 && gran() !== "day") {
+    const pct = Math.round((out / inc) * 100);
+    m.innerHTML = `<div class="row between small"><span class="muted">Brugt af indtægterne</span><b class="${pct > 100 ? "neg" : ""}">${pct}%</b></div>
+      <div class="track"><div style="width:${Math.min(100, pct)}%;background:${pct > 100 ? "var(--red)" : "var(--accent)"}"></div>
+      ${pct < 100 ? `<div style="flex:1;background:#2c5a46"></div>` : ""}</div>`;
+    m.classList.remove("hidden");
+  } else m.classList.add("hidden");
+
   const parts = [];
-  if (inc > 0) parts.push(`Du har brugt <b>${Math.round((out / inc) * 100)}%</b> af indtægterne`);
-  if (saved > 0) parts.push(`${kr(saved)} flyttet til opsparing/egne konti`);
-  else if (saved < 0) parts.push(`${kr(-saved)} hentet fra opsparing/egne konti`);
-  if (!isYear(state.period)) {
-    const prev = [1, 2, 3].map((i) => totals(state.txs.filter((t) => inPeriod(t, addMonths(state.period, -i)))).out).filter((v) => v > 0);
-    if (prev.length) {
-      const avg = prev.reduce((a, b) => a + b, 0) / prev.length;
-      const diff = Math.round(((out - avg) / avg) * 100);
-      parts.push(`udgifter ${diff >= 0 ? `<span class="up">${diff}% over</span>` : `<span class="down">${-diff}% under</span>`} snittet for de ${prev.length} forrige måneder`);
-    }
+  if (saved > 0) parts.push(`🐷 ${kr(saved)} flyttet til opsparing/egne konti`);
+  else if (saved < 0) parts.push(`🔁 ${kr(-saved)} hentet fra opsparing/egne konti`);
+  const prev = prevPeriods(state.period).map((q) => totals(txsIn(q)).out).filter((v) => v > 0);
+  if (prev.length && out > 0) {
+    const avg = prev.reduce((a, b) => a + b, 0) / prev.length;
+    const diff = Math.round(((out - avg) / avg) * 100);
+    parts.push(`Udgifter ${diff >= 0 ? `<span class="up">▲ ${diff}% over</span>` : `<span class="down">▼ ${-diff}% under</span>`} snittet for de ${prev.length} forrige ${prev.length === 1 ? G[gran()].unit : G[gran()].units}`);
   }
   $("subStat").innerHTML = parts.join(" · ");
   $("subStat").classList.toggle("hidden", !parts.length);
 }
 
+// Søjlediagram: de seneste N perioder (12 mdr., 12 uger, 14 dage, 5 år)
 function renderChart() {
-  const now = ym(new Date());
-  const end = isYear(state.period) ? (state.period === now.slice(0, 4) ? now : state.period + "-12")
-    : (state.period > addMonths(now, -11) ? now : addMonths(state.period, 11));
-  const months = Array.from({ length: 12 }, (_, i) => addMonths(end, i - 11));
-  const data = months.map((m) => totals(state.txs.filter((t) => inPeriod(t, m))));
+  const n = G[gran()].n, now = keyOf(todayIso());
+  let end = state.period;
+  for (let i = 0; i < n - 1 && end < now; i++) end = stepP(end, 1);   // vis gerne perioder efter den valgte
+  const periods = Array.from({ length: n }, (_, i) => stepP(end, i - n + 1));
+  const data = periods.map((p) => totals(txsIn(p)));
   const max = Math.max(1, ...data.map((d) => Math.max(d.out, d.inc)));
-  $("chart").innerHTML = months.map((m, i) => {
-    const cur = isYear(state.period) ? m.startsWith(state.period) : m === state.period;
+  $("chartTitle").textContent = `Seneste ${n} ${G[gran()].units}`;
+  const short = (v) => v >= 1000 ? Math.round(v / 1000) + "k" : v ? Math.round(v) : "";
+  $("chart").innerHTML = periods.map((p, i) => {
     const d = data[i];
-    return `<div class="m ${cur ? "cur" : ""}" data-m="${m}" title="${monthLabel(m)}: udgifter ${kr(d.out)}, indtægter ${kr(d.inc)}">
-      <span class="lbl num">${d.out ? Math.round(d.out / 1000) + "k" : ""}</span>
+    return `<div class="m ${p === state.period ? "cur" : ""}" data-p="${p}" data-i="${i}">
+      <span class="lbl num">${short(d.out)}</span>
       <div class="cols">
         <div class="col out" style="height:${(d.out / max) * 100}%"></div>
         <div class="col in" style="height:${(d.inc / max) * 100}%"></div>
       </div>
-      <span class="lbl">${parseYm(m).toLocaleDateString("da-DK", { month: "short" }).replace(".", "")}</span>
+      <span class="lbl">${esc(periodLabel(p, true))}</span>
     </div>`;
   }).join("");
-  document.querySelectorAll("#chart .m").forEach((el) => el.onclick = () => setPeriod(el.dataset.m));
+  document.querySelectorAll("#chart .m").forEach((el) => {
+    const d = data[el.dataset.i];
+    el.onclick = () => setPeriod(el.dataset.p);
+    el.onmouseenter = (e) => {
+      const r = el.getBoundingClientRect();
+      showTip(`<div style="margin-bottom:3px">${esc(periodLabel(el.dataset.p))}</div>
+        <div><i style="background:var(--accent)"></i>Udgifter <b>${kr(d.out)}</b></div>
+        <div><i style="background:var(--green)"></i>Indtægter <b>${kr(d.inc)}</b></div>`, r.left + r.width / 2, r.top);
+    };
+    el.onmouseleave = hideTip;
+  });
 }
+
+// Linjediagram: akkumulerede udgifter gennem perioden mod snittet af de 3 forrige
+function renderPace() {
+  const card = $("paceCard");
+  if (gran() === "day") { card.classList.add("hidden"); return; }
+  card.classList.remove("hidden");
+  // Delperioder: år -> måneder, måned -> dage, uge -> dage
+  const subKeys = (p) => {
+    if (gran() === "year") return Array.from({ length: 12 }, (_, i) => `${p}-${pad(i + 1)}`);
+    const start = gran() === "week" ? p.slice(1) : p + "-01";
+    const len = gran() === "week" ? 7 : new Date(Date.UTC(+p.slice(0, 4), +p.slice(5, 7), 0)).getUTCDate();
+    return Array.from({ length: len }, (_, i) => addDays(start, i));
+  };
+  const cumulative = (p) => {
+    const keys = subKeys(p);
+    const sub = gran() === "year" ? (d) => d.slice(0, 7) : (d) => d;
+    const byKey = new Map();
+    for (const t of txsIn(p)) if (t.amount < 0 && counts(t)) byKey.set(sub(t.booking_date), (byKey.get(sub(t.booking_date)) ?? 0) - t.amount);
+    let acc = 0;
+    return keys.map((k) => (acc += byKey.get(k) ?? 0));
+  };
+  const keys = subKeys(state.period);
+  const L = keys.length;
+  const cur = cumulative(state.period);
+  // Fremtidige dage i den igangværende periode tegnes ikke
+  const today = todayIso();
+  const lastIdx = gran() === "year" ? keys.findLastIndex((k) => k <= today.slice(0, 7)) : keys.findLastIndex((k) => k <= today);
+  const curShown = cur.slice(0, lastIdx + 1);
+  const prevs = prevPeriods(state.period).map(cumulative);
+  const avg = prevs.length ? keys.map((_, i) => prevs.reduce((s, c) => s + (c[Math.min(i, c.length - 1)] ?? 0), 0) / prevs.length) : null;
+  const budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? Number(c.monthly_budget) || 0 : 0), 0) * budgetFactor();
+
+  $("paceTitle").textContent = { year: "Forbrug gennem året", month: "Forbrug gennem måneden", week: "Forbrug gennem ugen" }[gran()];
+  $("paceLbl").textContent = { year: "Dette år", month: "Denne måned", week: "Denne uge" }[gran()];
+  $("paceAvgLbl").textContent = `Snit ${prevs.length || 3} forrige`;
+  $("paceAvgLbl").parentElement.classList.toggle("hidden", !avg);
+
+  const svg = $("paceSvg");
+  const W = svg.clientWidth || 600, H = 190, padL = 6, padR = 46, padT = 10, padB = 22;
+  const max = Math.max(1, ...curShown, ...(avg ?? []), budget) * 1.08;
+  const x = (i) => padL + (L === 1 ? 0 : (i / (L - 1)) * (W - padL - padR));
+  const y = (v) => padT + (1 - v / max) * (H - padT - padB);
+  const path = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const grid = [0.25, 0.5, 0.75, 1].map((f) => max * f / 1.08).map((v) =>
+    `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="#262a33" stroke-width="1"/>
+     <text x="${W - padR + 6}" y="${y(v) + 4}">${v >= 1000 ? Math.round(v / 1000) + "k" : Math.round(v)}</text>`).join("");
+  const tickEvery = L > 20 ? 5 : L > 8 ? 2 : 1;
+  const ticks = keys.map((k, i) => (i % tickEvery === 0 || i === L - 1)
+    ? `<text x="${x(i)}" y="${H - 5}" text-anchor="middle">${gran() === "year" ? fmt(k + "-01", { month: "short" }).replace(".", "") : gran() === "week" ? fmt(k, { weekday: "short" }).replace(".", "") : +k.slice(8)}</text>` : "").join("");
+  const lastV = curShown[curShown.length - 1] ?? 0;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = `${grid}${ticks}
+    ${budget ? `<line x1="${padL}" x2="${W - padR}" y1="${y(budget)}" y2="${y(budget)}" stroke="#ff7b7b" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text x="${padL + 2}" y="${y(budget) - 5}" style="fill:#ff7b7b">Budget ${kr(budget)}</text>` : ""}
+    ${avg ? `<path d="${path(avg)}" fill="none" stroke="#8b93a1" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>` : ""}
+    ${curShown.length ? `<path d="${path(curShown)}" fill="none" stroke="#3987e5" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(curShown.length - 1)}" cy="${y(lastV)}" r="4.5" fill="#3987e5" stroke="#181b22" stroke-width="2"/>` : ""}
+    <line id="paceCross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="#8b93a1" stroke-width="1" visibility="hidden"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="paceHit"/>`;
+
+  // Kort forklaring under grafen
+  let note = "";
+  if (avg && curShown.length) {
+    const ref = avg[curShown.length - 1];
+    const diff = lastV - ref;
+    const done = curShown.length === L;
+    note = `${done ? "I alt" : "Indtil nu"}: ${kr(lastV)} – ${diff >= 0 ? `<span class="up">${kr(diff)} mere</span>` : `<span class="down">${kr(-diff)} mindre</span>`} end ${done ? "snittet" : "normalt på samme tidspunkt"}.`;
+  }
+  if (budget && curShown.length) note += ` ${lastV > budget ? `<span class="up">Budgettet er overskredet.</span>` : `${kr(budget - lastV)} tilbage af budgettet.`}`;
+  $("paceNote").innerHTML = note;
+
+  // Hover / tryk: lodret linje + tooltip
+  const hit = $("paceHit"), cross = $("paceCross");
+  const move = (clientX) => {
+    const r = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(L - 1, Math.round(((clientX - r.left) * (W / r.width) - padL) / (W - padL - padR) * (L - 1))));
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    const label = gran() === "year" ? fmt(keys[i] + "-01", { month: "long" }) : fmt(keys[i], { weekday: "short", day: "numeric", month: "short" });
+    showTip(`<div style="margin-bottom:3px">${esc(label)}</div>
+      ${i < curShown.length ? `<div><i style="background:#3987e5"></i>${esc($("paceLbl").textContent)} <b>${kr(cur[i])}</b></div>` : ""}
+      ${avg ? `<div><i style="background:#8b93a1"></i>Snit <b>${kr(avg[i])}</b></div>` : ""}`,
+      r.left + x(i) * (r.width / W), r.top + 10);
+  };
+  const leave = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
+  hit.onmousemove = (e) => move(e.clientX);
+  hit.onmouseleave = leave;
+  hit.ontouchstart = (e) => move(e.touches[0].clientX);
+  hit.ontouchmove = (e) => { move(e.touches[0].clientX); };
+  hit.ontouchend = () => setTimeout(leave, 1500);
+}
+window.addEventListener("resize", () => { clearTimeout(renderPace._t); renderPace._t = setTimeout(renderPace, 150); });
 
 document.querySelectorAll("#catMode button").forEach((b) => b.onclick = () => {
   state.catMode = b.dataset.mode; state.catFilter = null;
@@ -526,54 +783,68 @@ document.querySelectorAll("#catMode button").forEach((b) => b.onclick = () => {
   renderBars(); renderTxs();
 });
 
+// Kategorier: segmenteret fordelingsbar + fliser med ikon, beløb, budget og udvikling
 function renderBars() {
-  const list = state.txs.filter((t) => inPeriod(t, state.period) && counts(t));
+  const list = txsIn(state.period).filter(counts);
   const wantOut = state.catMode === "out";
   const sumBy = (rows) => {
     const m = new Map();
     for (const t of rows) if (wantOut ? t.amount < 0 : t.amount > 0) {
-      const k = t.category_id ?? "none";
-      m.set(String(k), (m.get(String(k)) ?? 0) + Math.abs(t.amount));
+      const k = String(t.category_id ?? "none");
+      m.set(k, (m.get(k) ?? 0) + Math.abs(t.amount));
     }
     return m;
   };
   const byCat = sumBy(list);
   const total = [...byCat.values()].reduce((a, b) => a + b, 0);
-  // Gennemsnit for de 3 forrige måneder (kun månedsvisning)
+  const prevs = prevPeriods(state.period);
   const prevAvg = new Map();
-  if (!isYear(state.period)) {
-    const prevMonths = [1, 2, 3].map((i) => addMonths(state.period, -i))
-      .filter((m) => state.txs.some((t) => inPeriod(t, m)));
-    for (const m of prevMonths) for (const [k, v] of sumBy(state.txs.filter((t) => inPeriod(t, m) && counts(t))))
-      prevAvg.set(k, (prevAvg.get(k) ?? 0) + v / prevMonths.length);
-  }
-  // Kategorier med budget vises også, selvom der ikke er brugt noget endnu
-  if (wantOut && !isYear(state.period))
-    for (const c of state.cats) if (Number(c.monthly_budget) > 0 && !byCat.has(String(c.id))) byCat.set(String(c.id), 0);
+  for (const q of prevs) for (const [k, v] of sumBy(txsIn(q).filter(counts))) prevAvg.set(k, (prevAvg.get(k) ?? 0) + v / prevs.length);
+  if (wantOut) for (const c of state.cats) if (Number(c.monthly_budget) > 0 && !byCat.has(String(c.id))) byCat.set(String(c.id), 0);
 
   const rows = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
-  const top = Math.max(1, rows[0]?.[1] ?? 1);
+  const nameOf = (k) => k === "none" ? "Uden kategori" : catById(k)?.name ?? "?";
+
+  // Fordelingsbar: kategorier med fast farve; resten samles i "Øvrige"
+  const colorOf = (k) => wantOut ? colorMap.get(k) : null;
+  const segs = [], rest = { v: 0, n: 0 };
+  for (const [k, v] of rows) { if (!v) continue; if (colorOf(k)) segs.push({ k, v, c: colorOf(k) }); else { rest.v += v; rest.n++; } }
+  if (!wantOut) { segs.length = 0; rows.filter(([, v]) => v).slice(0, 5).forEach(([k, v], i) => segs.push({ k, v, c: PALETTE[i] })); rest.v = total - segs.reduce((s, x) => s + x.v, 0); }
+  if (rest.v > 0.5) segs.push({ k: "__other", v: rest.v, c: OTHER });
+  $("segBar").innerHTML = total ? segs.map((s) => `<div data-k="${s.k}" style="flex:${s.v};background:${s.c}"></div>`).join("") : "";
+  $("segLegend").innerHTML = total ? segs.map((s) => `<span><i style="background:${s.c}"></i>${s.k === "__other" ? "Øvrige" : esc(nameOf(s.k))} <b>${Math.round((s.v / total) * 100)}%</b></span>`).join("") : "";
+  document.querySelectorAll("#segBar > div").forEach((el) => {
+    const s = segs.find((x) => x.k === el.dataset.k);
+    el.onmouseenter = () => { const r = el.getBoundingClientRect();
+      showTip(`<i style="background:${s.c}"></i>${s.k === "__other" ? "Øvrige" : esc(nameOf(s.k))} <b>${kr(s.v)}</b> · ${Math.round((s.v / total) * 100)}%`, r.left + r.width / 2, r.top); };
+    el.onmouseleave = hideTip;
+    el.onclick = () => { if (s.k !== "__other") { state.catFilter = s.k; renderBars(); renderTxs(); $("txTitle").scrollIntoView({ behavior: "smooth" }); } };
+  });
+
+  // Fliser
+  const factor = budgetFactor();
   $("bars").innerHTML = rows.length ? rows.map(([k, v]) => {
     const cat = catById(k);
-    const budget = wantOut && !isYear(state.period) ? Number(cat?.monthly_budget) || 0 : 0;
+    const budget = wantOut ? (Number(cat?.monthly_budget) || 0) * factor : 0;
     const avg = prevAvg.get(k);
-    let meta = [];
-    if (budget) meta.push(v > budget ? `<span class="up">${kr(v - budget)} over budget</span>` : `${kr(budget - v)} tilbage af ${kr(budget)}`);
+    let chip = "";
     if (avg > 0 && v > 0) {
       const diff = Math.round(((v - avg) / avg) * 100);
-      if (Math.abs(diff) >= 10) meta.push(`<span class="${(diff > 0) === wantOut ? "up" : "down"}">${diff > 0 ? "▲" : "▼"} ${Math.abs(diff)}%</span> mod snit ${kr(avg)}`);
-    }
-    const width = budget ? Math.min(100, (v / budget) * 100) : (v / top) * 100;
-    const fillClass = !wantOut ? "inc" : budget && v > budget ? "over" : "";
-    return `<div class="bar ${String(state.catFilter) === k ? "active" : ""}" data-cat="${k}">
-      <span>${k === "none" ? "<em>Uden kategori</em>" : esc(cat?.name ?? "?")}</span>
-      <span class="num">${kr(v)} <span class="muted small">${total ? Math.round((v / total) * 100) : 0}%</span></span>
-      <div class="track"><div class="fill ${fillClass}" style="width:${width}%"></div></div>
-      ${meta.length ? `<div class="meta">${meta.join(" · ")}</div>` : ""}
+      if (Math.abs(diff) >= 10) chip = `<span class="chip ${(diff > 0) === wantOut ? "up" : "down"}" title="Mod snit ${kr(avg)}">${diff > 0 ? "▲" : "▼"} ${Math.abs(diff)}%</span>`;
+    } else if (!avg && v > 0 && prevs.length) chip = `<span class="chip muted">ny</span>`;
+    const width = budget ? Math.min(100, (v / budget) * 100) : total ? (v / total) * 100 : 0;
+    const cls = !wantOut ? "inc" : budget && v > budget ? "over" : "";
+    const sub = budget ? (v > budget ? `<span class="up">${kr(v - budget)} over</span>` : `${kr(budget - v)} tilbage`) : `${total ? Math.round((v / total) * 100) : 0}% af alle`;
+    const dot = colorOf(k) ? `<span class="dot" style="background:${colorOf(k)}"></span>` : "";
+    return `<div class="tile ${String(state.catFilter) === k ? "active" : ""}" data-cat="${k}" title="${esc(nameOf(k))}">
+      <div class="top"><div class="ico">${k === "none" ? "❓" : iconOf(cat)}${dot}</div>
+        <div style="min-width:0"><div class="name">${esc(nameOf(k))}</div><div class="amt">${kr(v)}</div></div></div>
+      <div class="meter"><div class="${cls}" style="width:${width}%"></div></div>
+      <div class="meta"><span>${sub}</span>${chip}</div>
     </div>`;
   }).join("") : `<p class="muted">Ingen ${wantOut ? "udgifter" : "indtægter"} i perioden.</p>`;
-  $("barsHint").textContent = rows.length ? "Tryk på en kategori for at se posteringerne." : "";
-  document.querySelectorAll(".bar").forEach((el) => el.onclick = () => {
+  $("barsHint").textContent = rows.length ? `Tryk på en kategori for at se posteringerne.${prevs.length ? ` ▲▼ = mod snittet for de ${prevs.length} forrige ${prevs.length === 1 ? G[gran()].unit : G[gran()].units}.` : ""}` : "";
+  document.querySelectorAll(".tile").forEach((el) => el.onclick = () => {
     state.catFilter = String(state.catFilter) === el.dataset.cat ? null : el.dataset.cat;
     state.shown = PAGE;
     renderBars(); renderTxs();
@@ -583,14 +854,14 @@ function renderBars() {
 
 // Faste udgifter: samme modtager i mindst 3 af de 4 seneste hele måneder, højst 2 gange pr. måned, stabilt beløb
 function renderFixed() {
-  const base = isYear(state.period) ? ym(new Date()) : state.period;
+  const base = gran() === "year" ? todayIso().slice(0, 7) : (state.period.startsWith("W") ? state.period.slice(1) : state.period).slice(0, 7);
   const months = [1, 2, 3, 4].map((i) => addMonths(base, -i));
-  const keyOf = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
+  const keyOfTx = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
   const groups = new Map();
   for (const t of state.txs) {
     const m = t.booking_date.slice(0, 7);
     if (t.amount >= 0 || !counts(t) || !months.includes(m)) continue;
-    const k = keyOf(t);
+    const k = keyOfTx(t);
     if (!groups.has(k)) groups.set(k, { name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map() });
     const g = groups.get(k);
     const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
@@ -609,7 +880,8 @@ function renderFixed() {
   $("fixedCard").classList.toggle("hidden", !fixed.length);
   $("fixedTotal").textContent = fixed.length ? `${kr(fixed.reduce((s, f) => s + f.amount, 0))} / md.` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
-    <div><span>${esc(f.name)}</span> <span class="muted small">${esc(catById(f.cat)?.name ?? "")}</span></div>
+    <div class="ico sm">${f.cat ? iconOf(catById(f.cat)) : "❓"}</div>
+    <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")}</div></div>
     <div class="num">${kr(f.amount)}</div>`).join("");
 }
 
@@ -621,7 +893,7 @@ $("moreBtn").onclick = () => { state.shown += PAGE; renderTxs(); };
 function renderTxs() {
   const f = $("txFilter").value;
   const q = $("search").value.trim().toLowerCase();
-  let list = state.txs.filter((t) => inPeriod(t, state.period));
+  let list = txsIn(state.period);
   if (state.catFilter) {
     const wantOut = state.catMode === "out";
     list = list.filter((t) => String(t.category_id ?? "none") === state.catFilter && (wantOut ? t.amount < 0 : t.amount > 0));
@@ -642,7 +914,7 @@ function renderTxs() {
 
   const sum = list.reduce((s, t) => s + t.amount, 0);
   const options = (sel) => `<option value="">– vælg kategori –</option>` +
-    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
+    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${iconOf(c)} ${esc(c.name)}</option>`).join("") +
     `<option value="__new">+ Ny kategori…</option>`;
 
   let html = list.length ? `<div class="small muted">${list.length} posteringer · i alt <span class="num">${kr(sum)}</span></div>` : "";
@@ -650,10 +922,12 @@ function renderTxs() {
   for (const t of list.slice(0, state.shown)) {
     if (t.booking_date !== lastDay) {
       lastDay = t.booking_date;
-      html += `<div class="day">${new Date(t.booking_date + "T12:00").toLocaleDateString("da-DK", { weekday: "long", day: "numeric", month: "long" })}</div>`;
+      html += `<div class="day">${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long" })}</div>`;
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
+    const cat = catById(t.category_id);
     html += `<div class="tx">
+      <div class="ico sm">${cat ? iconOf(cat) : "❓"}</div>
       <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       <select data-id="${esc(t.id)}">${options(t.category_id)}</select>
@@ -703,7 +977,7 @@ async function setCategory(txId, value) {
 
   if (catId) {
     const suggestion = (tx.counterparty || tx.description).toLowerCase().replace(/[0-9*#]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
-    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${esc(catById(catId).name)}</b>?`;
+    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${iconOf(catById(catId))} ${esc(catById(catId).name)}</b>?`;
     $("rulePattern").value = suggestion;
     const updateCount = () => {
       const p = $("rulePattern").value.trim().toLowerCase();
@@ -735,6 +1009,7 @@ async function setCategory(txId, value) {
 
 // ---------- Indstillinger ----------
 function showSettings(on) {
+  hideTip();
   $("app").classList.toggle("hidden", on);
   $("settings").classList.toggle("hidden", !on);
   if (on) renderSettings(); else render();
@@ -749,9 +1024,10 @@ function renderSettings() {
   const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel" };
   $("catList").innerHTML = state.cats.map((c) => `
     <div class="set-cat" data-id="${c.id}">
+      <input class="icon" value="${esc(iconOf(c))}" aria-label="Ikon" maxlength="8">
       <input class="name" value="${esc(c.name)}" aria-label="Navn">
       <select class="kind" aria-label="Type">${Object.entries(kinds).map(([k, v]) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-      <input class="budget" type="number" inputmode="numeric" min="0" step="100" placeholder="Budget" value="${c.monthly_budget ?? ""}" aria-label="Budget pr. måned" ${c.kind === "expense" ? "" : "disabled"}>
+      <input class="budget" type="number" inputmode="numeric" min="0" step="100" placeholder="Budget/md." value="${c.monthly_budget ?? ""}" aria-label="Budget pr. måned" ${c.kind === "expense" ? "" : "disabled"}>
       <button class="ghost danger del" title="Slet kategori" aria-label="Slet">✕</button>
     </div>`).join("");
   document.querySelectorAll(".set-cat").forEach((row) => {
@@ -759,12 +1035,16 @@ function renderSettings() {
     const save = async (patch) => {
       const { error } = await sb.from("categories").update(patch).eq("id", c.id);
       if (error) {
-        toast(error.message.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." : "Fejl: " + error.message, 6000);
+        const m = error.message;
+        toast(m.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." :
+              m.includes("icon") ? "Egne ikoner kræver databaseopdatering 003 – se README." : "Fejl: " + m, 6000);
         return renderSettings();
       }
       Object.assign(c, patch); toast("Gemt.", 1500);
       if ("kind" in patch) renderSettings();
     };
+    row.querySelector(".icon").onfocus = (e) => e.target.select();
+    row.querySelector(".icon").onchange = (e) => save({ icon: e.target.value.trim() || null });
     row.querySelector(".name").onchange = (e) => e.target.value.trim() && save({ name: e.target.value.trim() });
     row.querySelector(".kind").onchange = (e) => save({ kind: e.target.value });
     row.querySelector(".budget").onchange = (e) => save({ monthly_budget: e.target.value === "" ? null : Number(e.target.value) });
@@ -789,7 +1069,7 @@ function renderRules() {
   $("ruleList").innerHTML = rules.length ? rules.map((r) => `
     <div class="set-rule" data-id="${r.id}">
       <span>"${esc(r.pattern)}" ${r.priority < 200 ? '<span class="tag">standard</span>' : ""}</span>
-      <span class="muted small">→ ${esc(catById(r.category_id)?.name ?? "?")}</span>
+      <span class="muted small">→ ${iconOf(catById(r.category_id))} ${esc(catById(r.category_id)?.name ?? "?")}</span>
       <button class="ghost danger" title="Slet regel" aria-label="Slet">✕</button>
     </div>`).join("")
     : `<p class="muted small">Du har ingen egne regler endnu. De oprettes, når du retter en kategori og vælger "Gem som regel".</p>`;

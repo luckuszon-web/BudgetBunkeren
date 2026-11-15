@@ -43,7 +43,9 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 
 ## Bygget i frontend (nov. 2026)
 - Alle posteringer (25 mdr.) hentes én gang med paginering (Supabase giver max 1000 rækker pr. kald); periodeskift sker lokalt.
-- Periode: måned eller hele året (`state.period` = "YYYY-MM" eller "YYYY"), 12-mdr. graf (klikbar), swipe, dropdown.
+- Periode: `state.gran` = year|month|week|day; nøgler "YYYY", "YYYY-MM", "WYYYY-MM-DD" (mandag), "YYYY-MM-DD". Søjlegraf over seneste N perioder (klikbar), swipe, dropdown. Datoer regnes i UTC.
+- Visuelt: akkumuleret forbrugskurve vs. snit af 3 forrige perioder (+ budgetlinje), segmenteret fordelingsbar (5 faste farver tildelt efter 12-mdr. forbrug, resten "Øvrige"), kategori-fliser med emoji-ikon (`categories.icon`, migration 003, ellers gættet ud fra navn).
+- Budget er pr. måned og skaleres til år/uge/dag.
 - Kategorier: udgifter/indtægter, sammenligning med snit af 3 forrige mdr., budget.
 - Faste udgifter: samme modtager i ≥3 af 4 seneste mdr., ≤2 gange/md., beløb inden for ±20 % af median.
 - Søgning, filtre, "Vis flere", dialoger til ny kategori og gem-regel, indstillingsside (kategorier, regler).
