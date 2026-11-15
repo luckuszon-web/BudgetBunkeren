@@ -2,8 +2,9 @@
 -- Kør hele filen i Supabase → SQL Editor. Kræver, at du har oprettet din bruger (README trin 1.4).
 -- Kan køres igen: gamle demodata slettes først.
 --
--- FJERN DEMODATA IGEN (kør kun denne linje):
+-- FJERN DEMODATA IGEN (kør kun disse linjer):
 --   delete from public.accounts where uid = 'demo-konto';
+--   delete from public.goals where demo; delete from public.assets where demo; delete from public.challenges where demo;
 
 do $$
 declare
@@ -163,5 +164,39 @@ begin
        or (t.description in ('Restaurante Mar Azul', 'Supermercado Continente') and c.name = 'Rejser'));
 
   -- Husleje, opsparingskontoen, A-kasse, fagforening og MobilePay står uden kategori, så du kan prøve at rette dem
+
+  -- PLANLÆGNING (kun hvis databaseopdatering 004 er kørt)
+  if to_regclass('public.goals') is not null then
+    delete from public.goals where demo; delete from public.assets where demo; delete from public.challenges where demo;
+
+    insert into public.goals (user_id, name, icon, target_amount, saved_amount, monthly_amount, target_date, demo) values
+      (uid, 'Buffer til uforudsete udgifter', '🛟', 50000, 30000, 2000, null, true),
+      (uid, 'Ferie i Japan',                  '✈️', 40000, 12500, 1500, make_date(extract(year from current_date)::int + 1, 9, 1), true),
+      (uid, 'Ny bil',                         '🚗', 150000, 45000, 3000, make_date(extract(year from current_date)::int + 3, 6, 1), true);
+
+    insert into public.assets (user_id, name, kind, value, rate, monthly_payment, invested, demo) values
+      (uid, 'Lønkonto',             'cash',       18400,  null, null, null,  true),
+      (uid, 'Opsparingskonto',      'cash',       30000,  1.5,  null, null,  true),
+      (uid, 'Aktiedepot',           'investment', 86500,  6,    null, 70000, true),
+      (uid, 'Pension',              'pension',    312000, 5,    null, null,  true),
+      (uid, 'Bil (Skoda Octavia)',  'vehicle',    95000,  null, null, null,  true),
+      (uid, 'Billån Santander',     'loan',       68000,  6.9,  2350, null,  true),
+      (uid, 'Kreditkort',           'credit',     4200,   22,   1000, null,  true);
+
+    -- 6 måneders historik, så udviklingen i formuen kan ses
+    insert into public.asset_history (user_id, asset_id, value, recorded_on)
+    select uid, a.id,
+           round(a.value * (1 - g.k * case a.kind when 'investment' then 0.025 when 'pension' then 0.012 when 'vehicle' then -0.012
+                                                when 'loan' then -0.03 when 'credit' then -0.05 else 0.03 end)::numeric, 0),
+           (date_trunc('month', current_date) - make_interval(months => g.k))::date
+    from public.assets a cross join generate_series(0, 5) as g(k)
+    where a.demo and a.user_id = uid
+    on conflict (asset_id, recorded_on) do nothing;
+
+    insert into public.challenges (user_id, title, category_id, limit_amount, month, demo)
+    select uid, 'Brug højst 600 kr. på restaurant og takeaway', c.id, 600, to_char(current_date, 'YYYY-MM'), true
+    from public.categories c where c.user_id = uid and c.name = 'Restaurant & takeaway';
+  end if;
+
   raise notice 'Demodata indsat: % posteringer', (select count(*) from public.transactions where account_uid = 'demo-konto');
 end $$;

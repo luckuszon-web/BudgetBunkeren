@@ -152,6 +152,18 @@
     .hero-amt { font-size: 34px; }
   }
 
+
+  /* Bundmenu */
+  main { padding-bottom: 96px; }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; justify-content: center;
+    background: rgba(15,17,21,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  .tabs button { flex: 1; max-width: 160px; background: none; border: 0; color: var(--muted); font-size: 11.5px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; }
+  .tabs svg { width: 22px; height: 22px; fill: currentColor; }
+  .tabs button.on { color: var(--accent); }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+
   /* Faste udgifter */
   .fixed { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; }
 
@@ -166,13 +178,15 @@
   .tag.ai { color: var(--warn); border-color: #5a4a1c; }
 
   /* Indstillinger */
-  .set-cat { display: grid; grid-template-columns: 52px 1fr 120px 100px 40px; gap: 6px; align-items: center; padding: 5px 0; }
+  .set-cat .roll { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .set-cat .roll input { width: auto; }
+  .set-cat { display: grid; grid-template-columns: 52px 1fr 120px 100px auto 40px; gap: 6px; align-items: center; padding: 5px 0; }
   .set-cat .icon { text-align: center; font-size: 18px; padding: 4px; }
   .set-cat input, .set-cat select { padding: 6px 8px; font-size: 14px; }
   .set-cat button { padding: 6px 0; }
   .set-rule { display: grid; grid-template-columns: 1fr auto 40px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
   @media (max-width: 520px) {
-    .set-cat { grid-template-columns: 52px 1fr 1fr 40px; border-top: 1px solid var(--line); padding: 8px 0; }
+    .set-cat { grid-template-columns: 52px 1fr 1fr auto 40px; border-top: 1px solid var(--line); padding: 8px 0; }
     .set-cat .name { grid-column: 2 / -1; }
     .set-cat .kind { grid-column: 1 / 3; }
     .tiles { grid-template-columns: 1fr 1fr; }
@@ -180,6 +194,7 @@
   }
 
   .banner { border-color: var(--warn); }
+  #consentCard:not([data-tab="app"]) { display: none; }
   .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222632; z-index: 10;
     border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; max-width: 90vw; }
   dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
@@ -207,22 +222,25 @@
     </div>
   </section>
 
-  <!-- Overblik -->
-  <section id="app" class="hidden">
+  <!-- Fælles top -->
+  <div id="topbar" class="hidden">
     <div class="row between">
-      <h1>Forbrug</h1>
+      <h1 id="pageTitle">Overblik</h1>
       <div class="row">
         <button class="ghost small" id="syncBtn" title="Hent nye posteringer">↻ Opdater</button>
-        <button class="ghost small" id="settingsBtn" title="Kategorier, budgetter og regler">⚙ Indstillinger</button>
+        <button class="ghost small" id="settingsBtn" title="Kategorier, budgetter og regler">Indstillinger</button>
       </div>
     </div>
-
     <div id="consentCard" class="card banner hidden">
       <div class="row between">
         <span id="consentText"></span>
         <button class="primary" id="connectBtn">Forbind Nordea</button>
       </div>
     </div>
+  </div>
+
+  <!-- Overblik -->
+  <section id="app" class="hidden">
 
     <div class="card" id="summaryCard">
       <div class="seg gran" id="granSel" style="display:flex;margin-bottom:10px">
@@ -329,10 +347,15 @@
     <p class="small muted" id="footer"></p>
   </section>
 
+  <!-- Planlæg, Værktøjer, Rådgiver (bygges af modulerne i js/) -->
+  <section id="plan" class="hidden"></section>
+  <section id="tools" class="hidden"></section>
+  <section id="advisor" class="hidden"></section>
+
   <!-- Indstillinger -->
   <section id="settings" class="hidden">
     <div class="row between">
-      <h1>Indstillinger</h1>
+      <h2 style="font-size:15px;color:var(--text);text-transform:none;letter-spacing:0">Kategorier, budgetter og regler</h2>
       <button class="ghost small" id="closeSettings">‹ Tilbage</button>
     </div>
 
@@ -358,6 +381,13 @@
     </div>
   </section>
 </main>
+
+<nav id="tabs" class="tabs hidden" aria-label="Hovedmenu">
+  <button data-tab="app" class="on"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg>Overblik</button>
+  <button data-tab="plan"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm0 4a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg>Planlæg</button>
+  <button data-tab="tools"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer</button>
+  <button data-tab="advisor"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver</button>
+</nav>
 
 <!-- Dialog: ny kategori -->
 <dialog id="catDialog">
@@ -470,6 +500,7 @@ function assignColors() {
 // ---------- Tilstand ----------
 const state = {
   cats: [], rules: [], txs: [],
+  goals: [], assets: [], history: [], challenges: [], planReady: false,
   gran: "month",
   period: todayIso().slice(0, 7),
   catFilter: null,          // kategori-id, "none" eller null
@@ -588,7 +619,23 @@ async function load() {
   } catch (e) {
     toast("Kunne ikke hente data: " + e.message, 8000);
   }
-  render();
+  await loadPlan();
+  refresh();
+}
+
+// Mål, formue, gæld og udfordringer (kræver databaseopdatering 004)
+async function loadPlan() {
+  const [g, a, h, c] = await Promise.all([
+    sb.from("goals").select("*").order("created_at"),
+    sb.from("assets").select("*").order("id"),
+    fetchAll(() => sb.from("asset_history").select("asset_id, value, recorded_on").order("recorded_on")).catch((e) => ({ error: e })),
+    sb.from("challenges").select("*").order("month", { ascending: false }),
+  ]);
+  state.planReady = !g.error && !a.error && !c.error;
+  state.goals = (g.data ?? []).map((x) => ({ ...x, target_amount: +x.target_amount, saved_amount: +x.saved_amount, monthly_amount: x.monthly_amount == null ? null : +x.monthly_amount }));
+  state.assets = (a.data ?? []).map((x) => ({ ...x, value: +x.value, rate: x.rate == null ? null : +x.rate, monthly_payment: x.monthly_payment == null ? null : +x.monthly_payment, invested: x.invested == null ? null : +x.invested }));
+  state.history = Array.isArray(h) ? h.map((x) => ({ ...x, value: +x.value })) : [];
+  state.challenges = (c.data ?? []).map((x) => ({ ...x, limit_amount: +x.limit_amount }));
 }
 
 function renderConsent(s) {
@@ -696,6 +743,19 @@ const elapsed = (m) => isCurrentMonth(m) ? +todayIso().slice(8) / daysInMonth(m)
 const prevMonthsWithData = (m, n = 3) => Array.from({ length: n }, (_, i) => addMonths(m, -i - 1)).filter((q) => monthTx(q).length);
 const avgOf = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 const salaryCat = () => state.cats.find((c) => /^løn$/i.test(c.name));
+
+// Budget for en måned inkl. overført (u)brugt budget fra tidligere måneder, hvis det er slået til
+const spentIn = (cat, m) => sumOut(monthTx(m).filter((t) => String(t.category_id) === String(cat.id)));
+function carryOver(cat, m) {
+  const b = Number(cat?.monthly_budget) || 0;
+  if (!b || !cat.rollover_from || m <= cat.rollover_from) return 0;
+  let carry = 0;
+  for (let q = cat.rollover_from; q < m; q = addMonths(q, 1)) carry += b - spentIn(cat, q);
+  return carry;
+}
+const monthBudget = (cat, m) => { const b = Number(cat?.monthly_budget) || 0; return b ? Math.max(0, b + carryOver(cat, m)) : 0; };
+// Budget for den valgte periode (overførsel gælder kun månedsvisning)
+const periodBudget = (cat) => gran() === "month" ? monthBudget(cat, state.period) : (Number(cat?.monthly_budget) || 0) * budgetFactor();
 
 // Faste udgifter: samme modtager i mindst 3 af de 4 forrige måneder, højst 2 gange pr. måned, stabilt beløb
 const fixedKey = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
@@ -845,7 +905,7 @@ function renderScore() {
   // 2) Budgetoverholdelse
   const budgeted = state.cats.filter((c) => c.kind === "expense" && Number(c.monthly_budget) > 0);
   if (budgeted.length) {
-    const ok = budgeted.filter((c) => sumOut(tx.filter((t) => String(t.category_id) === String(c.id))) <= Number(c.monthly_budget) * Math.min(1, f * 1.1)).length;
+    const ok = budgeted.filter((c) => sumOut(tx.filter((t) => String(t.category_id) === String(c.id))) <= monthBudget(c, m) * Math.min(1, f * 1.1)).length;
     parts.push({ name: "Budgetter overholdt", max: 30, pts: ok / budgeted.length * 30, txt: `${ok} af ${budgeted.length}`,
       tip: "Hold øje med de kategorier, der er tæt på budgettet." });
   }
@@ -911,7 +971,7 @@ function renderInsights(fixedItems) {
     const f = elapsed(p);
     const cur = byCat(list);
     for (const c of state.cats) {
-      const b = Number(c.monthly_budget); if (!(b > 0) || c.kind !== "expense") continue;
+      const b = monthBudget(c, p); if (!(b > 0) || c.kind !== "expense") continue;
       const v = cur.get(String(c.id)) ?? 0, pct = Math.round(v / b * 100);
       if (v > b) items.push({ cls: "bad", e: "🔴", w: 100 + pct, html: `<b>${esc(c.name)}</b> er ${kr(v - b)} over budgettet (${pct}% brugt).` });
       else if (f < 1 && v > b * f * 1.1 && pct >= 40) items.push({ cls: "warn", e: "⏱️", w: 80 + pct,
@@ -1034,7 +1094,7 @@ function renderPace() {
   const curShown = cur.slice(0, lastIdx + 1);
   const prevs = prevPeriods(state.period).map(cumulative);
   const avg = prevs.length ? keys.map((_, i) => prevs.reduce((s, c) => s + (c[Math.min(i, c.length - 1)] ?? 0), 0) / prevs.length) : null;
-  let budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? Number(c.monthly_budget) || 0 : 0), 0) * budgetFactor();
+  let budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? periodBudget(c) : 0), 0);
   // Budgetlinjen giver kun mening, hvis budgetterne dækker det meste af forbruget
   const normalOut = avgOf(prevPeriods(state.period).map((q) => totals(txsIn(q)).out));
   if (normalOut && budget < normalOut * 0.5) budget = 0;
@@ -1144,10 +1204,10 @@ function renderBars() {
   });
 
   // Fliser
-  const factor = budgetFactor();
   $("bars").innerHTML = rows.length ? rows.map(([k, v]) => {
     const cat = catById(k);
-    const budget = wantOut ? (Number(cat?.monthly_budget) || 0) * factor : 0;
+    const budget = wantOut ? periodBudget(cat) : 0;
+    const carry = wantOut && gran() === "month" && cat ? carryOver(cat, state.period) : 0;
     const avg = prevAvg.get(k);
     let chip = "";
     if (avg > 0 && v > 0) {
@@ -1156,7 +1216,9 @@ function renderBars() {
     } else if (!avg && v > 0 && prevs.length) chip = `<span class="chip muted">ny</span>`;
     const width = budget ? Math.min(100, (v / budget) * 100) : total ? (v / total) * 100 : 0;
     const cls = !wantOut ? "inc" : budget && v > budget ? "over" : "";
-    const sub = budget ? (v > budget ? `<span class="up">${kr(v - budget)} over</span>` : `${kr(budget - v)} tilbage`) : `${total ? Math.round((v / total) * 100) : 0}% af alle`;
+    const sub = budget ? (v > budget ? `<span class="up">${kr(v - budget)} over</span>` : `${kr(budget - v)} tilbage`) +
+        (carry ? ` <span class="muted" title="Overført fra tidligere måneder">(${carry > 0 ? "+" : "−"}${kr(Math.abs(carry))} overført)</span>` : "")
+      : `${total ? Math.round((v / total) * 100) : 0}% af alle`;
     const dot = colorOf(k) ? `<span class="dot" style="background:${colorOf(k)}"></span>` : "";
     return `<div class="tile ${String(state.catFilter) === k ? "active" : ""}" data-cat="${k}" title="${esc(nameOf(k))}">
       <div class="top"><div class="ico">${k === "none" ? "❓" : iconOf(cat)}${dot}</div>
@@ -1309,15 +1371,30 @@ async function setCategory(txId, value) {
 }
 
 // ---------- Indstillinger ----------
-function showSettings(on) {
+// ---------- Faner ----------
+const TABS = { app: "Overblik", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
+const modules = {};   // plan / tools / advisor – indlæses fra js/
+let currentTab = "app", lastTab = "app";
+function showTab(tab) {
   hideTip();
-  $("app").classList.toggle("hidden", on);
-  $("settings").classList.toggle("hidden", !on);
-  if (on) renderSettings(); else render();
+  if (tab !== "settings") lastTab = tab;
+  currentTab = tab;
+  for (const t of Object.keys(TABS)) $(t).classList.toggle("hidden", t !== tab);
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+  $("pageTitle").textContent = TABS[tab];
+  $("consentCard").dataset.tab = tab;
+  if (tab === "settings") renderSettings();
+  else if (tab === "app") render();
+  else modules[tab]?.render();
+  try { localStorage.setItem("tab", tab === "settings" ? lastTab : tab); } catch {}
   window.scrollTo(0, 0);
 }
-$("settingsBtn").onclick = () => showSettings(true);
+const showSettings = (on) => showTab(on ? "settings" : lastTab);
+document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+$("settingsBtn").onclick = () => showSettings(currentTab !== "settings");
 $("closeSettings").onclick = () => showSettings(false);
+// Gentegn den aktive fane (bruges efter ændringer i data)
+function refresh() { if (currentTab === "app") render(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
 $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
@@ -1329,6 +1406,7 @@ function renderSettings() {
       <input class="name" value="${esc(c.name)}" aria-label="Navn">
       <select class="kind" aria-label="Type">${Object.entries(kinds).map(([k, v]) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select>
       <input class="budget" type="number" inputmode="numeric" min="0" step="100" placeholder="Budget/md." value="${c.monthly_budget ?? ""}" aria-label="Budget pr. måned" ${c.kind === "expense" ? "" : "disabled"}>
+      <label class="roll small muted" title="Ubrugt budget overføres til næste måned (og overforbrug trækkes fra)"><input type="checkbox" class="rollover" ${c.rollover_from ? "checked" : ""} ${c.kind === "expense" && Number(c.monthly_budget) > 0 ? "" : "disabled"}> Overfør</label>
       <button class="ghost danger del" title="Slet kategori" aria-label="Slet">✕</button>
     </div>`).join("");
   document.querySelectorAll(".set-cat").forEach((row) => {
@@ -1338,7 +1416,8 @@ function renderSettings() {
       if (error) {
         const m = error.message;
         toast(m.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." :
-              m.includes("icon") ? "Egne ikoner kræver databaseopdatering 003 – se README." : "Fejl: " + m, 6000);
+              m.includes("icon") ? "Egne ikoner kræver databaseopdatering 003 – se README." :
+              m.includes("rollover") ? "Overførsel af budget kræver databaseopdatering 004 – se README." : "Fejl: " + m, 6000);
         return renderSettings();
       }
       Object.assign(c, patch); toast("Gemt.", 1500);
@@ -1348,7 +1427,8 @@ function renderSettings() {
     row.querySelector(".icon").onchange = (e) => save({ icon: e.target.value.trim() || null });
     row.querySelector(".name").onchange = (e) => e.target.value.trim() && save({ name: e.target.value.trim() });
     row.querySelector(".kind").onchange = (e) => save({ kind: e.target.value });
-    row.querySelector(".budget").onchange = (e) => save({ monthly_budget: e.target.value === "" ? null : Number(e.target.value) });
+    row.querySelector(".budget").onchange = (e) => save({ monthly_budget: e.target.value === "" ? null : Number(e.target.value) }).then(renderSettings);
+    row.querySelector(".rollover").onchange = (e) => save({ rollover_from: e.target.checked ? todayIso().slice(0, 7) : null });
     row.querySelector(".del").onclick = async () => {
       const n = state.txs.filter((t) => String(t.category_id) === String(c.id)).length;
       if (!confirm(`Slet "${c.name}"? ${n} posteringer bliver "Uden kategori", og kategoriens regler slettes.`)) return;
@@ -1383,12 +1463,37 @@ function renderRules() {
   });
 }
 
+// ---------- Fælles værktøjskasse til modulerne i js/ ----------
+function makeCtx() {
+  return {
+    sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
+    toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
+    catById, iconOf, counts, kindOf, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
+    detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat,
+    showTab: (t) => showTab(t),
+  };
+}
+
 // ---------- Start ----------
 async function start() {
   $("login").classList.add("hidden");
+  $("topbar").classList.remove("hidden");
+  $("tabs").classList.remove("hidden");
   $("app").classList.remove("hidden");
   await handleBankCallback();
+  await loadModules();
   await load();
+  let saved = "app"; try { saved = localStorage.getItem("tab") || "app"; } catch {}
+  showTab(TABS[saved] && saved !== "settings" ? saved : "app");
+}
+
+// Funktionsmoduler. Fejler et modul, virker resten af siden stadig.
+async function loadModules() {
+  const ctx = makeCtx();
+  for (const [name, file] of [["plan", "./js/plan.js"], ["tools", "./js/tools.js"], ["advisor", "./js/advisor.js"]]) {
+    try { modules[name] = (await import(file)).init(ctx, $(name)); }
+    catch (e) { console.error(e); $(name).innerHTML = `<div class="card">Denne del kunne ikke indlæses: ${esc(e.message)}</div>`; }
+  }
 }
 
 const { data: { session } } = await sb.auth.getSession();

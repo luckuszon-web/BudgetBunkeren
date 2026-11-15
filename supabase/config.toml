@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.bank-connect]
 verify_jwt = false
+
+[functions.advisor]
+verify_jwt = false

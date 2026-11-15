@@ -29,3 +29,4 @@ jobs:
           fi
           supabase functions deploy bank-connect --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
           supabase functions deploy sync --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+          supabase functions deploy advisor --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
