@@ -10,47 +10,102 @@
 <style>
   :root {
     --bg: #0f1115; --card: #181b22; --line: #262a33; --text: #e9ebef; --muted: #8b93a1;
-    --accent: #6ea8fe; --red: #ff7b7b; --green: #5fd39a; --warn: #f5c451;
+    --accent: #6ea8fe; --red: #ff7b7b; --green: #5fd39a; --warn: #f5c451; --field: #222632;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 760px; margin: 0 auto; padding: 16px 14px 60px; }
   h1 { font-size: 20px; margin: 4px 0 12px; }
-  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .card > .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .row { display: flex; align-items: center; gap: 8px; }
   .between { justify-content: space-between; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
-  button, select, input { font: inherit; color: var(--text); background: #222632; border: 1px solid var(--line);
+  button, select, input { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--line);
     border-radius: 10px; padding: 8px 12px; }
   button { cursor: pointer; }
+  button:disabled { opacity: .35; cursor: default; }
   button.primary { background: var(--accent); color: #0b1020; border: 0; font-weight: 600; }
   button.ghost { background: transparent; }
+  button.danger { color: var(--red); }
   input { width: 100%; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .stat .v { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
   .neg { color: var(--red); } .pos { color: var(--green); }
-  .bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 7px 4px; border-radius: 8px; cursor: pointer; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .hidden { display: none !important; }
+
+  /* Periodevælger */
+  .period { display: grid; grid-template-columns: 48px 1fr 48px; gap: 8px; align-items: center; }
+  .period button { height: 44px; font-size: 22px; padding: 0; }
+  .period select { text-align: center; text-align-last: center; font-weight: 650; font-size: 17px; height: 44px; width: 100%;
+    appearance: none; -webkit-appearance: none; background: var(--field); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .stat .v { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .substat { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+  /* 12-måneders graf */
+  .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
+  .chart .m { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;
+    justify-content: flex-end; cursor: pointer; border-radius: 8px; padding: 4px 0 2px; }
+  .chart .m:hover { background: #1f2330; }
+  .chart .m.cur { background: #1f2a40; }
+  .chart .cols { display: flex; align-items: flex-end; gap: 2px; width: 100%; justify-content: center; flex: 1; }
+  .chart .col { width: 42%; max-width: 16px; border-radius: 4px 4px 1px 1px; min-height: 2px; }
+  .chart .col.out { background: #3a4560; } .chart .m.cur .col.out { background: var(--accent); }
+  .chart .col.in { background: #2c5a46; } .chart .m.cur .col.in { background: var(--green); }
+  .chart .lbl { font-size: 11px; color: var(--muted); }
+  .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
+
+  /* Kategorier */
+  .seg { display: inline-flex; background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+  .seg button { border: 0; background: transparent; padding: 5px 10px; font-size: 13px; border-radius: 8px; color: var(--muted); }
+  .seg button.on { background: #2e3442; color: var(--text); }
+  .bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
   .bar:hover, .bar.active { background: #1f2330; }
   .bar .track { grid-column: 1 / -1; height: 6px; background: #232836; border-radius: 4px; overflow: hidden; }
   .bar .fill { height: 100%; background: var(--accent); border-radius: 4px; }
-  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .months { display: flex; align-items: flex-end; gap: 6px; height: 110px; }
-  .months .m { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
-  .months .col { width: 100%; background: #2b3242; border-radius: 6px 6px 2px 2px; min-height: 2px; }
-  .months .m.cur .col { background: var(--accent); }
-  .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
-  .tx:first-child { border-top: 0; }
+  .bar .fill.over { background: var(--red); }
+  .bar .fill.inc { background: var(--green); }
+  .bar .meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+  .up { color: var(--red); } .down { color: var(--green); }
+
+  /* Faste udgifter */
+  .fixed { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
+  .fixed > div { padding: 3px 0; }
+
+  /* Posteringer */
+  .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
+  .day { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 2px; }
+  .tx { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); }
   .tx .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tx select { grid-column: 1 / -1; padding: 5px 8px; font-size: 13px; max-width: 100%; }
   .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
+  .tag.ai { color: var(--warn); border-color: #5a4a1c; }
+
+  /* Indstillinger */
+  .set-cat { display: grid; grid-template-columns: 1fr 120px 100px 40px; gap: 6px; align-items: center; padding: 5px 0; }
+  .set-cat input, .set-cat select { padding: 6px 8px; font-size: 14px; }
+  .set-cat button { padding: 6px 0; }
+  .set-rule { display: grid; grid-template-columns: 1fr auto 40px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+  @media (max-width: 520px) {
+    .set-cat { grid-template-columns: 1fr 1fr 40px; }
+    .set-cat .name { grid-column: 1 / -1; }
+    .stat .v { font-size: 15px; }
+  }
+
   .banner { border-color: var(--warn); }
-  .hidden { display: none !important; }
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222632;
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222632; z-index: 10;
     border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; max-width: 90vw; }
-  @media (max-width: 480px) { .stat .v { font-size: 15px; } }
+  dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    width: min(420px, calc(100vw - 32px)); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog p { margin: 0 0 12px; }
+  dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+  label.field { display: block; margin-bottom: 10px; }
+  label.field span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 </style>
 </head>
 <body>
@@ -69,13 +124,13 @@
     </div>
   </section>
 
-  <!-- App -->
+  <!-- Overblik -->
   <section id="app" class="hidden">
     <div class="row between">
       <h1>Forbrug</h1>
       <div class="row">
         <button class="ghost small" id="syncBtn" title="Hent nye posteringer">↻ Opdater</button>
-        <button class="ghost small" id="logoutBtn">Log ud</button>
+        <button class="ghost small" id="settingsBtn" title="Kategorier, budgetter og regler">⚙ Indstillinger</button>
       </div>
     </div>
 
@@ -86,44 +141,127 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="row between">
-        <button class="ghost" id="prevMonth">‹</button>
-        <strong id="monthLabel"></strong>
-        <button class="ghost" id="nextMonth">›</button>
+    <div class="card" id="summaryCard">
+      <div class="period">
+        <button id="prevPeriod" aria-label="Forrige">‹</button>
+        <select id="periodSel" aria-label="Vælg periode"></select>
+        <button id="nextPeriod" aria-label="Næste">›</button>
       </div>
-      <div class="stats" style="margin-top:12px">
+      <div class="stats">
         <div class="stat"><div class="muted small">Udgifter</div><div class="v neg" id="sumOut"></div></div>
         <div class="stat"><div class="muted small">Indtægter</div><div class="v pos" id="sumIn"></div></div>
         <div class="stat"><div class="muted small">Tilbage</div><div class="v" id="sumNet"></div></div>
       </div>
+      <div class="substat small muted" id="subStat"></div>
     </div>
 
     <div class="card">
-      <h2>Udgifter de sidste 6 måneder</h2>
-      <div class="months" id="months"></div>
+      <div class="head">
+        <h2>Seneste 12 måneder</h2>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span></div>
+      </div>
+      <div class="chart" id="chart"></div>
+      <div class="small muted" style="margin-top:6px">Tryk på en måned for at se den.</div>
     </div>
 
     <div class="card">
-      <div class="row between"><h2>Kategorier</h2><span class="small muted" id="catHint">Tryk for at filtrere</span></div>
+      <div class="head">
+        <h2>Kategorier</h2>
+        <div class="seg" id="catMode">
+          <button data-mode="out" class="on">Udgifter</button>
+          <button data-mode="in">Indtægter</button>
+        </div>
+      </div>
       <div id="bars"></div>
+      <div class="small muted" id="barsHint" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card" id="fixedCard">
+      <div class="head"><h2>Faste udgifter og abonnementer</h2><span class="num small" id="fixedTotal"></span></div>
+      <div class="fixed" id="fixedList"></div>
+      <div class="small muted" style="margin-top:8px">Findes automatisk: samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder.</div>
     </div>
 
     <div class="card">
-      <div class="row between">
-        <h2 id="txTitle">Posteringer</h2>
-        <select id="txFilter" class="small">
+      <div class="head"><h2 id="txTitle">Posteringer</h2><button class="ghost small hidden" id="clearCat">Vis alle ✕</button></div>
+      <div class="tools">
+        <input id="search" type="search" placeholder="Søg i tekst eller beløb…">
+        <select id="txFilter">
           <option value="all">Alle</option>
           <option value="none">Uden kategori</option>
-          <option value="ai">Sat af AI (tjek dem)</option>
+          <option value="ai">Sat af AI</option>
+          <option value="out">Kun udgifter</option>
+          <option value="in">Kun indtægter</option>
         </select>
       </div>
       <div id="txList"></div>
+      <button class="ghost small hidden" id="moreBtn" style="width:100%;margin-top:8px">Vis flere</button>
     </div>
 
     <p class="small muted" id="footer"></p>
   </section>
+
+  <!-- Indstillinger -->
+  <section id="settings" class="hidden">
+    <div class="row between">
+      <h1>Indstillinger</h1>
+      <button class="ghost small" id="closeSettings">‹ Tilbage</button>
+    </div>
+
+    <div class="card">
+      <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
+      <p class="small muted" style="margin-top:0">Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
+        <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.</p>
+      <div id="catList"></div>
+    </div>
+
+    <div class="card">
+      <div class="head">
+        <h2>Regler</h2>
+        <label class="small muted row"><input type="checkbox" id="showDefaults" style="width:auto"> Vis standardregler</label>
+      </div>
+      <p class="small muted" style="margin-top:0">En postering, hvis tekst indeholder ordet, får kategorien. Dine egne regler vinder over standardreglerne.</p>
+      <div id="ruleList"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:10px">Konto</h2>
+      <button id="logoutBtn">Log ud</button>
+    </div>
+  </section>
 </main>
+
+<!-- Dialog: ny kategori -->
+<dialog id="catDialog">
+  <form method="dialog" id="catForm">
+    <p><b>Ny kategori</b></p>
+    <label class="field"><span>Navn</span><input id="newCatName" required></label>
+    <label class="field"><span>Type</span>
+      <select id="newCatKind" style="width:100%">
+        <option value="expense">Udgift</option>
+        <option value="income">Indtægt</option>
+        <option value="transfer">Overførsel / opsparing (tælles ikke)</option>
+      </select></label>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Annuller</button>
+      <button value="ok" class="primary">Opret</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialog: gem som regel -->
+<dialog id="ruleDialog">
+  <form method="dialog">
+    <p id="ruleText"></p>
+    <label class="field"><span>Posteringer, hvis tekst indeholder:</span><input id="rulePattern"></label>
+    <p class="small muted" id="ruleCount"></p>
+    <div class="actions">
+      <button value="cancel">Kun denne ene</button>
+      <button value="ok" class="primary">Gem som regel</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" class="toast hidden"></div>
 
 <script src="config.js"></script>
@@ -134,11 +272,21 @@ const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
 const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(n);
-const monthName = (d) => d.toLocaleDateString("da-DK", { month: "long", year: "numeric" });
 const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const parseYm = (k) => new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1);
+const addMonths = (k, n) => { const d = parseYm(k); d.setMonth(d.getMonth() + n); return ym(d); };
+const monthLabel = (k) => parseYm(k).toLocaleDateString("da-DK", { month: "long", year: "numeric" });
+const isYear = (p) => p.length === 4;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const PAGE = 150;
 
-let state = { cats: [], txs: [], month: new Date(), catFilter: null };
-state.month.setDate(1);
+const state = {
+  cats: [], rules: [], txs: [],
+  period: ym(new Date()),   // "2026-11" (måned) eller "2026" (hele året)
+  catFilter: null,          // kategori-id, "none" eller null
+  catMode: "out",           // "out" = udgifter, "in" = indtægter
+  shown: PAGE,
+};
 
 function toast(msg, ms = 3500) {
   const t = $("toast"); t.textContent = msg; t.classList.remove("hidden");
@@ -152,7 +300,7 @@ async function callFn(name, body) {
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON_KEY },
     body: JSON.stringify(body ?? {}),
   });
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? res.statusText);
   return data;
 }
@@ -209,21 +357,38 @@ $("syncBtn").onclick = async () => {
 };
 
 // ---------- Data ----------
+// Supabase sender højst 1000 rækker ad gangen, så vi henter i bidder
+async function fetchAll(build) {
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999);
+    if (error) throw error;
+    out.push(...data);
+    if (data.length < 1000) return out;
+  }
+}
+
 async function load() {
   await sb.rpc("ensure_defaults");
-  const since = new Date(state.month.getFullYear(), state.month.getMonth() - 5, 1);
-  const [cats, txs, sessions, accounts] = await Promise.all([
-    sb.from("categories").select("id, name, kind").order("name"),
-    sb.from("transactions").select("id, booking_date, amount, description, counterparty, category_id, category_source")
-      .gte("booking_date", ym(since) + "-01").order("booking_date", { ascending: false }).limit(5000),
-    sb.from("bank_sessions").select("valid_until").order("valid_until", { ascending: false }).limit(1),
-    sb.from("accounts").select("last_synced_at").order("last_synced_at", { ascending: false }).limit(1),
-  ]);
-  state.cats = cats.data ?? [];
-  state.txs = (txs.data ?? []).map((t) => ({ ...t, amount: Number(t.amount) }));
-  renderConsent(sessions.data?.[0]);
-  const last = accounts.data?.[0]?.last_synced_at;
-  $("footer").textContent = last ? `Senest hentet ${new Date(last).toLocaleString("da-DK")}` : "";
+  const since = new Date(); since.setMonth(since.getMonth() - 25); since.setDate(1);
+  try {
+    const [cats, rules, txs, sessions, accounts] = await Promise.all([
+      sb.from("categories").select("*").order("name"),
+      fetchAll(() => sb.from("rules").select("id, pattern, category_id, priority").order("id")),
+      fetchAll(() => sb.from("transactions").select("id, booking_date, amount, description, counterparty, category_id, category_source")
+        .gte("booking_date", ym(since) + "-01").order("booking_date", { ascending: false }).order("id")),
+      sb.from("bank_sessions").select("valid_until").order("valid_until", { ascending: false }).limit(1),
+      sb.from("accounts").select("last_synced_at").order("last_synced_at", { ascending: false, nullsFirst: false }).limit(1),
+    ]);
+    state.cats = cats.data ?? [];
+    state.rules = rules;
+    state.txs = txs.map((t) => ({ ...t, amount: Number(t.amount) }));
+    renderConsent(sessions.data?.[0]);
+    const last = accounts.data?.[0]?.last_synced_at;
+    $("footer").textContent = last ? `Senest hentet fra banken ${new Date(last).toLocaleString("da-DK")}` : "";
+  } catch (e) {
+    toast("Kunne ikke hente data: " + e.message, 8000);
+  }
   render();
 }
 
@@ -238,123 +403,404 @@ function renderConsent(s) {
   } else card.classList.add("hidden");
 }
 
-const catById = (id) => state.cats.find((c) => c.id === id);
+// ---------- Hjælpere ----------
+const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
 const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
+const inPeriod = (t, p) => t.booking_date.startsWith(p);
+const counts = (t) => kindOf(t) !== "transfer";  // overførsler/opsparing tælles ikke som forbrug
 
-function render() {
-  const key = ym(state.month);
-  const inMonth = state.txs.filter((t) => t.booking_date.startsWith(key));
-  $("monthLabel").textContent = monthName(state.month);
-  $("nextMonth").disabled = key >= ym(new Date());
-
-  // Overførsler mellem egne konti og opsparing tælles ikke som forbrug
-  const real = inMonth.filter((t) => kindOf(t) !== "transfer");
+function totals(list) {
+  const real = list.filter(counts);
   const out = -real.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0);
   const inc = real.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const saved = -list.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
+  return { out, inc, saved };
+}
+
+function periodsWithData() {
+  const months = new Set(state.txs.map((t) => t.booking_date.slice(0, 7)));
+  months.add(ym(new Date()));
+  const sorted = [...months].sort().reverse();
+  const years = [...new Set(sorted.map((m) => m.slice(0, 4)))];
+  return { months: sorted, years };
+}
+
+// ---------- Visning ----------
+function render() {
+  renderPeriod();
+  renderSummary();
+  renderChart();
+  renderBars();
+  renderFixed();
+  renderTxs();
+}
+
+function renderPeriod() {
+  const { months, years } = periodsWithData();
+  const sel = $("periodSel");
+  sel.innerHTML =
+    `<optgroup label="Måneder">${months.map((m) => `<option value="${m}">${monthLabel(m)}</option>`).join("")}</optgroup>` +
+    `<optgroup label="Hele året">${years.map((y) => `<option value="${y}">Hele ${y}</option>`).join("")}</optgroup>`;
+  sel.value = state.period;
+  const now = ym(new Date());
+  if (isYear(state.period)) {
+    $("nextPeriod").disabled = state.period >= now.slice(0, 4);
+    $("prevPeriod").disabled = !years.includes(String(Number(state.period) - 1));
+  } else {
+    $("nextPeriod").disabled = state.period >= now;
+    $("prevPeriod").disabled = state.period <= months[months.length - 1];
+  }
+}
+
+function setPeriod(p) {
+  state.period = p; state.catFilter = null; state.shown = PAGE;
+  render();
+}
+$("periodSel").onchange = (e) => setPeriod(e.target.value);
+$("prevPeriod").onclick = () => setPeriod(isYear(state.period) ? String(Number(state.period) - 1) : addMonths(state.period, -1));
+$("nextPeriod").onclick = () => setPeriod(isYear(state.period) ? String(Number(state.period) + 1) : addMonths(state.period, 1));
+
+// Swipe til siden på overblikskortet skifter måned
+(() => {
+  let x0 = null, y0 = null;
+  const el = $("summaryCard");
+  el.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener("touchend", (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+    const btn = dx > 0 ? $("prevPeriod") : $("nextPeriod");
+    if (!btn.disabled) btn.click();
+  });
+})();
+
+function renderSummary() {
+  const list = state.txs.filter((t) => inPeriod(t, state.period));
+  const { out, inc, saved } = totals(list);
   $("sumOut").textContent = kr(out);
   $("sumIn").textContent = kr(inc);
   $("sumNet").textContent = kr(inc - out);
   $("sumNet").className = "v " + (inc - out >= 0 ? "pos" : "neg");
-
-  // 6 måneders udgifter
-  const months = [];
-  for (let i = 5; i >= 0; i--) months.push(new Date(state.month.getFullYear(), state.month.getMonth() - i, 1));
-  const totals = months.map((m) => -state.txs.filter((t) => t.booking_date.startsWith(ym(m)) && t.amount < 0 && kindOf(t) !== "transfer")
-    .reduce((s, t) => s + t.amount, 0));
-  const max = Math.max(1, ...totals);
-  $("months").innerHTML = months.map((m, i) => `
-    <div class="m ${ym(m) === key ? "cur" : ""}" title="${kr(totals[i])}">
-      <span class="small muted num">${Math.round(totals[i] / 1000)}k</span>
-      <div class="col" style="height:${(totals[i] / max) * 80}%"></div>
-      <span class="small muted">${m.toLocaleDateString("da-DK", { month: "short" })}</span>
-    </div>`).join("");
-
-  // Udgifter pr. kategori
-  const byCat = new Map();
-  for (const t of real.filter((t) => t.amount < 0)) {
-    const k = t.category_id ?? "none";
-    byCat.set(k, (byCat.get(k) ?? 0) - t.amount);
+  const parts = [];
+  if (inc > 0) parts.push(`Du har brugt <b>${Math.round((out / inc) * 100)}%</b> af indtægterne`);
+  if (saved > 0) parts.push(`${kr(saved)} flyttet til opsparing/egne konti`);
+  else if (saved < 0) parts.push(`${kr(-saved)} hentet fra opsparing/egne konti`);
+  if (!isYear(state.period)) {
+    const prev = [1, 2, 3].map((i) => totals(state.txs.filter((t) => inPeriod(t, addMonths(state.period, -i)))).out).filter((v) => v > 0);
+    if (prev.length) {
+      const avg = prev.reduce((a, b) => a + b, 0) / prev.length;
+      const diff = Math.round(((out - avg) / avg) * 100);
+      parts.push(`udgifter ${diff >= 0 ? `<span class="up">${diff}% over</span>` : `<span class="down">${-diff}% under</span>`} snittet for de ${prev.length} forrige måneder`);
+    }
   }
+  $("subStat").innerHTML = parts.join(" · ");
+  $("subStat").classList.toggle("hidden", !parts.length);
+}
+
+function renderChart() {
+  const now = ym(new Date());
+  const end = isYear(state.period) ? (state.period === now.slice(0, 4) ? now : state.period + "-12")
+    : (state.period > addMonths(now, -11) ? now : addMonths(state.period, 11));
+  const months = Array.from({ length: 12 }, (_, i) => addMonths(end, i - 11));
+  const data = months.map((m) => totals(state.txs.filter((t) => inPeriod(t, m))));
+  const max = Math.max(1, ...data.map((d) => Math.max(d.out, d.inc)));
+  $("chart").innerHTML = months.map((m, i) => {
+    const cur = isYear(state.period) ? m.startsWith(state.period) : m === state.period;
+    const d = data[i];
+    return `<div class="m ${cur ? "cur" : ""}" data-m="${m}" title="${monthLabel(m)}: udgifter ${kr(d.out)}, indtægter ${kr(d.inc)}">
+      <span class="lbl num">${d.out ? Math.round(d.out / 1000) + "k" : ""}</span>
+      <div class="cols">
+        <div class="col out" style="height:${(d.out / max) * 100}%"></div>
+        <div class="col in" style="height:${(d.inc / max) * 100}%"></div>
+      </div>
+      <span class="lbl">${parseYm(m).toLocaleDateString("da-DK", { month: "short" }).replace(".", "")}</span>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("#chart .m").forEach((el) => el.onclick = () => setPeriod(el.dataset.m));
+}
+
+document.querySelectorAll("#catMode button").forEach((b) => b.onclick = () => {
+  state.catMode = b.dataset.mode; state.catFilter = null;
+  document.querySelectorAll("#catMode button").forEach((x) => x.classList.toggle("on", x === b));
+  renderBars(); renderTxs();
+});
+
+function renderBars() {
+  const list = state.txs.filter((t) => inPeriod(t, state.period) && counts(t));
+  const wantOut = state.catMode === "out";
+  const sumBy = (rows) => {
+    const m = new Map();
+    for (const t of rows) if (wantOut ? t.amount < 0 : t.amount > 0) {
+      const k = t.category_id ?? "none";
+      m.set(String(k), (m.get(String(k)) ?? 0) + Math.abs(t.amount));
+    }
+    return m;
+  };
+  const byCat = sumBy(list);
+  const total = [...byCat.values()].reduce((a, b) => a + b, 0);
+  // Gennemsnit for de 3 forrige måneder (kun månedsvisning)
+  const prevAvg = new Map();
+  if (!isYear(state.period)) {
+    const prevMonths = [1, 2, 3].map((i) => addMonths(state.period, -i))
+      .filter((m) => state.txs.some((t) => inPeriod(t, m)));
+    for (const m of prevMonths) for (const [k, v] of sumBy(state.txs.filter((t) => inPeriod(t, m) && counts(t))))
+      prevAvg.set(k, (prevAvg.get(k) ?? 0) + v / prevMonths.length);
+  }
+  // Kategorier med budget vises også, selvom der ikke er brugt noget endnu
+  if (wantOut && !isYear(state.period))
+    for (const c of state.cats) if (Number(c.monthly_budget) > 0 && !byCat.has(String(c.id))) byCat.set(String(c.id), 0);
+
   const rows = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
-  const top = rows[0]?.[1] ?? 1;
-  $("bars").innerHTML = rows.length ? rows.map(([k, v]) => `
-    <div class="bar ${String(state.catFilter) === String(k) ? "active" : ""}" data-cat="${k}">
-      <span>${k === "none" ? "<em>Uden kategori</em>" : esc(catById(k)?.name ?? "?")}</span>
-      <span class="num">${kr(v)} <span class="muted small">${Math.round((v / out) * 100)}%</span></span>
-      <div class="track"><div class="fill" style="width:${(v / top) * 100}%"></div></div>
-    </div>`).join("") : `<p class="muted">Ingen udgifter i ${monthName(state.month)}.</p>`;
+  const top = Math.max(1, rows[0]?.[1] ?? 1);
+  $("bars").innerHTML = rows.length ? rows.map(([k, v]) => {
+    const cat = catById(k);
+    const budget = wantOut && !isYear(state.period) ? Number(cat?.monthly_budget) || 0 : 0;
+    const avg = prevAvg.get(k);
+    let meta = [];
+    if (budget) meta.push(v > budget ? `<span class="up">${kr(v - budget)} over budget</span>` : `${kr(budget - v)} tilbage af ${kr(budget)}`);
+    if (avg > 0 && v > 0) {
+      const diff = Math.round(((v - avg) / avg) * 100);
+      if (Math.abs(diff) >= 10) meta.push(`<span class="${(diff > 0) === wantOut ? "up" : "down"}">${diff > 0 ? "▲" : "▼"} ${Math.abs(diff)}%</span> mod snit ${kr(avg)}`);
+    }
+    const width = budget ? Math.min(100, (v / budget) * 100) : (v / top) * 100;
+    const fillClass = !wantOut ? "inc" : budget && v > budget ? "over" : "";
+    return `<div class="bar ${String(state.catFilter) === k ? "active" : ""}" data-cat="${k}">
+      <span>${k === "none" ? "<em>Uden kategori</em>" : esc(cat?.name ?? "?")}</span>
+      <span class="num">${kr(v)} <span class="muted small">${total ? Math.round((v / total) * 100) : 0}%</span></span>
+      <div class="track"><div class="fill ${fillClass}" style="width:${width}%"></div></div>
+      ${meta.length ? `<div class="meta">${meta.join(" · ")}</div>` : ""}
+    </div>`;
+  }).join("") : `<p class="muted">Ingen ${wantOut ? "udgifter" : "indtægter"} i perioden.</p>`;
+  $("barsHint").textContent = rows.length ? "Tryk på en kategori for at se posteringerne." : "";
   document.querySelectorAll(".bar").forEach((el) => el.onclick = () => {
     state.catFilter = String(state.catFilter) === el.dataset.cat ? null : el.dataset.cat;
-    render();
+    state.shown = PAGE;
+    renderBars(); renderTxs();
+    if (state.catFilter) $("txTitle").scrollIntoView({ behavior: "smooth", block: "start" });
   });
+}
 
-  // Posteringer
+// Faste udgifter: samme modtager i mindst 3 af de 4 seneste hele måneder, højst 2 gange pr. måned, stabilt beløb
+function renderFixed() {
+  const base = isYear(state.period) ? ym(new Date()) : state.period;
+  const months = [1, 2, 3, 4].map((i) => addMonths(base, -i));
+  const keyOf = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
+  const groups = new Map();
+  for (const t of state.txs) {
+    const m = t.booking_date.slice(0, 7);
+    if (t.amount >= 0 || !counts(t) || !months.includes(m)) continue;
+    const k = keyOf(t);
+    if (!groups.has(k)) groups.set(k, { name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map() });
+    const g = groups.get(k);
+    const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
+    e.n++; e.sum += -t.amount; g.byMonth.set(m, e);
+  }
+  const fixed = [];
+  for (const g of groups.values()) {
+    const vals = [...g.byMonth.values()];
+    if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
+    const sums = vals.map((v) => v.sum).sort((a, b) => a - b);
+    const median = sums[Math.floor(sums.length / 2)];
+    if (sums.some((s) => Math.abs(s - median) > median * 0.2)) continue;
+    fixed.push({ name: g.name, cat: g.cat, amount: median });
+  }
+  fixed.sort((a, b) => b.amount - a.amount);
+  $("fixedCard").classList.toggle("hidden", !fixed.length);
+  $("fixedTotal").textContent = fixed.length ? `${kr(fixed.reduce((s, f) => s + f.amount, 0))} / md.` : "";
+  $("fixedList").innerHTML = fixed.map((f) => `
+    <div><span>${esc(f.name)}</span> <span class="muted small">${esc(catById(f.cat)?.name ?? "")}</span></div>
+    <div class="num">${kr(f.amount)}</div>`).join("");
+}
+
+$("txFilter").onchange = () => { state.shown = PAGE; renderTxs(); };
+$("search").oninput = () => { state.shown = PAGE; renderTxs(); };
+$("clearCat").onclick = () => { state.catFilter = null; renderBars(); renderTxs(); };
+$("moreBtn").onclick = () => { state.shown += PAGE; renderTxs(); };
+
+function renderTxs() {
   const f = $("txFilter").value;
-  let list = inMonth;
-  if (state.catFilter) list = list.filter((t) => String(t.category_id ?? "none") === state.catFilter);
+  const q = $("search").value.trim().toLowerCase();
+  let list = state.txs.filter((t) => inPeriod(t, state.period));
+  if (state.catFilter) {
+    const wantOut = state.catMode === "out";
+    list = list.filter((t) => String(t.category_id ?? "none") === state.catFilter && (wantOut ? t.amount < 0 : t.amount > 0));
+  }
   if (f === "none") list = list.filter((t) => !t.category_id);
   if (f === "ai") list = list.filter((t) => t.category_source === "ai");
-  $("txTitle").textContent = state.catFilter
-    ? (state.catFilter === "none" ? "Uden kategori" : catById(Number(state.catFilter))?.name ?? "Posteringer")
-    : "Posteringer";
+  if (f === "out") list = list.filter((t) => t.amount < 0);
+  if (f === "in") list = list.filter((t) => t.amount > 0);
+  if (q) {
+    const qn = q.replace(/\./g, "").replace(",", ".");
+    list = list.filter((t) => `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(q) ||
+      String(Math.abs(t.amount)).includes(qn));
+  }
 
+  const catName = state.catFilter === "none" ? "Uden kategori" : catById(state.catFilter)?.name;
+  $("txTitle").textContent = state.catFilter ? catName ?? "Posteringer" : "Posteringer";
+  $("clearCat").classList.toggle("hidden", !state.catFilter);
+
+  const sum = list.reduce((s, t) => s + t.amount, 0);
   const options = (sel) => `<option value="">– vælg kategori –</option>` +
-    state.cats.map((c) => `<option value="${c.id}" ${c.id === sel ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
+    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
     `<option value="__new">+ Ny kategori…</option>`;
-  $("txList").innerHTML = list.length ? list.map((t) => `
-    <div class="tx">
-      <span class="desc">${esc(t.counterparty && !t.description.includes(t.counterparty) ? t.counterparty + " · " + t.description : t.description)}
-        ${t.category_source === "ai" ? '<span class="tag">AI</span>' : ""}</span>
+
+  let html = list.length ? `<div class="small muted">${list.length} posteringer · i alt <span class="num">${kr(sum)}</span></div>` : "";
+  let lastDay = "";
+  for (const t of list.slice(0, state.shown)) {
+    if (t.booking_date !== lastDay) {
+      lastDay = t.booking_date;
+      html += `<div class="day">${new Date(t.booking_date + "T12:00").toLocaleDateString("da-DK", { weekday: "long", day: "numeric", month: "long" })}</div>`;
+    }
+    const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
+    html += `<div class="tx">
+      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
-      <span class="small muted">${new Date(t.booking_date).toLocaleDateString("da-DK", { day: "numeric", month: "short" })}</span>
-      <span></span>
-      <select data-id="${t.id}">${options(t.category_id)}</select>
-    </div>`).join("") : `<p class="muted">Ingen posteringer.</p>`;
+      <select data-id="${esc(t.id)}">${options(t.category_id)}</select>
+    </div>`;
+  }
+  $("txList").innerHTML = html || `<p class="muted">Ingen posteringer.</p>`;
+  $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
+  $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
 }
 
-function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+// ---------- Dialoger ----------
+function ask(dialog) {
+  return new Promise((resolve) => {
+    dialog.returnValue = "";
+    dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
+    dialog.showModal();
+  });
+}
+
+async function newCategory() {
+  $("newCatName").value = ""; $("newCatKind").value = "expense";
+  if (!(await ask($("catDialog")))) return null;
+  const name = $("newCatName").value.trim();
+  if (!name) return null;
+  const { data, error } = await sb.from("categories").insert({ name, kind: $("newCatKind").value }).select().single();
+  if (error) { toast("Fejl: " + (error.code === "23505" ? "Kategorien findes allerede." : error.message)); return null; }
+  state.cats.push(data);
+  state.cats.sort((a, b) => a.name.localeCompare(b.name, "da"));
+  return data;
+}
+
+const matchesRule = (t, p) => `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(p);
 
 // ---------- Ret kategori + lær en regel ----------
 async function setCategory(txId, value) {
   let catId = value ? Number(value) : null;
   if (value === "__new") {
-    const name = prompt("Navn på ny kategori:");
-    if (!name) return render();
-    const kind = confirm(`Er "${name}" en udgift? (Annuller = indtægt/overførsel)`) ? "expense" : "income";
-    const { data, error } = await sb.from("categories").insert({ name, kind }).select().single();
-    if (error) return toast("Fejl: " + error.message);
-    state.cats.push(data); catId = data.id;
+    const c = await newCategory();
+    if (!c) return renderTxs();
+    catId = c.id;
   }
   const tx = state.txs.find((t) => t.id === txId);
-  const { error } = await sb.from("transactions").update({ category_id: catId, category_source: "manual" }).eq("id", txId);
-  if (error) return toast("Fejl: " + error.message);
-  tx.category_id = catId; tx.category_source = "manual";
+  const { error } = await sb.from("transactions").update({ category_id: catId, category_source: catId ? "manual" : null }).eq("id", txId);
+  if (error) { toast("Fejl: " + error.message); return renderTxs(); }
+  tx.category_id = catId; tx.category_source = catId ? "manual" : null;
 
   if (catId) {
     const suggestion = (tx.counterparty || tx.description).toLowerCase().replace(/[0-9*#]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
-    const pattern = prompt(
-      `Skal fremtidige posteringer, der indeholder denne tekst, også være "${catById(catId).name}"?\n` +
-      `Ret teksten om nødvendigt, eller tryk Annuller for kun at rette denne ene.`, suggestion);
-    if (pattern && pattern.trim().length >= 3) {
-      const p = pattern.trim().toLowerCase();
-      await sb.from("rules").insert({ pattern: p, category_id: catId, priority: 200 });
-      // Opdater også eksisterende posteringer, du ikke selv har rettet
-      const matches = state.txs.filter((t) => t.category_source !== "manual" &&
-        `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(p));
-      for (const m of matches) {
-        await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).eq("id", m.id);
-        m.category_id = catId; m.category_source = "rule";
+    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${esc(catById(catId).name)}</b>?`;
+    $("rulePattern").value = suggestion;
+    const updateCount = () => {
+      const p = $("rulePattern").value.trim().toLowerCase();
+      const n = p.length >= 3 ? state.txs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p)).length : 0;
+      $("ruleCount").textContent = p.length < 3 ? "Skriv mindst 3 tegn." : `${n} andre eksisterende posteringer bliver også opdateret.`;
+    };
+    $("rulePattern").oninput = updateCount; updateCount();
+    if (await ask($("ruleDialog"))) {
+      const p = $("rulePattern").value.trim().toLowerCase();
+      if (p.length >= 3) {
+        const { data: rule, error: rErr } = await sb.from("rules").insert({ pattern: p, category_id: catId, priority: 200 }).select().single();
+        if (rErr) toast("Kunne ikke gemme reglen: " + rErr.message);
+        else {
+          state.rules.push(rule);
+          // Opdater også eksisterende posteringer, du ikke selv har rettet
+          const matches = state.txs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p));
+          for (let i = 0; i < matches.length; i += 100) {
+            const ids = matches.slice(i, i + 100).map((m) => m.id);
+            await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).in("id", ids);
+          }
+          matches.forEach((m) => { m.category_id = catId; m.category_source = "rule"; });
+          toast(`Regel gemt – ${matches.length} andre posteringer opdateret.`);
+        }
       }
-      toast(`Regel gemt – ${matches.length} andre posteringer opdateret.`);
     }
   }
   render();
 }
 
-$("prevMonth").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); state.catFilter = null; load(); };
-$("nextMonth").onclick = () => { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1); state.catFilter = null; load(); };
-$("txFilter").onchange = render;
+// ---------- Indstillinger ----------
+function showSettings(on) {
+  $("app").classList.toggle("hidden", on);
+  $("settings").classList.toggle("hidden", !on);
+  if (on) renderSettings(); else render();
+  window.scrollTo(0, 0);
+}
+$("settingsBtn").onclick = () => showSettings(true);
+$("closeSettings").onclick = () => showSettings(false);
+$("showDefaults").onchange = () => renderRules();
+$("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
+
+function renderSettings() {
+  const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel" };
+  $("catList").innerHTML = state.cats.map((c) => `
+    <div class="set-cat" data-id="${c.id}">
+      <input class="name" value="${esc(c.name)}" aria-label="Navn">
+      <select class="kind" aria-label="Type">${Object.entries(kinds).map(([k, v]) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+      <input class="budget" type="number" inputmode="numeric" min="0" step="100" placeholder="Budget" value="${c.monthly_budget ?? ""}" aria-label="Budget pr. måned" ${c.kind === "expense" ? "" : "disabled"}>
+      <button class="ghost danger del" title="Slet kategori" aria-label="Slet">✕</button>
+    </div>`).join("");
+  document.querySelectorAll(".set-cat").forEach((row) => {
+    const c = catById(row.dataset.id);
+    const save = async (patch) => {
+      const { error } = await sb.from("categories").update(patch).eq("id", c.id);
+      if (error) {
+        toast(error.message.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." : "Fejl: " + error.message, 6000);
+        return renderSettings();
+      }
+      Object.assign(c, patch); toast("Gemt.", 1500);
+      if ("kind" in patch) renderSettings();
+    };
+    row.querySelector(".name").onchange = (e) => e.target.value.trim() && save({ name: e.target.value.trim() });
+    row.querySelector(".kind").onchange = (e) => save({ kind: e.target.value });
+    row.querySelector(".budget").onchange = (e) => save({ monthly_budget: e.target.value === "" ? null : Number(e.target.value) });
+    row.querySelector(".del").onclick = async () => {
+      const n = state.txs.filter((t) => String(t.category_id) === String(c.id)).length;
+      if (!confirm(`Slet "${c.name}"? ${n} posteringer bliver "Uden kategori", og kategoriens regler slettes.`)) return;
+      const { error } = await sb.from("categories").delete().eq("id", c.id);
+      if (error) return toast("Fejl: " + error.message);
+      state.cats = state.cats.filter((x) => x !== c);
+      state.rules = state.rules.filter((r) => String(r.category_id) !== String(c.id));
+      state.txs.forEach((t) => { if (String(t.category_id) === String(c.id)) { t.category_id = null; t.category_source = null; } });
+      renderSettings();
+    };
+  });
+  renderRules();
+}
+
+function renderRules() {
+  const all = $("showDefaults").checked;
+  const rules = state.rules.filter((r) => all || r.priority >= 200)
+    .sort((a, b) => b.priority - a.priority || a.pattern.localeCompare(b.pattern, "da"));
+  $("ruleList").innerHTML = rules.length ? rules.map((r) => `
+    <div class="set-rule" data-id="${r.id}">
+      <span>"${esc(r.pattern)}" ${r.priority < 200 ? '<span class="tag">standard</span>' : ""}</span>
+      <span class="muted small">→ ${esc(catById(r.category_id)?.name ?? "?")}</span>
+      <button class="ghost danger" title="Slet regel" aria-label="Slet">✕</button>
+    </div>`).join("")
+    : `<p class="muted small">Du har ingen egne regler endnu. De oprettes, når du retter en kategori og vælger "Gem som regel".</p>`;
+  document.querySelectorAll(".set-rule button").forEach((b) => b.onclick = async () => {
+    const id = b.closest(".set-rule").dataset.id;
+    const { error } = await sb.from("rules").delete().eq("id", id);
+    if (error) return toast("Fejl: " + error.message);
+    state.rules = state.rules.filter((r) => String(r.id) !== id);
+    renderRules();
+  });
+}
 
 // ---------- Start ----------
 async function start() {

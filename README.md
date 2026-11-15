@@ -17,7 +17,7 @@ Dit eget overblik over forbruget. Posteringerne hentes automatisk fra Nordea hve
 
 ### 1. Supabase: database og login
 1. Opret en gratis konto på **supabase.com** og opret et nyt projekt. Vælg region **Frankfurt** eller **Stockholm**, og gem database-adgangskoden et sikkert sted.
-2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**.
+2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Gør det samme med `supabase/migrations/002_budget.sql` (budget pr. kategori).
 3. Gå til **Authentication → Sign In / Providers**, og **slå "Allow new users to sign up" fra**. Så kan ingen andre oprette sig.
 4. Gå til **Authentication → Users → Add user → Create new user**. Indtast din e-mail og en stærk adgangskode, og sæt flueben i *Auto Confirm User*.
 5. Gå til **Project Settings → API**, og notér **Project URL** og **anon/publishable key**. De skal bruges i trin 2.
@@ -75,6 +75,10 @@ Vil du se siden i brug, før banken er forbundet? Kør `supabase/demo-data.sql` 
 Fjern dem igen med: `delete from public.accounts where uid = 'demo-konto';`
 
 ## Daglig brug
+- **Skift måned:** Tryk på en måned i grafen, vælg i menuen med månedens navn (her kan du også vælge *Hele året*), brug pilene, eller swipe til siden på overblikket.
+- **Budget:** Sæt et månedligt budget pr. kategori under **⚙ Indstillinger**. Kategorien bliver rød, når budgettet er overskredet.
+- **Faste udgifter og abonnementer** findes automatisk og vises med en samlet månedlig sum.
+- **Indstillinger:** Omdøb og slet kategorier, skift type (udgift/indtægt/overførsel), og se eller slet dine regler.
 - **Ret en kategori:** Vælg den rigtige i menuen under posteringen. Du bliver spurgt, om fremtidige posteringer med samme tekst også skal have den kategori. Det er sådan, systemet lærer.
 - **Tjek AI'ens forslag:** Vælg filteret *Sat af AI* og ret de forkerte.
 - **Overførsler mellem egne konti** og **opsparing** tælles ikke som forbrug. Giv dem kategorien *Overførsel mellem egne konti*.

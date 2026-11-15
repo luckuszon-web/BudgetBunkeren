@@ -14,6 +14,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 
 ## Struktur
 - `docs/index.html` – hele frontend (vanilla JS + supabase-js fra esm.sh). `docs/config.js` – Supabase URL + anon key (offentlige).
+- `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
+- `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
 - `supabase/functions/_shared/common.ts` – Enable Banking JWT (RS256, `kid` = app-id), sync, kategorisering, AI-kald.
 - `supabase/functions/bank-connect` – `start` (returnerer MitID-link) / `finish` (bytter `code` til session, gemmer konti, første sync).
@@ -37,4 +39,11 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Nye brugere kan ikke oprette sig (signups slået fra i Supabase); kun ejeren har en bruger.
 
 ## Idéer til senere (ikke bygget)
-- Flere banker/kreditkort, oversigt over faste udgifter og abonnementer, budget pr. kategori, opsætning af totrinsbekræftelse i UI'et.
+- Flere banker/kreditkort, opsætning af totrinsbekræftelse i UI'et.
+
+## Bygget i frontend (nov. 2026)
+- Alle posteringer (25 mdr.) hentes én gang med paginering (Supabase giver max 1000 rækker pr. kald); periodeskift sker lokalt.
+- Periode: måned eller hele året (`state.period` = "YYYY-MM" eller "YYYY"), 12-mdr. graf (klikbar), swipe, dropdown.
+- Kategorier: udgifter/indtægter, sammenligning med snit af 3 forrige mdr., budget.
+- Faste udgifter: samme modtager i ≥3 af 4 seneste mdr., ≤2 gange/md., beløb inden for ±20 % af median.
+- Søgning, filtre, "Vis flere", dialoger til ny kategori og gem-regel, indstillingsside (kategorier, regler).
