@@ -116,6 +116,42 @@
   .tip b { font-variant-numeric: tabular-nums; }
   .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
 
+
+  /* Dashboard */
+  .hero { background: linear-gradient(160deg, #1d2740 0%, #181b22 60%); border-color: #2c3854; }
+  .hero-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #a9b8d6; font-weight: 600; }
+  .hero-amt { font-size: 40px; font-weight: 750; letter-spacing: -.02em; margin: 4px 0 2px; line-height: 1.1; }
+  .hero-sub { color: var(--muted); font-size: 14px; }
+  .hero-meter { margin-top: 12px; }
+  .hero-meter .track { height: 10px; background: #2a2f3b; border-radius: 5px; overflow: hidden; display: flex; gap: 2px; }
+  .hero-meter .track > div { height: 100%; }
+  .hero-meter .lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .hero-meter .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
+  .hero-rows { margin-top: 12px; border-top: 1px solid #2c3854; padding-top: 8px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
+  .hero-rows .muted { font-size: 13px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-width: 0; }
+  .kpi .k-top { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+  .kpi .k-v { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 4px 0 2px; white-space: nowrap; }
+  .kpi .k-s { font-size: 12px; color: var(--muted); }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .duo > .card { margin-bottom: 12px; }
+  .score { display: flex; align-items: center; gap: 14px; }
+  .score svg { width: 104px; height: 104px; flex-shrink: 0; }
+  .score-parts { display: grid; gap: 6px; font-size: 12.5px; flex: 1; min-width: 0; }
+  .score-parts .p { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+  .score-parts .bar2 { grid-column: 1 / -1; height: 4px; background: #2a2f3b; border-radius: 2px; overflow: hidden; }
+  .score-parts .bar2 > div { height: 100%; background: var(--accent); }
+  .insights { display: grid; gap: 8px; }
+  .ins { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 10px; background: #1d212a; font-size: 14px; }
+  .ins .e { font-size: 18px; text-align: center; line-height: 1.3; }
+  .ins.warn { background: #2a2416; } .ins.bad { background: #2c1b1d; } .ins.good { background: #16261f; }
+  @media (max-width: 640px) {
+    .kpis { grid-template-columns: 1fr 1fr; }
+    .duo { grid-template-columns: 1fr; gap: 0; }
+    .hero-amt { font-size: 34px; }
+  }
+
   /* Faste udgifter */
   .fixed { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; }
 
@@ -200,13 +236,40 @@
         <select id="periodSel" aria-label="Vælg periode"></select>
         <button id="nextPeriod" aria-label="Næste">›</button>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="muted small">Udgifter</div><div class="v neg" id="sumOut"></div></div>
-        <div class="stat"><div class="muted small">Indtægter</div><div class="v pos" id="sumIn"></div></div>
-        <div class="stat"><div class="muted small">Tilbage</div><div class="v" id="sumNet"></div></div>
+    </div>
+
+    <!-- Det store tal -->
+    <div class="card hero" id="heroCard">
+      <div class="hero-lbl" id="heroLbl">Dit disponible beløb</div>
+      <div class="hero-amt num" id="heroAmt"></div>
+      <div class="hero-sub" id="heroSub"></div>
+      <div class="hero-meter" id="heroMeter"></div>
+      <div class="hero-rows" id="heroRows"></div>
+    </div>
+
+    <!-- Nøgletal -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- Score + ugens status -->
+    <div class="duo">
+      <div class="card" id="scoreCard">
+        <div class="head"><h2>Økonomisk score</h2><span class="small muted" id="scoreMonth"></span></div>
+        <div class="score">
+          <svg id="scoreRing" viewBox="0 0 120 120" aria-hidden="true"></svg>
+          <div id="scoreParts" class="score-parts"></div>
+        </div>
+        <div class="small muted" id="scoreTip" style="margin-top:8px"></div>
       </div>
-      <div class="meter-row hidden" id="spendMeter"></div>
-      <div class="substat small muted" id="subStat"></div>
+      <div class="card" id="weekCard">
+        <div class="head"><h2>Ugens status</h2><span class="small muted" id="weekLbl"></span></div>
+        <div id="weekBody"></div>
+      </div>
+    </div>
+
+    <!-- Indsigter og advarsler -->
+    <div class="card" id="insightsCard">
+      <div class="head"><h2>Indsigter</h2></div>
+      <div id="insights" class="insights"></div>
     </div>
 
     <div class="card pace" id="paceCard">
@@ -566,7 +629,7 @@ function periodsWithData() {
 function render() {
   assignColors();
   renderPeriod();
-  renderSummary();
+  renderDashboard();
   renderChart();
   renderPace();
   renderBars();
@@ -621,35 +684,291 @@ document.querySelectorAll("#granSel button").forEach((b) => b.onclick = () => {
   });
 })();
 
-function renderSummary() {
-  const list = txsIn(state.period);
-  const { out, inc, saved } = totals(list);
-  $("sumOut").textContent = kr(out);
-  $("sumIn").textContent = kr(inc);
-  $("sumNet").textContent = kr(inc - out);
-  $("sumNet").className = "v " + (inc - out >= 0 ? "pos" : "neg");
+// ---------- Dashboard ----------
+const monthOf = (p) => p.length === 4 ? (p === todayIso().slice(0, 4) ? todayIso().slice(0, 7) : p + "-12")
+  : (p.startsWith("W") ? p.slice(1) : p).slice(0, 7);
+const sumOut = (rows) => -rows.filter((t) => t.amount < 0 && counts(t)).reduce((s, t) => s + t.amount, 0);
+const monthTx = (m) => state.txs.filter((t) => t.booking_date.startsWith(m));
+const daysInMonth = (m) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
+const isCurrentMonth = (m) => m === todayIso().slice(0, 7);
+// Hvor stor en del af måneden er gået (1 for afsluttede måneder)
+const elapsed = (m) => isCurrentMonth(m) ? +todayIso().slice(8) / daysInMonth(m) : 1;
+const prevMonthsWithData = (m, n = 3) => Array.from({ length: n }, (_, i) => addMonths(m, -i - 1)).filter((q) => monthTx(q).length);
+const avgOf = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+const salaryCat = () => state.cats.find((c) => /^løn$/i.test(c.name));
 
-  // Måler: hvor stor en del af indtægterne er brugt
-  const m = $("spendMeter");
-  if (inc > 0 && gran() !== "day") {
-    const pct = Math.round((out / inc) * 100);
-    m.innerHTML = `<div class="row between small"><span class="muted">Brugt af indtægterne</span><b class="${pct > 100 ? "neg" : ""}">${pct}%</b></div>
-      <div class="track"><div style="width:${Math.min(100, pct)}%;background:${pct > 100 ? "var(--red)" : "var(--accent)"}"></div>
-      ${pct < 100 ? `<div style="flex:1;background:#2c5a46"></div>` : ""}</div>`;
-    m.classList.remove("hidden");
-  } else m.classList.add("hidden");
-
-  const parts = [];
-  if (saved > 0) parts.push(`🐷 ${kr(saved)} flyttet til opsparing/egne konti`);
-  else if (saved < 0) parts.push(`🔁 ${kr(-saved)} hentet fra opsparing/egne konti`);
-  const prev = prevPeriods(state.period).map((q) => totals(txsIn(q)).out).filter((v) => v > 0);
-  if (prev.length && out > 0) {
-    const avg = prev.reduce((a, b) => a + b, 0) / prev.length;
-    const diff = Math.round(((out - avg) / avg) * 100);
-    parts.push(`Udgifter ${diff >= 0 ? `<span class="up">▲ ${diff}% over</span>` : `<span class="down">▼ ${-diff}% under</span>`} snittet for de ${prev.length} forrige ${prev.length === 1 ? G[gran()].unit : G[gran()].units}`);
+// Faste udgifter: samme modtager i mindst 3 af de 4 forrige måneder, højst 2 gange pr. måned, stabilt beløb
+const fixedKey = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
+const fixedCache = new Map();
+function detectFixed(baseMonth) {
+  const ck = baseMonth + "|" + state.txs.length + "|" + state.cats.map((c) => c.kind).join("");
+  if (fixedCache.has(ck)) return fixedCache.get(ck);
+  const months = [1, 2, 3, 4].map((i) => addMonths(baseMonth, -i));
+  const groups = new Map();
+  for (const t of state.txs) {
+    const m = t.booking_date.slice(0, 7);
+    if (t.amount >= 0 || !counts(t) || !months.includes(m)) continue;
+    const k = fixedKey(t);
+    if (!groups.has(k)) groups.set(k, { key: k, name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map(), days: [] });
+    const g = groups.get(k);
+    const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
+    e.n++; e.sum += -t.amount; g.byMonth.set(m, e); g.days.push(+t.booking_date.slice(8));
   }
-  $("subStat").innerHTML = parts.join(" · ");
-  $("subStat").classList.toggle("hidden", !parts.length);
+  const fixed = [];
+  for (const g of groups.values()) {
+    const vals = [...g.byMonth.values()];
+    if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
+    const sums = vals.map((v) => v.sum).sort((a, b) => a - b);
+    const median = sums[Math.floor(sums.length / 2)];
+    if (sums.some((s) => Math.abs(s - median) > median * 0.2)) continue;
+    const days = g.days.sort((a, b) => a - b);
+    fixed.push({ key: g.key, name: g.name, cat: g.cat, amount: median, day: days[Math.floor(days.length / 2)] });
+  }
+  fixed.sort((a, b) => b.amount - a.amount);
+  fixedCache.set(ck, fixed);
+  return fixed;
+}
+
+// Samlet opsparing = alt, der er flyttet til opsparing/egne konti (minus det, der er hentet tilbage)
+const totalSaved = () => -state.txs.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
+const MILESTONES = [10000, 25000, 50000, 100000, 250000, 500000, 1000000];
+
+function renderDashboard() {
+  const p = state.period, list = txsIn(p);
+  const { out, inc, saved } = totals(list);
+  const fixedItems = detectFixed(monthOf(p));
+  const fixedKeys = new Set(fixedItems.map((f) => f.key));
+  const isFixed = (t) => t.amount < 0 && counts(t) && fixedKeys.has(fixedKey(t));
+  const fixedOut = sumOut(list.filter(isFixed));
+  const varOut = out - fixedOut;
+  const prevs = prevPeriods(p);
+  const prevTot = prevs.map((q) => totals(txsIn(q)));
+  const unitTxt = (n) => n === 1 ? G[gran()].unit : G[gran()].units;
+
+  // --- Det store tal ---
+  const m = monthOf(p);
+  const live = gran() === "month" && isCurrentMonth(p);
+  const rows = [];
+  let meter = "";
+  if (live) {
+    const avgInc = avgOf(prevMonthsWithData(m).map((q) => totals(monthTx(q)).inc));
+    const expInc = Math.max(inc, avgInc);
+    const seen = new Set(list.filter((t) => t.amount < 0).map(fixedKey));
+    const upcoming = fixedItems.filter((f) => !seen.has(f.key));
+    const upSum = upcoming.reduce((s, f) => s + f.amount, 0);
+    const disp = expInc - out - Math.max(0, saved) - upSum;
+    const daysLeft = daysInMonth(m) - +todayIso().slice(8) + 1;
+    $("heroLbl").textContent = "Dit disponible beløb";
+    $("heroAmt").textContent = kr(disp);
+    $("heroAmt").style.color = disp < 0 ? "var(--red)" : "";
+    $("heroSub").innerHTML = `Tilbage resten af ${fmt(m + "-01", { month: "long" })}` +
+      (disp > 0 ? ` · ca. <b>${kr(disp / daysLeft)}</b> pr. dag i ${daysLeft} dage` : "");
+    rows.push(["💰 Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} er endnu ikke kommet ind (snit af ${prevMonthsWithData(m).length} mdr.)` : ""]);
+    rows.push(["🧾 Brugt indtil nu", "−" + kr(out), ""]);
+    if (upSum) rows.push(["📅 Faste regninger på vej", "−" + kr(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
+    if (saved > 0) rows.push(["🐷 Sat til side", "−" + kr(saved), ""]);
+    if (expInc > 0) {
+      const w = (v) => Math.max(0, v / expInc * 100);
+      meter = `<div class="track">
+          <div style="width:${w(out)}%;background:#3987e5" title="Brugt"></div>
+          <div style="width:${w(upSum)}%;background:#c98500" title="Faste regninger på vej"></div>
+          <div style="width:${w(Math.max(0, saved))}%;background:#199e70" title="Sat til side"></div>
+          <div style="flex:1;background:#2f3646"></div></div>
+        <div class="lg"><span><i style="background:#3987e5"></i>Brugt</span><span><i style="background:#c98500"></i>Regninger på vej</span><span><i style="background:#199e70"></i>Sat til side</span><span><i style="background:#2f3646"></i>Disponibelt</span></div>`;
+    }
+  } else {
+    const res = inc - out;
+    const prevRes = prevTot.length ? avgOf(prevTot.map((t) => t.inc - t.out)) : null;
+    $("heroLbl").textContent = { year: "Årets resultat", month: "Månedens resultat", week: "Ugens resultat", day: "Dagens resultat" }[gran()];
+    $("heroAmt").textContent = (res > 0 ? "+" : "") + kr(res);
+    $("heroAmt").style.color = res < 0 ? "var(--red)" : "var(--green)";
+    $("heroSub").innerHTML = res >= 0 ? "Indtægter minus udgifter – det har du til overs" : "Du har brugt mere, end der er kommet ind";
+    if (prevRes !== null && gran() !== "day") {
+      const d = res - prevRes;
+      rows.push([d >= 0 ? "📈 Bedre end snittet" : "📉 Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod de ${prevTot.length} forrige ${unitTxt(prevTot.length)}`]);
+    }
+    if (saved > 0) rows.push(["🐷 Heraf sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
+    if (inc > 0) {
+      const pct = Math.min(100, out / inc * 100);
+      meter = `<div class="track"><div style="width:${pct}%;background:${out > inc ? "var(--red)" : "#3987e5"}"></div><div style="flex:1;background:#2c5a46"></div></div>
+        <div class="lg"><span><i style="background:#3987e5"></i>Brugt ${Math.round(out / inc * 100)}% af indtægterne</span><span><i style="background:#2c5a46"></i>Til overs</span></div>`;
+    }
+  }
+  $("heroMeter").innerHTML = meter;
+  $("heroRows").innerHTML = rows.map(([a, b, c]) => `<div>${a}${c ? `<div class="muted">${c}</div>` : ""}</div><div class="num">${b}</div>`).join("");
+  $("heroRows").classList.toggle("hidden", !rows.length);
+
+  // --- Nøgletal ---
+  const salary = salaryCat();
+  const salIn = salary ? list.filter((t) => String(t.category_id) === String(salary.id) && t.amount > 0).reduce((s, t) => s + t.amount, 0) : 0;
+  const prevVar = prevs.map((q) => { const l = txsIn(q); return sumOut(l) - sumOut(l.filter(isFixed)); });
+  const avgVar = avgOf(prevVar);
+  const varCmp = avgVar && varOut ? Math.round((varOut - avgVar) / avgVar * 100) : null;
+  const ts = totalSaved();
+  const next = MILESTONES.find((x) => x > ts);
+  const kpi = (icon, label, v, sub, cls = "") => `<div class="kpi"><div class="k-top">${icon} ${label}</div><div class="k-v ${cls}">${v}</div><div class="k-s">${sub}</div></div>`;
+  $("kpis").innerHTML =
+    kpi("💰", "Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)} · andet ${kr(inc - salIn)}` : `${list.filter((t) => t.amount > 0 && counts(t)).length} indbetalinger`, "pos") +
+    kpi("🏠", "Faste udgifter", kr(fixedOut), `${new Set(list.filter(isFixed).map(fixedKey)).size} faste poster`) +
+    kpi("🛒", "Variable udgifter", kr(varOut), varCmp === null ? "mad, shopping, transport …" :
+      `<span class="${varCmp > 0 ? "up" : "down"}">${varCmp > 0 ? "▲" : "▼"} ${Math.abs(varCmp)}%</span> mod snit`) +
+    kpi("🐷", "Opsparing", kr(Math.max(0, saved)), ts > 0 ? `${kr(ts)} i alt${next ? ` · næste mål ${kr(next)}` : ""}` : "overførsler til opsparing", "");
+
+  renderScore();
+  renderWeek();
+  renderInsights(fixedItems, isFixed);
+}
+
+// Økonomisk score 0-100: opsparing (40), budget (30), forbrugsudvikling (30)
+function renderScore() {
+  const m = gran() === "month" ? state.period : todayIso().slice(0, 7);
+  const tx = monthTx(m);
+  const { out, inc } = totals(tx);
+  const prevM = prevMonthsWithData(m);
+  const expInc = isCurrentMonth(m) ? Math.max(inc, avgOf(prevM.map((q) => totals(monthTx(q)).inc))) : inc;
+  const f = elapsed(m);
+  const parts = [];
+  // Fremskriv måneden: faste udgifter (også dem, der mangler) + variable udgifter skaleret til hele måneden
+  const project = (mm) => {
+    const fx = detectFixed(mm), keys = new Set(fx.map((x) => x.key)), rows = monthTx(mm);
+    const fixedOut = sumOut(rows.filter((t) => t.amount < 0 && keys.has(fixedKey(t))));
+    const seen = new Set(rows.filter((t) => t.amount < 0).map(fixedKey));
+    const missing = isCurrentMonth(mm) ? fx.filter((x) => !seen.has(x.key)).reduce((a, x) => a + x.amount, 0) : 0;
+    const varOut = sumOut(rows) - fixedOut;
+    return fixedOut + missing + varOut / (isCurrentMonth(mm) ? Math.max(elapsed(mm), 0.2) : 1);
+  };
+  // 1) Opsparingsrate: hvor stor en del af indkomsten bliver tilbage (mål: 20 %). For igangværende måned fremskrives forbruget.
+  const outProj = project(m);
+  const rate = expInc ? (expInc - outProj) / expInc : 0;
+  parts.push({ name: "Opsparingsrate", max: 40, pts: Math.max(0, Math.min(1, rate / 0.2)) * 40, txt: `${Math.round(rate * 100)}%${isCurrentMonth(m) ? " forventet" : ""} (mål 20%)`,
+    tip: "Prøv at lade mindst 20 % af indkomsten blive tilbage hver måned." });
+  // 2) Budgetoverholdelse
+  const budgeted = state.cats.filter((c) => c.kind === "expense" && Number(c.monthly_budget) > 0);
+  if (budgeted.length) {
+    const ok = budgeted.filter((c) => sumOut(tx.filter((t) => String(t.category_id) === String(c.id))) <= Number(c.monthly_budget) * Math.min(1, f * 1.1)).length;
+    parts.push({ name: "Budgetter overholdt", max: 30, pts: ok / budgeted.length * 30, txt: `${ok} af ${budgeted.length}`,
+      tip: "Hold øje med de kategorier, der er tæt på budgettet." });
+  }
+  // 3) Udvikling: forbrug mod snittet af de 3 forrige måneder (samme del af måneden)
+  const avgOut = avgOf(prevM.map((q) => totals(monthTx(q)).out));
+  if (avgOut) {
+    const ratio = outProj / avgOut;
+    parts.push({ name: "Forbrug mod snit", max: 30, pts: Math.max(0, Math.min(1, (1.3 - ratio) / 0.3)) * 30, txt: `${Math.round((ratio - 1) * 100) > 0 ? "+" : ""}${Math.round((ratio - 1) * 100)}%`,
+      tip: "Dit forbrug ligger over det normale – se Indsigter for, hvor det stiger." });
+  }
+  const max = parts.reduce((s, x) => s + x.max, 0);
+  const score = max ? Math.round(parts.reduce((s, x) => s + x.pts, 0) / max * 100) : 0;
+  const [col, word] = score >= 70 ? ["#5fd39a", "Rigtig godt"] : score >= 40 ? ["#f5c451", "OK"] : ["#ff7b7b", "Kan forbedres"];
+  const C = 2 * Math.PI * 50;
+  $("scoreRing").innerHTML = `<circle cx="60" cy="60" r="50" fill="none" stroke="#2a2f3b" stroke-width="11"/>
+    <circle cx="60" cy="60" r="50" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round"
+      stroke-dasharray="${C * score / 100} ${C}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="62" text-anchor="middle" font-size="32" font-weight="750" fill="#e9ebef">${score}</text>
+    <text x="60" y="82" text-anchor="middle" font-size="11" fill="${col}">${word}</text>`;
+  $("scoreMonth").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
+  $("scoreParts").innerHTML = parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
+    <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${x.pts / x.max >= .7 ? "#5fd39a" : x.pts / x.max >= .4 ? "#f5c451" : "#ff7b7b"}"></div></div></div>`).join("");
+  const weakest = [...parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
+  $("scoreTip").textContent = !budgeted.length ? "Tip: Sæt budgetter under ⚙ Indstillinger, så tæller de også med i scoren."
+    : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan! 🎉";
+}
+
+// Ugens status: indeværende uge mod snittet af de 4 forrige uger (samme antal dage)
+function renderWeek() {
+  const today = todayIso(), mon = mondayOf(today);
+  const n = (D(today) - D(mon)) / 864e5 + 1;
+  const span = (start) => state.txs.filter((t) => t.booking_date >= start && t.booking_date <= addDays(start, n - 1));
+  const cur = span(mon);
+  const out = sumOut(cur);
+  const prev = [1, 2, 3, 4].map((i) => sumOut(span(addDays(mon, -7 * i)))).filter((v, i) => state.txs.some((t) => t.booking_date >= addDays(mon, -7 * (i + 1)) && t.booking_date < addDays(mon, -7 * i)));
+  const avg = avgOf(prev);
+  const byCat = new Map();
+  for (const t of cur) if (t.amount < 0 && counts(t)) byCat.set(String(t.category_id ?? "none"), (byCat.get(String(t.category_id ?? "none")) ?? 0) - t.amount);
+  const top = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
+  const big = cur.filter((t) => t.amount < 0 && counts(t)).sort((a, b) => a.amount - b.amount)[0];
+  $("weekLbl").textContent = `Uge ${isoWeekNo(today)} · ${n} ${n === 1 ? "dag" : "dage"}`;
+  const diff = avg ? Math.round((out - avg) / avg * 100) : null;
+  $("weekBody").innerHTML = `
+    <div class="row" style="gap:12px;align-items:baseline"><span style="font-size:26px;font-weight:700" class="num">${kr(out)}</span>
+      <span class="small muted">brugt indtil nu</span></div>
+    ${diff !== null ? `<div class="small" style="margin:4px 0 8px">${diff > 0 ? `<span class="up">▲ ${diff}% mere</span>` : `<span class="down">▼ ${-diff}% mindre</span>`} end normalt efter ${n} ${n === 1 ? "dag" : "dage"} (snit ${kr(avg)})</div>` : ""}
+    <div class="hero-rows" style="border-color:var(--line)">
+      ${top ? `<div>${top[0] === "none" ? "❓" : iconOf(catById(top[0]))} Mest brugt på<div class="muted">${esc(top[0] === "none" ? "Uden kategori" : catById(top[0])?.name)}</div></div><div class="num">${kr(top[1])}</div>` : ""}
+      ${big ? `<div>💸 Største køb<div class="muted">${esc(big.counterparty || big.description)}</div></div><div class="num">${kr(-big.amount)}</div>` : ""}
+      ${!cur.length ? `<div class="muted">Ingen posteringer endnu i denne uge.</div><div></div>` : ""}
+    </div>`;
+}
+
+// Indsigter: budgetadvarsler, store ændringer pr. kategori, milepæle og abonnementer
+function renderInsights(fixedItems) {
+  const p = state.period, list = txsIn(p);
+  const items = [];   // { cls, e, html, w } – w = vigtighed
+  const nameOf = (k) => k === "none" ? "Uden kategori" : catById(k)?.name ?? "?";
+  const byCat = (rows) => { const mm = new Map(); for (const t of rows) if (t.amount < 0 && counts(t)) { const k = String(t.category_id ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
+
+  // 1) Budgetadvarser (kun måned)
+  if (gran() === "month") {
+    const f = elapsed(p);
+    const cur = byCat(list);
+    for (const c of state.cats) {
+      const b = Number(c.monthly_budget); if (!(b > 0) || c.kind !== "expense") continue;
+      const v = cur.get(String(c.id)) ?? 0, pct = Math.round(v / b * 100);
+      if (v > b) items.push({ cls: "bad", e: "🔴", w: 100 + pct, html: `<b>${esc(c.name)}</b> er ${kr(v - b)} over budgettet (${pct}% brugt).` });
+      else if (f < 1 && v > b * f * 1.1 && pct >= 40) items.push({ cls: "warn", e: "⏱️", w: 80 + pct,
+        html: `Du bruger hurtigere end budgettet til <b>${esc(c.name)}</b>: ${pct}% brugt, og ${Math.round(f * 100)}% af måneden er gået.` });
+      else if (pct >= 80) items.push({ cls: "warn", e: "⚠️", w: 90 + pct, html: `Du har brugt <b>${pct}%</b> af budgettet til <b>${esc(c.name)}</b> – der er ${kr(b - v)} tilbage${f < 1 ? ` med ${daysInMonth(p) - +todayIso().slice(8)} dage igen` : ""}` });
+    }
+  }
+
+  // 2) Ændringer pr. kategori mod forrige periode (igangværende periode sammenlignes med samme antal dage)
+  const prevP = stepP(p, -1);
+  let prevList = txsIn(prevP);
+  const nowKey = keyOf(todayIso());
+  if (p === nowKey && gran() === "month") {
+    const day = +todayIso().slice(8);
+    prevList = prevList.filter((t) => +t.booking_date.slice(8) <= day);
+  }
+  if (prevList.length && gran() !== "day") {
+    const a = byCat(list), b = byCat(prevList);
+    const changes = [];
+    for (const k of new Set([...a.keys(), ...b.keys()])) {
+      const v = a.get(k) ?? 0, w = b.get(k) ?? 0;
+      if (k === "none" || Math.max(v, w) < 300 || w < 100) continue;
+      const pct = Math.round((v - w) / w * 100);
+      if (Math.abs(pct) >= 20) changes.push({ k, v, w, pct, d: v - w });
+    }
+    changes.sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+    const than = { year: "sidste år", month: "sidste måned", week: "sidste uge" }[gran()] + (p === nowKey && gran() === "month" ? " på samme tid" : "");
+    for (const c of changes.slice(0, 3)) items.push({
+      cls: c.pct > 0 ? "" : "good", e: c.pct > 0 ? "📈" : "📉", w: 50 + Math.min(40, Math.abs(c.d) / 100),
+      html: `Du har brugt <b>${c.pct > 300 ? kr(c.d) : Math.abs(c.pct) + "%"} ${c.pct > 0 ? "mere" : "mindre"}</b> på ${esc(nameOf(c.k))} end ${than} (${kr(c.v)} mod ${kr(c.w)}).` });
+  }
+
+  // 3) Opsparingsmilepæle
+  const ts = totalSaved();
+  const reached = MILESTONES.filter((x) => x <= ts).pop();
+  const next = MILESTONES.find((x) => x > ts);
+  if (reached) items.push({ cls: "good", e: "🎉", w: 70, html: `Milepæl nået: du har sat over <b>${kr(reached)}</b> til side (i alt ${kr(ts)}).${next ? ` Næste milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` : ""}` });
+  else if (ts > 0 && next) items.push({ cls: "", e: "🐷", w: 40, html: `Du har sat ${kr(ts)} til side. Første milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` });
+
+  // 4) Abonnementer pr. år
+  const subs = fixedItems.filter((f) => /abonnement/i.test(catById(f.cat)?.name ?? ""));
+  if (subs.length) {
+    const mo = subs.reduce((s, f) => s + f.amount, 0);
+    items.push({ cls: "", e: "📺", w: 30, html: `Dine ${subs.length} abonnementer koster ${kr(mo)} om måneden – det er <b>${kr(mo * 12)} om året</b>` });
+  }
+
+  // 5) Største enkeltudgift
+  const big = list.filter((t) => t.amount < 0 && counts(t)).sort((x, y) => x.amount - y.amount)[0];
+  if (big && gran() !== "day") items.push({ cls: "", e: "💸", w: 20, html: `Største udgift i perioden: ${esc(big.counterparty || big.description)} (${kr(-big.amount)}, ${fmt(big.booking_date, { day: "numeric", month: "short" })}).` });
+
+  // 6) Uden kategori
+  const none = list.filter((t) => !t.category_id).length;
+  if (none) items.push({ cls: "", e: "❓", w: 10, html: `${none} posteringer mangler en kategori. Vælg filteret <i>Uden kategori</i> nedenfor og ret dem.` });
+
+  items.sort((a, b) => b.w - a.w);
+  $("insights").innerHTML = items.length ? items.map((i) => `<div class="ins ${i.cls}"><div class="e">${i.e}</div><div>${i.html}</div></div>`).join("")
+    : `<p class="muted small">Ingen særlige bemærkninger for perioden.</p>`;
 }
 
 // Søjlediagram: de seneste N perioder (12 mdr., 12 uger, 14 dage, 5 år)
@@ -715,7 +1034,10 @@ function renderPace() {
   const curShown = cur.slice(0, lastIdx + 1);
   const prevs = prevPeriods(state.period).map(cumulative);
   const avg = prevs.length ? keys.map((_, i) => prevs.reduce((s, c) => s + (c[Math.min(i, c.length - 1)] ?? 0), 0) / prevs.length) : null;
-  const budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? Number(c.monthly_budget) || 0 : 0), 0) * budgetFactor();
+  let budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? Number(c.monthly_budget) || 0 : 0), 0) * budgetFactor();
+  // Budgetlinjen giver kun mening, hvis budgetterne dækker det meste af forbruget
+  const normalOut = avgOf(prevPeriods(state.period).map((q) => totals(txsIn(q)).out));
+  if (normalOut && budget < normalOut * 0.5) budget = 0;
 
   $("paceTitle").textContent = { year: "Forbrug gennem året", month: "Forbrug gennem måneden", week: "Forbrug gennem ugen" }[gran()];
   $("paceLbl").textContent = { year: "Dette år", month: "Denne måned", week: "Denne uge" }[gran()];
@@ -852,37 +1174,16 @@ function renderBars() {
   });
 }
 
-// Faste udgifter: samme modtager i mindst 3 af de 4 seneste hele måneder, højst 2 gange pr. måned, stabilt beløb
+// Faste udgifter og abonnementer (pr. måned og pr. år)
 function renderFixed() {
-  const base = gran() === "year" ? todayIso().slice(0, 7) : (state.period.startsWith("W") ? state.period.slice(1) : state.period).slice(0, 7);
-  const months = [1, 2, 3, 4].map((i) => addMonths(base, -i));
-  const keyOfTx = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
-  const groups = new Map();
-  for (const t of state.txs) {
-    const m = t.booking_date.slice(0, 7);
-    if (t.amount >= 0 || !counts(t) || !months.includes(m)) continue;
-    const k = keyOfTx(t);
-    if (!groups.has(k)) groups.set(k, { name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map() });
-    const g = groups.get(k);
-    const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
-    e.n++; e.sum += -t.amount; g.byMonth.set(m, e);
-  }
-  const fixed = [];
-  for (const g of groups.values()) {
-    const vals = [...g.byMonth.values()];
-    if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
-    const sums = vals.map((v) => v.sum).sort((a, b) => a - b);
-    const median = sums[Math.floor(sums.length / 2)];
-    if (sums.some((s) => Math.abs(s - median) > median * 0.2)) continue;
-    fixed.push({ name: g.name, cat: g.cat, amount: median });
-  }
-  fixed.sort((a, b) => b.amount - a.amount);
+  const fixed = detectFixed(monthOf(state.period));
+  const total = fixed.reduce((s, f) => s + f.amount, 0);
   $("fixedCard").classList.toggle("hidden", !fixed.length);
-  $("fixedTotal").textContent = fixed.length ? `${kr(fixed.reduce((s, f) => s + f.amount, 0))} / md.` : "";
+  $("fixedTotal").innerHTML = fixed.length ? `<b>${kr(total)}</b>/md. · ${kr(total * 12)}/år` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
     <div class="ico sm">${f.cat ? iconOf(catById(f.cat)) : "❓"}</div>
-    <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")}</div></div>
-    <div class="num">${kr(f.amount)}</div>`).join("");
+    <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
+    <div class="num" style="text-align:right">${kr(f.amount)}<div class="muted small">${kr(f.amount * 12)}/år</div></div>`).join("");
 }
 
 $("txFilter").onchange = () => { state.shown = PAGE; renderTxs(); };

@@ -75,6 +75,9 @@ Vil du se siden i brug, før banken er forbundet? Kør `supabase/demo-data.sql` 
 Fjern dem igen med: `delete from public.accounts where uid = 'demo-konto';`
 
 ## Daglig brug
+- **Dit disponible beløb** øverst viser, hvad der er tilbage resten af måneden: forventet indkomst (snit af de 3 forrige måneder, hvis lønnen ikke er kommet endnu) minus det brugte, de faste regninger der mangler, og det du har sat til side. For afsluttede perioder vises periodens resultat.
+- **Økonomisk score (0–100)** bygger på opsparingsrate (mål 20 %), overholdte budgetter og forbrug mod dit snit.
+- **Indsigter** advarer om budgetter, viser store ændringer pr. kategori, opsparingsmilepæle og hvad abonnementer koster om året.
 - **Vælg periode:** Skift mellem **År, Måned, Uge og Dag** øverst. Skift periode ved at trykke på en søjle i grafen, vælge i menuen, bruge pilene eller swipe til siden på overblikket.
 - **Forbrug gennem perioden:** Kurven viser, om du bruger mere eller mindre end normalt på samme tidspunkt (snittet af de 3 forrige perioder).
 - **Ikoner:** Hver kategori får automatisk et ikon. Du kan vælge en anden emoji under **⚙ Indstillinger**.

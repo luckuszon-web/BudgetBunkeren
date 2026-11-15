@@ -38,6 +38,16 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Bankdata må aldrig committes.
 - Nye brugere kan ikke oprette sig (signups slået fra i Supabase); kun ejeren har en bruger.
 
+## Dashboard (fase 1, bygget)
+- Disponibelt beløb (kun igangværende måned): max(indtægt, snit 3 mdr.) − brugt − manglende faste regninger − opsparing. Ellers "periodens resultat".
+- Faste udgifter = `detectFixed(måned)` (bruges også til fast/variabel-opdeling og "regninger på vej").
+- Score: opsparingsrate 40 + budget 30 + forbrug mod snit 30, normaliseret når budget mangler. Igangværende måned fremskrives (faste fuldt, variable skaleret).
+- Indsigter: budgetadvarsler (tempo + 80 % + over), kategoriændringer ≥20 % (samme dage ved igangværende måned), milepæle (10k/25k/50k/100k…), abonnementer pr. år, største udgift, manglende kategorier.
+
+## Køreplan (aftalt med brugeren)
+- Fase 2 (kræver nye tabeller): opsparingsmål, formue/aktiver/gæld/investeringer (manuel indtastning), overførsel af ubrugt budget, spareudfordringer.
+- Fase 3 (kræver bankforbindelse + `ANTHROPIC_API_KEY`): AI-rådgiver (Edge Function), økonomisk kalender og saldoprognose, hvad-nu-hvis-beregner, årsprognose, kvartalsrapport. Skat/løn efter skat er lavt prioriteret (dansk skat er kompleks).
+
 ## Idéer til senere (ikke bygget)
 - Flere banker/kreditkort, opsætning af totrinsbekræftelse i UI'et.
 
