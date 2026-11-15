@@ -17,7 +17,7 @@ Dit eget overblik over forbruget. Posteringerne hentes automatisk fra Nordea hve
 
 ### 1. Supabase: database og login
 1. Opret en gratis konto på **supabase.com** og opret et nyt projekt. Vælg region **Frankfurt** eller **Stockholm**, og gem database-adgangskoden et sikkert sted.
-2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Gør det samme med `supabase/migrations/002_budget.sql` (budget pr. kategori) og `supabase/migrations/003_icons.sql` (egne ikoner).
+2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Gør det samme med `002_budget.sql` (budget), `003_icons.sql` (egne ikoner) og `004_plan.sql` (mål, formue, gæld, udfordringer og overførsel af budget) i samme mappe – i den rækkefølge.
 3. Gå til **Authentication → Sign In / Providers**, og **slå "Allow new users to sign up" fra**. Så kan ingen andre oprette sig.
 4. Gå til **Authentication → Users → Add user → Create new user**. Indtast din e-mail og en stærk adgangskode, og sæt flueben i *Auto Confirm User*.
 5. Gå til **Project Settings → API**, og notér **Project URL** og **anon/publishable key**. De skal bruges i trin 2.
@@ -48,7 +48,7 @@ Gå til **Edge Functions → Secrets**, og tilføj:
 | `EB_REDIRECT_URL` | Din side-URL (samme som i Enable Banking) |
 | `SITE_ORIGIN` | `https://luckuszon-web.github.io` (uden `/BudgetBunkeren`) |
 | `SYNC_SECRET` | En lang, tilfældig tekst, f.eks. fra en password-generator |
-| `ANTHROPIC_API_KEY` | *Valgfri.* Slår AI-kategorisering af ukendte posteringer til (få kroner om måneden) |
+| `ANTHROPIC_API_KEY` | *Valgfri.* Slår AI-kategorisering af ukendte posteringer og **AI-rådgiveren** til (få kroner om måneden) |
 
 Hvis din `.pem`-fil starter med `-----BEGIN RSA PRIVATE KEY-----` i stedet for `-----BEGIN PRIVATE KEY-----`, skal den konverteres. Sig til, så hjælper jeg.
 
@@ -72,9 +72,21 @@ Hvis din `.pem`-fil starter med `-----BEGIN RSA PRIVATE KEY-----` i stedet for `
 
 ## Prøv siden med demodata (valgfrit)
 Vil du se siden i brug, før banken er forbundet? Kør `supabase/demo-data.sql` i **SQL Editor**. Så får du ca. et halvt års opdigtede posteringer på en "Demokonto".
-Fjern dem igen med: `delete from public.accounts where uid = 'demo-konto';`
+Har du kørt `004_plan.sql`, får du også demo-mål, -formue, -gæld og en udfordring.
+Fjern det hele igen med:
+```sql
+delete from public.accounts where uid = 'demo-konto';
+delete from public.goals where demo; delete from public.assets where demo; delete from public.challenges where demo;
+```
+
+## Siden består af fire faner
+- **Overblik:** Dit disponible beløb, nøgletal, økonomisk score, ugens status, indsigter, grafer, kategorier og posteringer.
+- **Planlæg:** Nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer. Værdierne indtaster du selv – opdatér dem fx en gang om måneden.
+- **Værktøjer:** Økonomisk kalender med forventede regninger og indtægter og en prognose for saldoen, hvad-nu-hvis-beregner (bil, bolig, lønforhøjelse, rejse), årsprognose, kvartalsrapport og en beregner for løn efter skat (et skøn – tjek skat.dk).
+- **Rådgiver:** Stil spørgsmål som "Hvor kan jeg spare 1.000 kr. om måneden?". Kræver `ANTHROPIC_API_KEY` og at serverfunktionerne er lagt op (trin 4–5). Rådgiveren får et sammendrag af dine tal, ikke de enkelte posteringer.
 
 ## Daglig brug
+- **Overfør ubrugt budget:** Sæt flueben i *Overfør* ud for en kategori under Indstillinger. Ubrugt budget lægges til næste måned (og overforbrug trækkes fra).
 - **Dit disponible beløb** øverst viser, hvad der er tilbage resten af måneden: forventet indkomst (snit af de 3 forrige måneder, hvis lønnen ikke er kommet endnu) minus det brugte, de faste regninger der mangler, og det du har sat til side. For afsluttede perioder vises periodens resultat.
 - **Økonomisk score (0–100)** bygger på opsparingsrate (mål 20 %), overholdte budgetter og forbrug mod dit snit.
 - **Indsigter** advarer om budgetter, viser store ændringer pr. kategori, opsparingsmilepæle og hvad abonnementer koster om året.

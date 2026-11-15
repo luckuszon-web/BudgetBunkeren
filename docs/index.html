@@ -143,9 +143,12 @@
   .score-parts .bar2 { grid-column: 1 / -1; height: 4px; background: #2a2f3b; border-radius: 2px; overflow: hidden; }
   .score-parts .bar2 > div { height: 100%; background: var(--accent); }
   .insights { display: grid; gap: 8px; }
-  .ins { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 10px; background: #1d212a; font-size: 14px; }
-  .ins .e { font-size: 18px; text-align: center; line-height: 1.3; }
-  .ins.warn { background: #2a2416; } .ins.bad { background: #2c1b1d; } .ins.good { background: #16261f; }
+  .ins { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 10px;
+    background: #1d212a; font-size: 14px; border-left: 3px solid #3a4152; }
+  .ins .e { color: var(--muted); padding-top: 1px; }
+  .ins.warn { border-left-color: var(--warn); } .ins.warn .e { color: var(--warn); }
+  .ins.bad { border-left-color: var(--red); } .ins.bad .e { color: var(--red); }
+  .ins.good { border-left-color: var(--green); } .ins.good .e { color: var(--green); }
   @media (max-width: 640px) {
     .kpis { grid-template-columns: 1fr 1fr; }
     .duo { grid-template-columns: 1fr; gap: 0; }
@@ -165,15 +168,17 @@
   .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
 
   /* Faste udgifter */
-  .fixed { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 10px; align-items: center; }
+  .fixed { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; }
 
   /* Posteringer */
   .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
   .day { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 2px; }
-  .tx { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; }
-  .tx .ico { grid-row: span 2; align-self: start; }
+  .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; }
   .tx .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tx select { grid-column: 2 / -1; padding: 5px 8px; font-size: 13px; max-width: 100%; }
+  .tx select { justify-self: start; grid-column: 1 / -1; padding: 2px 22px 2px 8px; font-size: 12.5px; max-width: 100%; color: var(--muted);
+    background: transparent; border-color: transparent; border-radius: 6px; margin-left: -8px; }
+  .tx select:hover, .tx select:focus { border-color: var(--line); background: var(--field); color: var(--text); }
+  .tx select.unset { color: var(--warn); }
   .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
   .tag.ai { color: var(--warn); border-color: #5a4a1c; }
 
@@ -355,8 +360,8 @@
   <!-- Indstillinger -->
   <section id="settings" class="hidden">
     <div class="row between">
-      <h2 style="font-size:15px;color:var(--text);text-transform:none;letter-spacing:0">Kategorier, budgetter og regler</h2>
-      <button class="ghost small" id="closeSettings">‹ Tilbage</button>
+      <span></span>
+      <button class="ghost small hidden" id="closeSettings">‹ Tilbage</button>
     </div>
 
     <div class="card">
@@ -478,8 +483,17 @@ const ICONS = [
   [/fagforening|a-kasse/i, "🪪"], [/børn|barn/i, "🧸"], [/dyr|hund|kat/i, "🐾"], [/uddannelse|skole/i, "🎓"],
   [/gebyr|bank|renter|lån/i, "🏦"], [/telefon|mobil|internet/i, "📱"], [/andet/i, "📦"],
 ];
+// Enkle ensfarvede ikoner (bruges i stedet for emojis uden for kategorierne)
+const SVG = {
+  up: '<path d="M12 5l7 7h-4v7H9v-7H5z"/>', down: '<path d="M12 19l-7-7h4V5h6v7h4z"/>',
+  alert: '<path d="M12 3L2 20h20zM11 10h2v5h-2zm0 6h2v2h-2z"/>', clock: '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4V6h-2v7.4l5 3 1-1.7z"/>',
+  star: '<path d="M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18.3 5.5 22l1.7-7.4-5.7-5 7.5-.7z"/>', repeat: '<path d="M7 7h10v3l4-4-4-4v3H5v6h2zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2z"/>',
+  tag: '<path d="M3 3h8l10 10-8 8L3 11zm4 2.5A1.5 1.5 0 1 0 7 8.5 1.5 1.5 0 0 0 7 5.5z"/>', receipt: '<path d="M5 2h14v20l-3-2-2 2-2-2-2 2-2-2-3 2zm3 5v2h8V7zm0 4v2h8v-2z"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">${SVG[name]}</svg>`;
+
 function iconOf(cat) {
-  if (!cat) return "❓";
+  if (!cat) return "?";
   if (cat.icon) return cat.icon;
   for (const [re, ic] of ICONS) if (re.test(cat.name)) return ic;
   return { income: "💰", transfer: "🔁" }[cat.kind] ?? "🧾";
@@ -823,10 +837,10 @@ function renderDashboard() {
     $("heroAmt").style.color = disp < 0 ? "var(--red)" : "";
     $("heroSub").innerHTML = `Tilbage resten af ${fmt(m + "-01", { month: "long" })}` +
       (disp > 0 ? ` · ca. <b>${kr(disp / daysLeft)}</b> pr. dag i ${daysLeft} dage` : "");
-    rows.push(["💰 Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} er endnu ikke kommet ind (snit af ${prevMonthsWithData(m).length} mdr.)` : ""]);
-    rows.push(["🧾 Brugt indtil nu", "−" + kr(out), ""]);
-    if (upSum) rows.push(["📅 Faste regninger på vej", "−" + kr(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
-    if (saved > 0) rows.push(["🐷 Sat til side", "−" + kr(saved), ""]);
+    rows.push(["Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} er endnu ikke kommet ind (snit af ${prevMonthsWithData(m).length} mdr.)` : ""]);
+    rows.push(["Brugt indtil nu", "−" + kr(out), ""]);
+    if (upSum) rows.push(["Faste regninger på vej", "−" + kr(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
+    if (saved > 0) rows.push(["Sat til side", "−" + kr(saved), ""]);
     if (expInc > 0) {
       const w = (v) => Math.max(0, v / expInc * 100);
       meter = `<div class="track">
@@ -845,9 +859,9 @@ function renderDashboard() {
     $("heroSub").innerHTML = res >= 0 ? "Indtægter minus udgifter – det har du til overs" : "Du har brugt mere, end der er kommet ind";
     if (prevRes !== null && gran() !== "day") {
       const d = res - prevRes;
-      rows.push([d >= 0 ? "📈 Bedre end snittet" : "📉 Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod de ${prevTot.length} forrige ${unitTxt(prevTot.length)}`]);
+      rows.push([d >= 0 ? "Bedre end snittet" : "Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod de ${prevTot.length} forrige ${unitTxt(prevTot.length)}`]);
     }
-    if (saved > 0) rows.push(["🐷 Heraf sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
+    if (saved > 0) rows.push(["Heraf sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
     if (inc > 0) {
       const pct = Math.min(100, out / inc * 100);
       meter = `<div class="track"><div style="width:${pct}%;background:${out > inc ? "var(--red)" : "#3987e5"}"></div><div style="flex:1;background:#2c5a46"></div></div>
@@ -866,7 +880,7 @@ function renderDashboard() {
   const varCmp = avgVar && varOut ? Math.round((varOut - avgVar) / avgVar * 100) : null;
   const ts = totalSaved();
   const next = MILESTONES.find((x) => x > ts);
-  const kpi = (icon, label, v, sub, cls = "") => `<div class="kpi"><div class="k-top">${icon} ${label}</div><div class="k-v ${cls}">${v}</div><div class="k-s">${sub}</div></div>`;
+  const kpi = (_, label, v, sub, cls = "") => `<div class="kpi"><div class="k-top">${label}</div><div class="k-v ${cls}">${v}</div><div class="k-s">${sub}</div></div>`;
   $("kpis").innerHTML =
     kpi("💰", "Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)} · andet ${kr(inc - salIn)}` : `${list.filter((t) => t.amount > 0 && counts(t)).length} indbetalinger`, "pos") +
     kpi("🏠", "Faste udgifter", kr(fixedOut), `${new Set(list.filter(isFixed).map(fixedKey)).size} faste poster`) +
@@ -900,7 +914,7 @@ function renderScore() {
   // 1) Opsparingsrate: hvor stor en del af indkomsten bliver tilbage (mål: 20 %). For igangværende måned fremskrives forbruget.
   const outProj = project(m);
   const rate = expInc ? (expInc - outProj) / expInc : 0;
-  parts.push({ name: "Opsparingsrate", max: 40, pts: Math.max(0, Math.min(1, rate / 0.2)) * 40, txt: `${Math.round(rate * 100)}%${isCurrentMonth(m) ? " forventet" : ""} (mål 20%)`,
+  parts.push({ name: "Opsparingsrate", max: 40, pts: Math.max(0, Math.min(1, rate / 0.2)) * 40, txt: `${Math.round(rate * 100)}% · mål 20%`,
     tip: "Prøv at lade mindst 20 % af indkomsten blive tilbage hver måned." });
   // 2) Budgetoverholdelse
   const budgeted = state.cats.filter((c) => c.kind === "expense" && Number(c.monthly_budget) > 0);
@@ -930,7 +944,7 @@ function renderScore() {
     <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${x.pts / x.max >= .7 ? "#5fd39a" : x.pts / x.max >= .4 ? "#f5c451" : "#ff7b7b"}"></div></div></div>`).join("");
   const weakest = [...parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
   $("scoreTip").textContent = !budgeted.length ? "Tip: Sæt budgetter under ⚙ Indstillinger, så tæller de også med i scoren."
-    : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan! 🎉";
+    : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!";
 }
 
 // Ugens status: indeværende uge mod snittet af de 4 forrige uger (samme antal dage)
@@ -953,8 +967,8 @@ function renderWeek() {
       <span class="small muted">brugt indtil nu</span></div>
     ${diff !== null ? `<div class="small" style="margin:4px 0 8px">${diff > 0 ? `<span class="up">▲ ${diff}% mere</span>` : `<span class="down">▼ ${-diff}% mindre</span>`} end normalt efter ${n} ${n === 1 ? "dag" : "dage"} (snit ${kr(avg)})</div>` : ""}
     <div class="hero-rows" style="border-color:var(--line)">
-      ${top ? `<div>${top[0] === "none" ? "❓" : iconOf(catById(top[0]))} Mest brugt på<div class="muted">${esc(top[0] === "none" ? "Uden kategori" : catById(top[0])?.name)}</div></div><div class="num">${kr(top[1])}</div>` : ""}
-      ${big ? `<div>💸 Største køb<div class="muted">${esc(big.counterparty || big.description)}</div></div><div class="num">${kr(-big.amount)}</div>` : ""}
+      ${top ? `<div>Mest brugt på<div class="muted">${esc(top[0] === "none" ? "Uden kategori" : catById(top[0])?.name)}</div></div><div class="num">${kr(top[1])}</div>` : ""}
+      ${big ? `<div>Største køb<div class="muted">${esc(big.counterparty || big.description)}</div></div><div class="num">${kr(-big.amount)}</div>` : ""}
       ${!cur.length ? `<div class="muted">Ingen posteringer endnu i denne uge.</div><div></div>` : ""}
     </div>`;
 }
@@ -973,10 +987,10 @@ function renderInsights(fixedItems) {
     for (const c of state.cats) {
       const b = monthBudget(c, p); if (!(b > 0) || c.kind !== "expense") continue;
       const v = cur.get(String(c.id)) ?? 0, pct = Math.round(v / b * 100);
-      if (v > b) items.push({ cls: "bad", e: "🔴", w: 100 + pct, html: `<b>${esc(c.name)}</b> er ${kr(v - b)} over budgettet (${pct}% brugt).` });
-      else if (f < 1 && v > b * f * 1.1 && pct >= 40) items.push({ cls: "warn", e: "⏱️", w: 80 + pct,
+      if (v > b) items.push({ cls: "bad", e: "alert", w: 100 + pct, html: `<b>${esc(c.name)}</b> er ${kr(v - b)} over budgettet (${pct}% brugt).` });
+      else if (f < 1 && v > b * f * 1.1 && pct >= 40) items.push({ cls: "warn", e: "clock", w: 80 + pct,
         html: `Du bruger hurtigere end budgettet til <b>${esc(c.name)}</b>: ${pct}% brugt, og ${Math.round(f * 100)}% af måneden er gået.` });
-      else if (pct >= 80) items.push({ cls: "warn", e: "⚠️", w: 90 + pct, html: `Du har brugt <b>${pct}%</b> af budgettet til <b>${esc(c.name)}</b> – der er ${kr(b - v)} tilbage${f < 1 ? ` med ${daysInMonth(p) - +todayIso().slice(8)} dage igen` : ""}` });
+      else if (pct >= 80) items.push({ cls: "warn", e: "alert", w: 90 + pct, html: `Du har brugt <b>${pct}%</b> af budgettet til <b>${esc(c.name)}</b> – der er ${kr(b - v)} tilbage${f < 1 ? ` med ${daysInMonth(p) - +todayIso().slice(8)} dage igen` : ""}` });
     }
   }
 
@@ -1000,7 +1014,7 @@ function renderInsights(fixedItems) {
     changes.sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
     const than = { year: "sidste år", month: "sidste måned", week: "sidste uge" }[gran()] + (p === nowKey && gran() === "month" ? " på samme tid" : "");
     for (const c of changes.slice(0, 3)) items.push({
-      cls: c.pct > 0 ? "" : "good", e: c.pct > 0 ? "📈" : "📉", w: 50 + Math.min(40, Math.abs(c.d) / 100),
+      cls: c.pct > 0 ? "" : "good", e: c.pct > 0 ? "up" : "down", w: 50 + Math.min(40, Math.abs(c.d) / 100),
       html: `Du har brugt <b>${c.pct > 300 ? kr(c.d) : Math.abs(c.pct) + "%"} ${c.pct > 0 ? "mere" : "mindre"}</b> på ${esc(nameOf(c.k))} end ${than} (${kr(c.v)} mod ${kr(c.w)}).` });
   }
 
@@ -1008,26 +1022,26 @@ function renderInsights(fixedItems) {
   const ts = totalSaved();
   const reached = MILESTONES.filter((x) => x <= ts).pop();
   const next = MILESTONES.find((x) => x > ts);
-  if (reached) items.push({ cls: "good", e: "🎉", w: 70, html: `Milepæl nået: du har sat over <b>${kr(reached)}</b> til side (i alt ${kr(ts)}).${next ? ` Næste milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` : ""}` });
-  else if (ts > 0 && next) items.push({ cls: "", e: "🐷", w: 40, html: `Du har sat ${kr(ts)} til side. Første milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` });
+  if (reached) items.push({ cls: "good", e: "star", w: 70, html: `Milepæl nået: du har sat over <b>${kr(reached)}</b> til side (i alt ${kr(ts)}).${next ? ` Næste milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` : ""}` });
+  else if (ts > 0 && next) items.push({ cls: "", e: "star", w: 40, html: `Du har sat ${kr(ts)} til side. Første milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` });
 
   // 4) Abonnementer pr. år
   const subs = fixedItems.filter((f) => /abonnement/i.test(catById(f.cat)?.name ?? ""));
   if (subs.length) {
     const mo = subs.reduce((s, f) => s + f.amount, 0);
-    items.push({ cls: "", e: "📺", w: 30, html: `Dine ${subs.length} abonnementer koster ${kr(mo)} om måneden – det er <b>${kr(mo * 12)} om året</b>` });
+    items.push({ cls: "", e: "repeat", w: 30, html: `Dine ${subs.length} abonnementer koster ${kr(mo)} om måneden – det er <b>${kr(mo * 12)} om året</b>` });
   }
 
   // 5) Største enkeltudgift
   const big = list.filter((t) => t.amount < 0 && counts(t)).sort((x, y) => x.amount - y.amount)[0];
-  if (big && gran() !== "day") items.push({ cls: "", e: "💸", w: 20, html: `Største udgift i perioden: ${esc(big.counterparty || big.description)} (${kr(-big.amount)}, ${fmt(big.booking_date, { day: "numeric", month: "short" })}).` });
+  if (big && gran() !== "day") items.push({ cls: "", e: "receipt", w: 20, html: `Største udgift i perioden: ${esc(big.counterparty || big.description)} (${kr(-big.amount)}, ${fmt(big.booking_date, { day: "numeric", month: "short" })}).` });
 
   // 6) Uden kategori
   const none = list.filter((t) => !t.category_id).length;
-  if (none) items.push({ cls: "", e: "❓", w: 10, html: `${none} posteringer mangler en kategori. Vælg filteret <i>Uden kategori</i> nedenfor og ret dem.` });
+  if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. Vælg filteret <i>Uden kategori</i> nedenfor og ret dem.` });
 
   items.sort((a, b) => b.w - a.w);
-  $("insights").innerHTML = items.length ? items.map((i) => `<div class="ins ${i.cls}"><div class="e">${i.e}</div><div>${i.html}</div></div>`).join("")
+  $("insights").innerHTML = items.length ? items.map((i) => `<div class="ins ${i.cls}"><div class="e">${icon(i.e)}</div><div>${i.html}</div></div>`).join("")
     : `<p class="muted small">Ingen særlige bemærkninger for perioden.</p>`;
 }
 
@@ -1221,7 +1235,7 @@ function renderBars() {
       : `${total ? Math.round((v / total) * 100) : 0}% af alle`;
     const dot = colorOf(k) ? `<span class="dot" style="background:${colorOf(k)}"></span>` : "";
     return `<div class="tile ${String(state.catFilter) === k ? "active" : ""}" data-cat="${k}" title="${esc(nameOf(k))}">
-      <div class="top"><div class="ico">${k === "none" ? "❓" : iconOf(cat)}${dot}</div>
+      <div class="top"><div class="ico">${k === "none" ? "?" : iconOf(cat)}${dot}</div>
         <div style="min-width:0"><div class="name">${esc(nameOf(k))}</div><div class="amt">${kr(v)}</div></div></div>
       <div class="meter"><div class="${cls}" style="width:${width}%"></div></div>
       <div class="meta"><span>${sub}</span>${chip}</div>
@@ -1243,7 +1257,6 @@ function renderFixed() {
   $("fixedCard").classList.toggle("hidden", !fixed.length);
   $("fixedTotal").innerHTML = fixed.length ? `<b>${kr(total)}</b>/md. · ${kr(total * 12)}/år` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
-    <div class="ico sm">${f.cat ? iconOf(catById(f.cat)) : "❓"}</div>
     <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
     <div class="num" style="text-align:right">${kr(f.amount)}<div class="muted small">${kr(f.amount * 12)}/år</div></div>`).join("");
 }
@@ -1276,8 +1289,8 @@ function renderTxs() {
   $("clearCat").classList.toggle("hidden", !state.catFilter);
 
   const sum = list.reduce((s, t) => s + t.amount, 0);
-  const options = (sel) => `<option value="">– vælg kategori –</option>` +
-    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${iconOf(c)} ${esc(c.name)}</option>`).join("") +
+  const options = (sel) => `<option value="">Vælg kategori …</option>` +
+    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
     `<option value="__new">+ Ny kategori…</option>`;
 
   let html = list.length ? `<div class="small muted">${list.length} posteringer · i alt <span class="num">${kr(sum)}</span></div>` : "";
@@ -1290,10 +1303,9 @@ function renderTxs() {
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const cat = catById(t.category_id);
     html += `<div class="tx">
-      <div class="ico sm">${cat ? iconOf(cat) : "❓"}</div>
       <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
-      <select data-id="${esc(t.id)}">${options(t.category_id)}</select>
+      <select data-id="${esc(t.id)}" class="${t.category_id ? "" : "unset"}" aria-label="Kategori">${options(t.category_id)}</select>
     </div>`;
   }
   $("txList").innerHTML = html || `<p class="muted">Ingen posteringer.</p>`;
@@ -1340,7 +1352,7 @@ async function setCategory(txId, value) {
 
   if (catId) {
     const suggestion = (tx.counterparty || tx.description).toLowerCase().replace(/[0-9*#]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
-    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${iconOf(catById(catId))} ${esc(catById(catId).name)}</b>?`;
+    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${esc(catById(catId).name)}</b>?`;
     $("rulePattern").value = suggestion;
     const updateCount = () => {
       const p = $("rulePattern").value.trim().toLowerCase();
@@ -1382,6 +1394,7 @@ function showTab(tab) {
   for (const t of Object.keys(TABS)) $(t).classList.toggle("hidden", t !== tab);
   document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
   $("pageTitle").textContent = TABS[tab];
+  $("settingsBtn").textContent = tab === "settings" ? "Luk" : "Indstillinger";
   $("consentCard").dataset.tab = tab;
   if (tab === "settings") renderSettings();
   else if (tab === "app") render();
@@ -1450,7 +1463,7 @@ function renderRules() {
   $("ruleList").innerHTML = rules.length ? rules.map((r) => `
     <div class="set-rule" data-id="${r.id}">
       <span>"${esc(r.pattern)}" ${r.priority < 200 ? '<span class="tag">standard</span>' : ""}</span>
-      <span class="muted small">→ ${iconOf(catById(r.category_id))} ${esc(catById(r.category_id)?.name ?? "?")}</span>
+      <span class="muted small">→ ${esc(catById(r.category_id)?.name ?? "?")}</span>
       <button class="ghost danger" title="Slet regel" aria-label="Slet">✕</button>
     </div>`).join("")
     : `<p class="muted small">Du har ingen egne regler endnu. De oprettes, når du retter en kategori og vælger "Gem som regel".</p>`;

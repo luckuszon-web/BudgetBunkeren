@@ -13,7 +13,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Kategorier af typen `transfer` (egne konti, opsparing) tælles ikke som forbrug.
 
 ## Struktur
-- `docs/index.html` – hele frontend (vanilla JS + supabase-js fra esm.sh). `docs/config.js` – Supabase URL + anon key (offentlige).
+- `docs/index.html` – skal + fanen Overblik + Indstillinger (vanilla JS + supabase-js fra esm.sh). `docs/config.js` – Supabase URL + anon key (offentlige).
+- `docs/js/ui.js` (formDialog, lineChart, ring, annuity, monthsToPayoff), `docs/js/plan.js` (Planlæg), `docs/js/tools.js` (Værktøjer), `docs/js/advisor.js` (Rådgiver). Modulerne får et fælles `ctx` fra `makeCtx()` i index.html og eksporterer `init(ctx, root) -> { render }`.
+- `supabase/functions/advisor` – AI-rådgiver (Anthropic SDK, `claude-opus-5-5` med server-side fallback; `ADVISOR_MODEL` kan overstyre). Klienten sender sammendrag (`buildContext`), ikke rå posteringer.
+- `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
@@ -44,7 +47,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Score: opsparingsrate 40 + budget 30 + forbrug mod snit 30, normaliseret når budget mangler. Igangværende måned fremskrives (faste fuldt, variable skaleret).
 - Indsigter: budgetadvarsler (tempo + 80 % + over), kategoriændringer ≥20 % (samme dage ved igangværende måned), milepæle (10k/25k/50k/100k…), abonnementer pr. år, største udgift, manglende kategorier.
 
-## Køreplan (aftalt med brugeren)
+## Køreplan – fase 2 og 3 er bygget (nov. 2026); bankforbindelsen er bevidst udskudt
+- Design: emojis kun på kategorier og opsparingsmål (brugerens ønske); ellers ensfarvede SVG-ikoner (`icon()` i index.html).
+
+## Oprindelig køreplan
 - Fase 2 (kræver nye tabeller): opsparingsmål, formue/aktiver/gæld/investeringer (manuel indtastning), overførsel af ubrugt budget, spareudfordringer.
 - Fase 3 (kræver bankforbindelse + `ANTHROPIC_API_KEY`): AI-rådgiver (Edge Function), økonomisk kalender og saldoprognose, hvad-nu-hvis-beregner, årsprognose, kvartalsrapport. Skat/løn efter skat er lavt prioriteret (dansk skat er kompleks).
 

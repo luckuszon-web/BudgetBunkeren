@@ -100,7 +100,7 @@ export function lineChart(el, { labels, series, fmt, height = 180, showTip, hide
   const grid = ticks.map((v) => `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="#262a33"/>
     <text x="${W - padR + 6}" y="${y(v) + 4}">${short(v)}</text>`).join("");
   const every = Math.ceil(L / 7);
-  const xl = labels.map((l, i) => (i % every === 0 || i === L - 1) ? `<text x="${x(i)}" y="${H - 5}" text-anchor="middle">${esc(l)}</text>` : "").join("");
+  const xl = labels.map((l, i) => ((i % every === 0 && L - 1 - i >= every) || i === L - 1) ? `<text x="${x(i)}" y="${H - 5}" text-anchor="middle">${esc(l)}</text>` : "").join("");
   const path = (vals) => vals.map((v, i) => v == null ? null : [i, v]).filter(Boolean).map(([i, v], k) => `${k ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
   const lines = series.map((s) => {
     const pts = s.values.map((v, i) => [i, v]).filter(([, v]) => v != null);

@@ -264,7 +264,7 @@ export function init(ctx, root) {
       const lbl = { bad: "Overskredet", warn: "Hold igen", good: "På sporet" }[cls];
       const daysLeft = ctx.daysInMonth(now) - +todayIso().slice(8);
       return `<div class="list-row" data-id="${c.id}" style="grid-template-columns:1fr">
-        <div class="row between"><span>${ctx.iconOf(ctx.catById(c.category_id))} ${esc(c.title)}</span><span class="pill ${cls}">${lbl}</span></div>
+        <div class="row between"><span>${esc(c.title)}</span><span class="pill ${cls}">${lbl}</span></div>
         <div class="pbar"><div style="width:${Math.min(100, spent / Math.max(1, c.limit_amount) * 100)}%;background:${cls === "bad" ? "var(--red)" : cls === "warn" ? "var(--warn)" : "var(--green)"}"></div>
           <span class="mark" style="left:${f * 100}%" title="Så langt er måneden"></span></div>
         <div class="row between small muted"><span>${kr(spent)} brugt af ${kr(c.limit_amount)}</span>

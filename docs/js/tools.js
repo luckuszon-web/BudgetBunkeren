@@ -5,12 +5,12 @@ export function init(ctx, root) {
   const { state, kr, esc, fmt, todayIso, addMonths, addDays, daysInMonth, monthTx, totals, sumOut, avgOf } = ctx;
 
   root.innerHTML = `
-    <div class="seg" id="toolSel" style="display:flex;margin-bottom:12px;overflow-x:auto">
-      <button data-t="cal" class="on" style="flex:1">Kalender</button>
-      <button data-t="whatif" style="flex:1">Hvad nu hvis</button>
-      <button data-t="year" style="flex:1">Årsprognose</button>
-      <button data-t="quarter" style="flex:1">Kvartal</button>
-      <button data-t="tax" style="flex:1">Løn og skat</button>
+    <div class="seg" id="toolSel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));margin-bottom:12px">
+      <button data-t="cal" class="on">Kalender</button>
+      <button data-t="whatif">Hvad nu hvis</button>
+      <button data-t="year">Årsprognose</button>
+      <button data-t="quarter">Kvartal</button>
+      <button data-t="tax">Løn og skat</button>
     </div>
     <div id="tool"></div>`;
   const $ = (id) => root.querySelector("#" + id);
@@ -77,6 +77,7 @@ export function init(ctx, root) {
       for (const f of fixed) if (!seen.has(f.key)) addEv(Math.max(todayD, Math.min(dim, f.day)), { name: f.name, amount: -f.amount });
       for (const r of recurringIncome(isFuture ? thisMonth() : m)) if (!seen.has(r.key)) addEv(Math.max(todayD, r.endOfMonth ? dim - r.fromEnd : Math.min(dim, r.day)), { name: r.name, amount: r.amount });
     }
+    const c = (v) => { v = Math.round(v); return Math.abs(v) >= 10000 ? (v / 1000).toFixed(0) + "k" : v.toLocaleString("da-DK"); };
     const first = (new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1, 1)).getUTCDay() + 6) % 7;
     const maxOut = Math.max(1, ...[...byDay.values()].map((e) => e.out));
     let cells = ["man", "tir", "ons", "tor", "fre", "lør", "søn"].map((d) => `<div class="cal-h">${d}</div>`).join("");
@@ -88,10 +89,10 @@ export function init(ctx, root) {
       const evIn = ev.filter((x) => x.amount > 0).reduce((s, x) => s + x.amount, 0), evOut = -ev.filter((x) => x.amount < 0).reduce((s, x) => s + x.amount, 0);
       cells += `<div class="cal-d ${ds === today ? "today" : ""} ${ds > today ? "fut" : ""}" data-d="${d}" style="${heat ? `background:rgba(57,135,229,${heat})` : ""}">
         <span class="n">${d}</span>
-        ${e?.out ? `<span class="a">−${Math.round(e.out).toLocaleString("da-DK")}</span>` : ""}
-        ${e?.inc ? `<span class="a pos">+${Math.round(e.inc).toLocaleString("da-DK")}</span>` : ""}
-        ${evIn ? `<span class="ev in" title="Forventet indtægt">+${Math.round(evIn).toLocaleString("da-DK")}</span>` : ""}
-        ${evOut ? `<span class="ev out" title="Forventet regning">−${Math.round(evOut).toLocaleString("da-DK")}</span>` : ""}
+        ${e?.out ? `<span class="a">−${c(e.out)}</span>` : ""}
+        ${e?.inc ? `<span class="a pos">+${c(e.inc)}</span>` : ""}
+        ${evIn ? `<span class="ev in" title="Forventet indtægt">+${c(evIn)}</span>` : ""}
+        ${evOut ? `<span class="ev out" title="Forventet regning">−${c(evOut)}</span>` : ""}
       </div>`;
     }
 
@@ -316,7 +317,7 @@ export function init(ctx, root) {
         <span>Antal posteringer</span><span>${cur.length}</span>
       </div>
       <div class="small muted" style="margin:14px 0 4px">Største udgiftsområder</div>
-      ${top.map(([k, v]) => { const c = chg(v, pc.get(k)); return `<div class="list-row"><div>${k === "none" ? "" : ctx.iconOf(ctx.catById(k)) + " "}${esc(name(k))}</div>
+      ${top.map(([k, v]) => { const c = chg(v, pc.get(k)); return `<div class="list-row"><div>${esc(name(k))}</div>
         <div class="num">${kr(v)} <span class="small">${chip(c, false)}</span></div></div>`; }).join("")}
       <p class="note">Sammenlignet med ${qLabel(prevQ(quarter))}${prv.length ? "" : " (ingen data)"}.</p>
     </div>`;
@@ -399,7 +400,7 @@ export function init(ctx, root) {
     .cal-d { min-height: 58px; border-radius: 8px; background: #1d212a; padding: 4px; display: flex; flex-direction: column; gap: 1px; cursor: pointer; overflow: hidden; }
     .cal-d .n { font-size: 12px; font-weight: 600; }
     .cal-d .a { font-size: 10.5px; font-variant-numeric: tabular-nums; }
-    .cal-d .ev { font-size: 10.5px; border: 1.5px dashed; border-radius: 4px; padding: 0 2px; font-variant-numeric: tabular-nums; }
+    .cal-d .ev { font-size: 10.5px; border: 1.5px dashed; border-radius: 4px; padding: 0 2px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
     .cal-d .ev.in { border-color: var(--green); color: var(--green); } .cal-d .ev.out { border-color: var(--warn); color: var(--warn); }
     .cal-d.today { outline: 2px solid var(--accent); }
     .cal-d.fut { background: #171a21; }
