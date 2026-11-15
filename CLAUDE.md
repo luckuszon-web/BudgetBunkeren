@@ -1,7 +1,7 @@
 # Forbrugsoverblik – kontekst til Claude Code
 
-Personligt værktøj til Luke: overblik over eget forbrug, fordi Nordea-appen kategoriserer dårligt.
-Kommunikér på **dansk**. Luke er ikke udvikler – forklar trin enkelt og konkret, og gør så meget som muligt for ham.
+Personligt værktøj til én person: overblik over eget forbrug, fordi Nordea-appen kategoriserer dårligt.
+Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og konkret, og gør så meget som muligt for brugeren.
 
 ## Beslutninger (truffet)
 - **Ingen CSV-eksport** – posteringer hentes automatisk via **Enable Banking** (PSD2, kun læseadgang, gratis for egne konti).
@@ -26,7 +26,7 @@ Kommunikér på **dansk**. Luke er ikke udvikler – forklar trin enkelt og konk
 - Koden er skrevet og typetjekket (`deno check`), men **ikke testet mod rigtige tjenester** endnu.
 - Repo: `luckuszon-web/BudgetBunkeren`. Side-URL: `https://luckuszon-web.github.io/BudgetBunkeren/`.
 - Konti genkendes på `accounts.account_key` (hash af IBAN), fordi Enable Bankings konto-uid skifter ved hver fornyelse. Posterings-id = hash(account_key + bankreference), så fornyelse ikke giver dubletter.
-- Næste skridt: Luke følger README fra trin 1 (opret Supabase-projekt). Hjælp ham igennem trinene og test hele flowet:
+- Næste skridt: Brugeren følger README fra trin 1 (opret Supabase-projekt). Hjælp brugeren igennem trinene og test hele flowet:
   login → Forbind Nordea (MitID) → posteringer hentes → kategorisering → natlig kørsel.
 - Ting at verificere ved første rigtige kørsel: Enable Banking-navnet på Nordea DK (`EB_ASPSP_NAME`, default "Nordea"),
   formatet på `.pem`-nøglen (skal være PKCS8), felterne i transaktions-svaret, og at RLS blokerer en ikke-indlogget bruger.
@@ -34,7 +34,7 @@ Kommunikér på **dansk**. Luke er ikke udvikler – forklar trin enkelt og konk
 ## Sikkerhed – vigtigt
 - Læg aldrig `.pem`-nøgle, `SYNC_SECRET`, service role key eller API-nøgler i repoet. De hører hjemme i Supabase → Edge Functions → Secrets.
 - Bankdata må aldrig committes.
-- Nye brugere kan ikke oprette sig (signups slået fra i Supabase); kun Luke har en bruger.
+- Nye brugere kan ikke oprette sig (signups slået fra i Supabase); kun ejeren har en bruger.
 
 ## Idéer til senere (ikke bygget)
 - Flere banker/kreditkort, oversigt over faste udgifter og abonnementer, budget pr. kategori, opsætning af totrinsbekræftelse i UI'et.
