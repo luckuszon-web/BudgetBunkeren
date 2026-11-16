@@ -299,6 +299,19 @@
   .chips::-webkit-scrollbar { display: none; }
   .chips button { flex-shrink: 0; border: 0; background: transparent; color: var(--muted); padding: 7px 12px; border-radius: 9px; font-size: 14px; }
   .chips button.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  /* Vælg flere */
+  #txs:has(#selBar:not(.hidden)) .tx-card { margin-bottom: 120px; }
+  #txList.selecting .tx select, #txList.selecting .tx .oo { display: none; }
+  .tx.pickable { cursor: pointer; grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .tx.pickable::before { content: ""; grid-row: 1 / span 2; width: 18px; height: 18px; border: 2px solid var(--line2); border-radius: 6px; align-self: center; }
+  .tx.pickable.picked::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 3px var(--card); }
+  .tx.pickable .tx-note { grid-column: 2 / -1; }
+  .sel-bar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 16; width: min(680px, calc(100% - 20px));
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--line2); border-radius: 14px; padding: 8px 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  .sel-bar .sel-count { font-weight: 600; font-size: 14px; margin-right: auto; }
+  .sel-bar select { max-width: 150px; padding: 6px 8px; }
+  @media (min-width: 900px) { .sel-bar { bottom: 20px; margin-left: 116px; }
+    .tx.pickable { grid-template-columns: 26px minmax(0, 1fr) 120px; } .tx.pickable .desc { grid-column: 2; } .tx.pickable > .num { grid-column: 3; } .tx.pickable .tx-note { grid-column: 2 / -1; } }
   .tx .desc[data-open] { cursor: pointer; }
   .tx .desc[data-open]:hover { text-decoration: underline; text-decoration-color: var(--line2); }
   .tx-note { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -678,9 +691,17 @@
       </div>
     </div>
     <div class="card tx-card">
-      <div class="head"><h2 id="txTitle">Posteringer</h2><button class="ghost small hidden" id="clearCat">Vis alle ✕</button></div>
+      <div class="head"><h2 id="txTitle">Posteringer</h2><div class="row" style="gap:6px"><button class="ghost small hidden" id="clearCat">Vis alle ✕</button><button class="small" id="selToggle">Vælg</button></div></div>
       <div id="txList"></div>
       <button class="ghost small hidden" id="moreBtn" style="width:100%;margin-top:8px">Vis flere</button>
+    </div>
+    <!-- Handlinger for valgte posteringer -->
+    <div id="selBar" class="sel-bar hidden" role="toolbar" aria-label="Valgte posteringer">
+      <span id="selCount" class="sel-count"></span>
+      <select id="selCat" aria-label="Giv de valgte en kategori"></select>
+      <button class="small" id="selOneOff">Engangskøb</button>
+      <button class="small ghost" id="selAll">Vælg alle</button>
+      <button class="small ghost" id="selDone">Færdig</button>
     </div>
   </section>
 
@@ -1046,7 +1067,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116205003";</script>
+<script>window.APP_VERSION = "20261116205242";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2335,7 +2356,8 @@ function renderTxs() {
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const nSplit = (state.splits ?? []).filter((x) => x.tx_id === t.id).length;
-    html += `<div class="tx ${t.note ? "has-note" : ""}">
+    const pickable = state.selMode && !t.manual;
+    html += `<div class="tx ${t.note ? "has-note" : ""} ${pickable ? "pickable" : ""} ${pickable && state.sel.has(t.id) ? "picked" : ""}" ${pickable ? `data-pick="${esc(t.id)}"` : ""}>
       <span class="desc" ${t.manual ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       ${t.note ? `<span class="tx-note">${esc(t.note)}</span>` : ""}
@@ -2348,6 +2370,13 @@ function renderTxs() {
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
+  state.visibleIds = list.slice(0, state.shown).filter((t) => !t.manual).map((t) => t.id);
+  document.querySelectorAll("#txList [data-pick]").forEach((r) => r.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const id = r.dataset.pick; state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id);
+    r.classList.toggle("picked", state.sel.has(id)); renderSelBar();
+  });
+  if (state.selMode) { renderSelBar(); return; }
   document.querySelectorAll("#txList [data-open]").forEach((d) => { d.onclick = () => openTx(d.dataset.open); d.onkeydown = (e) => { if (e.key === "Enter") openTx(d.dataset.open); }; });
   document.querySelectorAll("#txList .oo-cb").forEach((cb) => cb.onchange = () => setOneOff(cb.dataset.id, cb.checked));
   document.querySelectorAll("#txList .mi-open").forEach((b) => b.onclick = () => { showTab("settings"); setPage("income"); });
@@ -2450,6 +2479,43 @@ $("recatBtn").onclick = async () => {
 };
 
 // ---------- Ret kategori + lær en regel ----------
+// ---------- Vælg flere posteringer ----------
+state.selMode = false; state.sel = new Set();
+function renderSelBar() {
+  $("selBar").classList.toggle("hidden", !state.selMode);
+  $("selToggle").textContent = state.selMode ? "Færdig" : "Vælg";
+  $("txList").classList.toggle("selecting", state.selMode);
+  if (!state.selMode) return;
+  const n = state.sel.size;
+  $("selCount").textContent = n ? `${n} valgt` : "Tryk på posteringer";
+  $("selCat").innerHTML = `<option value="">Giv kategori …</option>` + state.cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("selCat").disabled = $("selOneOff").disabled = !n;
+  const all = n && [...state.sel].every((id) => state.allTxs.find((t) => t.id === id)?.one_off);
+  $("selOneOff").textContent = all ? "Ikke engangskøb" : "Engangskøb";
+}
+const setSelMode = (on) => { state.selMode = on; state.sel.clear(); renderTxs(); renderSelBar(); };
+$("selToggle").onclick = () => setSelMode(!state.selMode);
+$("selDone").onclick = () => setSelMode(false);
+$("selAll").onclick = () => { for (const id of state.visibleIds ?? []) state.sel.add(id); renderTxs(); };
+async function updateMany(patch, label) {
+  const ids = [...state.sel];
+  for (let i = 0; i < ids.length; i += 100) {
+    const { error } = await sb.from("transactions").update(patch).in("id", ids.slice(i, i + 100));
+    if (error) { toast(/one_off/.test(error.message) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000); return false; }
+  }
+  for (const t of state.allTxs) if (state.sel.has(t.id)) Object.assign(t, patch);
+  toast(`${ids.length} posteringer ${label}.`); fixedCache.clear(); state.sel.clear(); refresh(); renderSelBar();
+  return true;
+}
+$("selCat").onchange = () => {
+  const id = Number($("selCat").value); if (!id) return;
+  updateMany({ category_id: id, category_source: "manual" }, `fik kategorien ${catById(id)?.name}`);
+};
+$("selOneOff").onclick = () => {
+  const all = [...state.sel].every((id) => state.allTxs.find((t) => t.id === id)?.one_off);
+  updateMany({ one_off: !all }, all ? "tæller med igen" : "er markeret som engangskøb");
+};
+
 // Detaljer om en postering: note, engangskøb og opdeling i flere kategorier
 async function openTx(id) {
   const t = state.allTxs.find((x) => x.id === id);
