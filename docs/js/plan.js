@@ -212,7 +212,7 @@ export function init(ctx, root) {
       return `<div class="goal" data-id="${g.id}">
         <div class="g-top"><span class="g-n">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</span>${pill}<span class="num muted">${pctNum}%</span></div>
         <div class="bbar"><span class="${done ? "b-done" : "b-ok"}" style="width:${pctNum}%"></span></div>
-        <div class="g-sub num">${kr(g.saved_amount)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
+        <div class="g-sub">${kr(g.saved_amount)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
         <div class="g-st">${status}</div>
         <div class="g-act"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>
       </div>`;
