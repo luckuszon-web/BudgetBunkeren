@@ -254,6 +254,13 @@
   .bud-legend .bl i { width: 10px; height: 10px; border-radius: 50%; } .bud-legend .bl span:nth-child(2) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .fx-row:last-child { border-bottom: 0; } .fx-n { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sug-list { display: grid; gap: 2px; max-height: 55vh; overflow-y: auto; margin: 4px -4px 0; padding: 0 4px; }
+  .sug-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 110px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .sug-row .sug-on { width: auto; accent-color: var(--accent); }
+  .sug-row .sug-n { min-width: 0; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sug-row .sug-s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  .sug-row .sug-v { padding: 6px 8px; text-align: right; }
+
   /* Planlæg */
   .bbar .b-done { background: var(--green); }
   .nw-list { margin-top: 14px; }
@@ -673,7 +680,8 @@
     </div>
     <div class="card" id="budSum"></div>
     <div class="ov-mid">
-      <div class="card"><div class="head"><h2>Kategorier</h2><span class="small muted">Tryk for at ændre budget</span></div><div id="budList"></div></div>
+      <div class="card"><div class="head"><h2>Kategorier</h2><button class="small" id="budSuggest">Foreslå budgetter</button></div><div id="budList"></div>
+        <p class="small muted" style="margin:8px 0 0">Tryk på en kategori for at ændre budgettet.</p></div>
       <div class="card"><div class="head"><h2>Fordeling</h2></div>
         <svg id="budDonut" viewBox="0 0 200 200" role="img" aria-label="Forbrug pr. kategori"></svg>
         <div id="budLegend" class="bud-legend"></div></div>
@@ -911,6 +919,20 @@
   </form>
 </dialog>
 
+<!-- Dialog: foreslå budgetter -->
+<dialog id="sugDialog">
+  <form method="dialog">
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
+    <p style="margin-top:0"><b>Foreslå budgetter</b></p>
+    <p class="small muted" id="sugIntro" style="margin-top:-6px"></p>
+    <div id="sugList" class="sug-list"></div>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Annuller</button>
+      <button value="ok" class="primary" id="sugSave">Gem budgetter</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Dialog: ret kategori -->
 <dialog id="catEdit">
   <form method="dialog">
@@ -990,7 +1012,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116202108";</script>
+<script>window.APP_VERSION = "20261116204029";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2131,6 +2153,33 @@ function renderBudget() {
 }
 // Farve på bjælken: rød over budget, gul hvis forbruget løber foran måneden (eller over 85 %), ellers blå
 const barCls = (r, f = 1) => r > 1 ? "b-bad" : r > 0.85 || r > f * 1.15 ? "b-warn" : "b-ok";
+// Forslag: snit af de seneste hele måneder (op til 3) minus 5 %, rundet op til nærmeste 100 kr.
+$("budSuggest").onclick = async () => {
+  const now = todayIso().slice(0, 7), months = prevMonthsWithData(now, 3);
+  if (!months.length) return toast("Der skal være mindst én hel måned med posteringer, før der kan foreslås budgetter.");
+  const rows = state.cats.filter((c) => c.kind === "expense").map((c) => {
+    const avg = avgOf(months.map((m) => sumOut(monthTx(m).filter((t) => String(effCat(t)) === String(c.id)))));
+    // Faste regninger i kategorien (fx forsikring) skæres ikke ned – kun den variable del får 5 % mindre
+    const fixedPart = Math.min(avg, detectFixed(now).filter((f) => String(f.cat) === String(c.id)).reduce((s2, f) => s2 + f.amount, 0));
+    return { c, avg, sug: Math.max(100, Math.ceil((fixedPart + (avg - fixedPart) * 0.95) / 100) * 100), cur: Number(c.monthly_budget) || 0 };
+  }).filter((x) => x.avg >= 50).sort((a, b) => b.avg - a.avg);
+  if (!rows.length) return toast("Ingen kategorier med forbrug at foreslå budget til.");
+  $("sugIntro").textContent = `Ud fra dit snit for ${months.length === 1 ? "den seneste måned" : `de seneste ${months.length} måneder`} – 5 % mindre på det variable forbrug, faste regninger fuldt med. Ret beløbene, og fjern fluebenet ved dem, du ikke vil ændre.`;
+  $("sugList").innerHTML = rows.map((x) => `<label class="sug-row" data-id="${x.c.id}">
+      <input type="checkbox" class="sug-on" ${x.cur ? "" : "checked"}>
+      <span class="sug-n">${esc(iconOf(x.c))} ${esc(x.c.name)}<span class="sug-s">snit ${kr(x.avg)}${x.cur ? ` · nu ${kr(x.cur)}` : ""}</span></span>
+      <input type="number" class="sug-v" inputmode="numeric" min="0" step="100" value="${x.sug}" aria-label="Budget for ${esc(x.c.name)}"></label>`).join("");
+  $("sugList").querySelectorAll(".sug-v").forEach((i) => i.oninput = () => { i.closest(".sug-row").querySelector(".sug-on").checked = true; });
+  if (!(await ask($("sugDialog")))) return;
+  const picked = [...$("sugList").querySelectorAll(".sug-row")].filter((r) => r.querySelector(".sug-on").checked)
+    .map((r) => ({ id: r.dataset.id, v: Number(r.querySelector(".sug-v").value) || null }));
+  for (const x of picked) {
+    const { error } = await sb.from("categories").update({ monthly_budget: x.v }).eq("id", x.id);
+    if (error) return toast("Kunne ikke gemme: " + error.message, 6000);
+    const c = catById(x.id); if (c) c.monthly_budget = x.v;
+  }
+  toast(`${picked.length} budgetter gemt.`); renderBudget();
+};
 $("budPrev").onclick = () => { state.budMonth = addMonths(state.budMonth, -1); renderBudget(); };
 $("budNext").onclick = () => { state.budMonth = addMonths(state.budMonth, 1); renderBudget(); };
 

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # Playwright understøtter (endnu) ikke nyeste Ubuntu
     timeout-minutes: 15
     defaults:
       run:
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: node smoke.js
