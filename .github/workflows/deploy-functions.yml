@@ -5,6 +5,7 @@ name: Deploy Supabase functions
 on:
   workflow_dispatch:
   push:
+    branches: [main]   # kun main, så hver ændring kun lægges op én gang
     paths:
       - "supabase/functions/**"
       - "supabase/config.toml"
