@@ -28,7 +28,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/nightly-sync.sql` – pg_cron-job der kalder `sync` kl. 03:00 UTC.
 - `.github/workflows/deploy-functions.yml` – deployer Edge Functions ved push.
 - `README.md` – opsætningsguide på dansk (7 trin).
-- `docs/privatliv.html`, `docs/vilkaar.html` – privatlivspolitik og vilkår til Enable Banking-appens felter. `docs/opdater.html` – kopiér databaseopdateringen fra telefonen.
+- `docs/privatliv.html`, `docs/vilkaar.html` – privatlivspolitik og vilkår til Enable Banking-appens felter. `docs/opdater.html` – kopiér databaseopdateringen fra telefonen. `docs/hemmelighed.html` – laver en tilfældig SYNC_SECRET lokalt i browseren.
+- Edge Functions er deployet (16. nov.) via workflow med `--yes` (ny CLI kræver det). Alle tre svarer 401 uden login.
 
 ## Status
 - Koden er skrevet og typetjekket (`deno check`), men **ikke testet mod rigtige tjenester** endnu.

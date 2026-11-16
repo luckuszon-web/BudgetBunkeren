@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f1115">
+<title>Lav en SYNC_SECRET</title>
+<style>
+  :root { --bg: #0f1115; --card: #181b22; --line: #262a33; --text: #e9ebef; --muted: #8b93a1; --accent: #6ea8fe; --green: #5fd39a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 40px; }
+  h1 { font-size: 21px; margin: 4px 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  code { display: block; background: #0b0d12; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: 15px; word-break: break-all;
+    -webkit-user-select: all; user-select: all; }
+  button { font: inherit; font-weight: 650; width: 100%; padding: 14px; border-radius: 12px; border: 0; background: var(--accent); color: #0b1020; cursor: pointer; margin-top: 10px; }
+  button.done { background: var(--green); }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
+  ol { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+  .muted { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Din SYNC_SECRET</h1>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Koden laves her på din egen enhed og sendes ingen steder hen.</p>
+    <code id="secret"></code>
+    <button id="copy">Kopiér</button>
+    <button id="again" class="ghost">Lav en ny</button>
+  </div>
+  <div class="card">
+    <ol>
+      <li><b>Gem koden</b> i din password-manager eller en sikker note – du skal bruge den to steder.</li>
+      <li>Supabase → <b>Edge Functions → Secrets</b> → tilføj: navn <code style="display:inline;padding:1px 6px">SYNC_SECRET</code>, værdi = koden.</li>
+      <li>Senere (trin D) indsættes samme kode i SQL'en til den natlige hentning.</li>
+    </ol>
+  </div>
+</main>
+<script>
+  const make = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");   // 64 tegn, kun 0-9 og a-f
+  };
+  const el = document.getElementById("secret"), btn = document.getElementById("copy");
+  el.textContent = make();
+  btn.onclick = async () => {
+    try { await navigator.clipboard.writeText(el.textContent); }
+    catch { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("copy"); }
+    btn.textContent = "Kopieret ✓"; btn.classList.add("done");
+  };
+  document.getElementById("again").onclick = () => { el.textContent = make(); btn.textContent = "Kopiér"; btn.classList.remove("done"); };
+</script>
+</body>
+</html>
