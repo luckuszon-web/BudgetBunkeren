@@ -288,6 +288,14 @@
   .pot-item.settle .pi-d { color: var(--green); }
   .pot-item button { padding: 2px 0; }
 
+  /* Advarsler */
+  .alert-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; margin-bottom: 12px; }
+  .al-list { display: grid; gap: 6px; }
+  .al { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; font-size: 13.5px; background: var(--card);
+    border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 10px; padding: 8px 10px; color: var(--text); }
+  .al svg { color: var(--warn); } .al.bad { border-left-color: var(--red); } .al.bad svg { color: var(--red); }
+  .al-x { padding: 6px 10px; }
+
   /* Sundhedstjek */
   .hc-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .hc-row:last-child { border-bottom: 0; }
@@ -629,6 +637,9 @@
         <button id="nextPeriod" aria-label="Næste">›</button>
       </div>
     </div>
+
+    <!-- Advarsler, når appen åbnes (kan lukkes for i dag) -->
+    <div class="alert-bar hidden" id="alertBar"></div>
 
     <!-- Månedsrapport (i starten af måneden for forrige måned, og når du ser en afsluttet måned) -->
     <div class="card report hidden" id="reportCard"></div>
@@ -1177,7 +1188,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116220022";</script>
+<script>window.APP_VERSION = "20261116220250";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1615,6 +1626,35 @@ function render() {
   renderBars();
   renderTxs();
   renderSyncStatus();
+  renderAlerts();
+}
+
+// Advarsler øverst på Overblik: budgetter tæt på grænsen, abonnementer der skal opsiges, prøveperioder
+function renderAlerts() {
+  const bar = $("alertBar");
+  const today = todayIso(), m = today.slice(0, 7);
+  let closed = false; try { closed = localStorage.getItem("alerts-closed") === today; } catch {}
+  const items = [];
+  if (!closed) {
+    const daysLeft = daysInMonth(m) - +today.slice(8);
+    for (const c of state.cats.filter((c) => c.kind === "expense" && Number(c.monthly_budget) > 0)) {
+      const b = monthBudget(c, m), used = sumOut(monthTx(m).filter((t) => String(effCat(t)) === String(c.id)));
+      if (b > 0 && used / b >= 0.8) items.push({ w: used / b, cls: used > b ? "bad" : "warn",
+        html: used > b ? `<b>${esc(c.name)}</b> er ${kr(used - b)} over budget (${Math.round(used / b * 100)} %).` : `<b>${esc(c.name)}</b>: ${Math.round(used / b * 100)} % af budgettet brugt – ${daysLeft} dage tilbage.`, go: "budget" });
+    }
+    for (const x of subscriptions().filter((x) => x.mark === "cancel")) {
+      const d = Math.round((D(x.next) - D(today)) / 864e5);
+      if (d <= 5) items.push({ w: 2, cls: "warn", html: `Husk at opsige <b>${esc(x.name)}</b> – trækkes ca. ${fmt(x.next, { day: "numeric", month: "short" })} (${kr(x.amount)}).`, go: "budget" });
+    }
+    for (const g of newRecurring().filter((g) => g.trial)) items.push({ w: 1.5, cls: "warn", html: `Prøveperiode? <b>${esc(g.name)}</b> er gået fra et lille beløb til ${kr(g.amount)}.`, go: "budget" });
+  }
+  items.sort((a, b) => b.w - a.w);
+  bar.classList.toggle("hidden", !items.length || gran() !== "month" || state.period !== m);
+  if (!items.length) return;
+  bar.innerHTML = `<div class="al-list">${items.slice(0, 3).map((i) => `<button class="al ${i.cls}" data-go="${i.go}">${icon("alert")}<span>${i.html}</span></button>`).join("")}
+    ${items.length > 3 ? `<span class="small muted">+${items.length - 3} mere</span>` : ""}</div><button class="ghost small al-x" aria-label="Luk for i dag" title="Luk for i dag">✕</button>`;
+  bar.querySelectorAll(".al").forEach((b) => b.onclick = () => showTab(b.dataset.go));
+  bar.querySelector(".al-x").onclick = () => { try { localStorage.setItem("alerts-closed", today); } catch {} bar.classList.add("hidden"); };
 }
 
 // Status for hentning fra banken (vises under overskriften på Overblik): hvornår der sidst er hentet,
