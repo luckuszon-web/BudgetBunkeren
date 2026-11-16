@@ -100,6 +100,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Hver bruger har sine egne data (RLS). En inviteret ser ikke ejerens posteringer.
 
 ## App-fornemmelse
+- **App-skal:** `html, body` fylder skærmen (100dvh, overflow hidden); kun `main` scroller; bundmenuen `.tabs` ligger i layoutet (ikke `position: fixed`) – undgår Safari-fejlen, hvor menuen hopper op på korte sider. Brug `document.querySelector("main").scrollTo(...)`, ikke `window.scrollTo`.
 - Zoom er slået fra (viewport + gesturestart/touchmove i index.html + touch-action: manipulation). Felter er 16 px på mobil, så iPhone ikke auto-zoomer.
 - `docs/manifest.webmanifest` + ikoner (`icon-180/192/512.png`) – siden kan lægges på hjemmeskærmen og åbnes uden browserlinje.
 

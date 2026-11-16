@@ -202,8 +202,8 @@ export function init(ctx, root) {
       }
       return `<div class="sub-card" data-id="${g.id}">
         <div class="row" style="gap:12px">${ring(frac, done ? "#5fd39a" : "#3987e5", Math.min(100, Math.round(frac * 100)) + "%")}
-          <div style="min-width:0;flex:1"><div class="row between" style="gap:6px"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</b>${pill}</div>
-            <div class="num">${kr(g.saved_amount)} <span class="muted small">af ${kr(g.target_amount)}</span></div>
+          <div style="min-width:0;flex:1"><div class="row between" style="gap:6px"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</b>${pill}</div>
+            <div style="font-variant-numeric:tabular-nums">${kr(g.saved_amount)} <span class="muted small" style="white-space:nowrap">af ${kr(g.target_amount)}</span></div>
             ${!done ? `<div class="small muted">Mangler ${kr(left)}</div>` : ""}</div></div>
         <div class="note">${status}</div>
         <div class="row" style="gap:6px"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>

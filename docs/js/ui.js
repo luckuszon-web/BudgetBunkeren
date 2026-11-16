@@ -22,7 +22,8 @@ style.textContent = `
   .pbar > div { height: 100%; border-radius: 4px; background: var(--accent); }
   .pbar .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .7; border-radius: 1px; }
   .empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
-  .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 10px; }
+  .sub-card { min-width: 0; grid-template-columns: minmax(0, 1fr); }
   .sub-card { background: #1d212a; border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
   .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
   .kv > :nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
