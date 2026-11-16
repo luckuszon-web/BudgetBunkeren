@@ -2,7 +2,7 @@
 -- Fx bilkøb, større investeringer, depositum. Kør i Supabase → SQL Editor. Kan køres flere gange.
 alter table public.categories drop constraint if exists categories_kind_check;
 alter table public.categories add constraint categories_kind_check
-  check (kind in ('expense', 'income', 'transfer', 'oneoff'));
+  check (kind in ('expense', 'income', 'transfer', 'oneoff', 'ignore'));   -- 'ignore' fra 012 (så filen kan køres igen)
 
 -- En færdig kategori til formålet (oprettes kun, hvis den mangler)
 insert into public.categories (user_id, name, kind, icon)

@@ -282,14 +282,15 @@ export async function categorize(userId: string, opts: { reapply?: boolean; aiLi
   let aiCount = 0;
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   const todo = leftovers.filter((t) => !(t as { category_id?: number }).category_id).slice(0, opts.aiLimit ?? 400);
-  if (key && todo.length && cats?.length) {
+  const aiCats = (cats ?? []).filter((c) => c.kind !== "ignore");   // "Ignoreret" vælges kun af dig selv
+  if (key && todo.length && aiCats.length) {
     const batches: Tx[][] = [];
     for (let i = 0; i < todo.length; i += 50) batches.push(todo.slice(i, i + 50));
     for (let i = 0; i < batches.length; i += 3) {   // 3 ad gangen
-      const answers = await Promise.all(batches.slice(i, i + 3).map((b) => askClaude(key, cats, b)));
+      const answers = await Promise.all(batches.slice(i, i + 3).map((b) => askClaude(key, aiCats, b)));
       const groups = new Map<number, string[]>();
       for (const answer of answers) for (const [id, name] of Object.entries(answer)) {
-        const cat = cats.find((c) => c.name.toLowerCase() === String(name).toLowerCase());
+        const cat = aiCats.find((c) => c.name.toLowerCase() === String(name).toLowerCase());
         const tx = todo.find((t) => t.id === id);
         if (!cat || !tx || !fits(cat.id, Number(tx.amount))) continue;   // AI må ikke give løn en udgiftskategori o.l.
         if (!groups.has(cat.id)) groups.set(cat.id, []);

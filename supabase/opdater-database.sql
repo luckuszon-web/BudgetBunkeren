@@ -1,4 +1,4 @@
--- ALLE DATABASEOPDATERINGER I ÉN FIL (002–011).
+-- ALLE DATABASEOPDATERINGER I ÉN FIL (002–012).
 -- Kør hele filen i Supabase → SQL Editor. Den kan køres flere gange uden problemer.
 
 -- ===== 002_budget =====
@@ -503,7 +503,7 @@ where not exists (
 -- Fx bilkøb, større investeringer, depositum. Kør i Supabase → SQL Editor. Kan køres flere gange.
 alter table public.categories drop constraint if exists categories_kind_check;
 alter table public.categories add constraint categories_kind_check
-  check (kind in ('expense', 'income', 'transfer', 'oneoff'));
+  check (kind in ('expense', 'income', 'transfer', 'oneoff', 'ignore'));   -- 'ignore' fra 012 (så filen kan køres igen)
 
 -- En færdig kategori til formålet (oprettes kun, hvis den mangler)
 insert into public.categories (user_id, name, kind, icon)
@@ -587,3 +587,15 @@ alter table public.manual_income enable row level security;
 do $$ begin
   create policy own_manual_income on public.manual_income for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 exception when duplicate_object then null; end $$;
+
+-- ===== 012_ignore_kind =====
+-- Kategoritype "ignore": posteringen vises i listen, men er helt ude af tal, grafer, prognoser og rådgiver.
+-- Fx en refusion, der går lige op, eller en postering, der ikke vedrører din økonomi. Kan køres flere gange.
+alter table public.categories drop constraint if exists categories_kind_check;
+alter table public.categories add constraint categories_kind_check
+  check (kind in ('expense', 'income', 'transfer', 'oneoff', 'ignore'));
+
+insert into public.categories (user_id, name, kind, icon)
+select u.user_id, 'Ignoreret', 'ignore', '🚫'
+from (select distinct user_id from public.categories) u
+where not exists (select 1 from public.categories c where c.user_id = u.user_id and c.kind = 'ignore');

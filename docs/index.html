@@ -293,17 +293,18 @@
   .tag.ai { color: var(--warn); border-color: #5a4a1c; }
 
   /* Indstillinger */
-  .set-cat .roll { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-  .set-cat .roll input { width: auto; }
-  .set-cat { display: grid; grid-template-columns: 52px 1fr 120px 100px auto 40px; gap: 6px; align-items: center; padding: 5px 0; }
-  .set-cat .icon { text-align: center; font-size: 18px; padding: 4px; }
-  .set-cat input, .set-cat select { padding: 6px 8px; font-size: 14px; }
-  .set-cat button { padding: 6px 0; }
+  .cat-group { margin-top: 14px; }
+  .cat-group > .cg-h { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .cat-row { display: grid; grid-template-columns: 34px 1fr auto 14px; gap: 10px; align-items: center; width: 100%; text-align: left;
+    background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 9px 2px; color: var(--text); font: inherit; cursor: pointer; }
+  .cat-row .ci { font-size: 20px; text-align: center; }
+  .cat-row .cn { min-width: 0; } .cat-row .cn b { font-weight: 550; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-row .cs { font-size: 12.5px; color: var(--muted); }
+  .cat-row .cb { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; }
+  .cat-row .chev { width: 14px; height: 14px; fill: var(--muted); }
+  .kind-help { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--muted); }
   .set-rule { display: grid; grid-template-columns: 1fr auto 40px; gap: 8px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
   @media (max-width: 520px) {
-    .set-cat { grid-template-columns: 52px 1fr 1fr auto 40px; border-top: 1px solid var(--line); padding: 8px 0; }
-    .set-cat .name { grid-column: 2 / -1; }
-    .set-cat .kind { grid-column: 1 / 3; }
     .tiles { grid-template-columns: 1fr 1fr; }
   }
 
@@ -592,10 +593,15 @@
       <button class="ghost small set-back">‹ Indstillinger</button>
     <div class="card">
       <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
-      <p class="small muted" style="margin-top:0">Tryk på ikonet for at skifte det til en anden emoji. Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
-        <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.<br>
-        <b>Engangskøb</b> (fx bilkøb, større investeringer) vises, men holdes uden for overskud, snit, prognoser og score.<br>
-        <b>Modregning:</b> Giv en indbetaling en udgiftskategori, så trækkes den fra udgiften i stedet for at tælle som indtægt – fx fremleje under <i>Bolig</i>, en returvare under <i>Shopping</i> eller en vens andel af middagen under <i>Restaurant</i>.</p>
+      <p class="small muted" style="margin-top:0">Tryk på en kategori for at ændre navn, ikon, type og budget – eller slette den og flytte posteringerne over i en anden.</p>
+      <details class="small guide" style="margin-bottom:6px"><summary style="color:var(--accent)">Hvad betyder typerne?</summary>
+        <ul class="kind-help">
+          <li><b>Udgift / Indtægt</b> – tæller med overalt. En indbetaling med en udgiftskategori trækkes fra udgiften (<i>modregning</i>), fx fremleje under Husleje eller en returvare under Shopping.</li>
+          <li><b>Overførsel</b> – opsparing og flytninger mellem egne konti. Tæller ikke som forbrug, men vises som "sat til side".</li>
+          <li><b>Engangskøb</b> – store køb (fx bil). Vises som "holdt udenfor", men påvirker ikke snit, prognoser og score.</li>
+          <li><b>Ignoreret</b> – helt ude af alle tal og grafer. Posteringen ses kun i listen. Brug den fx til refusioner, der går lige op, eller penge der ikke vedrører din økonomi.</li>
+        </ul>
+      </details>
       <div id="catList"></div>
     </div>
 
@@ -713,10 +719,45 @@
         <option value="income">Indtægt</option>
         <option value="transfer">Overførsel / opsparing (tælles ikke)</option>
         <option value="oneoff">Engangskøb, fx bilkøb (holdes udenfor)</option>
+        <option value="ignore">Ignoreret (helt ude af tal og grafer)</option>
       </select></label>
     <div class="actions">
       <button value="cancel" formnovalidate>Annuller</button>
       <button value="ok" class="primary">Opret</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dialog: ret kategori -->
+<dialog id="catEdit">
+  <form method="dialog">
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
+    <p><b id="ceTitle">Ret kategori</b></p>
+    <div style="display:grid;grid-template-columns:64px 1fr;gap:8px">
+      <label class="field"><span>Ikon</span><input id="ceIcon" maxlength="8" style="text-align:center"></label>
+      <label class="field"><span>Navn</span><input id="ceName"></label>
+    </div>
+    <label class="field"><span>Type</span>
+      <select id="ceKind" style="width:100%">
+        <option value="expense">Udgift</option>
+        <option value="income">Indtægt</option>
+        <option value="transfer">Overførsel / opsparing (tælles ikke)</option>
+        <option value="oneoff">Engangskøb (holdes udenfor)</option>
+        <option value="ignore">Ignoreret (helt ude af tal og grafer)</option>
+      </select></label>
+    <div id="ceBudgetBox">
+      <label class="field"><span>Budget pr. måned (tom = intet budget)</span><input id="ceBudget" type="number" inputmode="numeric" min="0" step="100"></label>
+      <label class="small muted row" style="gap:6px;margin:-4px 0 10px"><input type="checkbox" id="ceRoll" style="width:auto"> Overfør ubrugt budget til næste måned</label>
+    </div>
+    <div id="ceDelBox" class="hidden" style="border-top:1px solid var(--line);padding-top:10px;margin-bottom:10px">
+      <p class="small" id="ceDelText" style="margin-top:0"></p>
+      <label class="field"><span>Flyt posteringer og regler til</span><select id="ceMoveTo" style="width:100%"></select></label>
+      <button value="del" class="danger" style="width:100%">Slet kategorien</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost danger" id="ceDelBtn">Slet…</button>
+      <button value="cancel" formnovalidate>Annuller</button>
+      <button value="ok" class="primary">Gem</button>
     </div>
   </form>
 </dialog>
@@ -766,7 +807,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116193134";</script>
+<script>window.APP_VERSION = "20261116195728";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -819,10 +860,10 @@ const budgetFactor = () => ({ year: 12, month: 1, week: 7 / 30.44, day: 1 / 30.4
 // ---------- Kategori-ikoner og farver ----------
 const ICONS = [
   [/dagligvar|supermarked|mad\b/i, "🛒"], [/restaurant|takeaway|café|cafe/i, "🍔"], [/transport|tog|bus/i, "🚆"],
-  [/bil|benzin|opladning|brændstof/i, "🚗"], [/bolig|husleje|\bleje/i, "🏠"], [/forsyning|el\b|vand|varme/i, "💡"],
+  [/bil|benzin|opladning|brændstof/i, "🚗"], [/bolig|husleje|\bleje/i, "🏠"], [/forsyning|\bel\b|vand|varme/i, "💡"],
   [/abonnement|streaming/i, "📺"], [/forsikring/i, "🛡️"], [/shopping|tøj/i, "🛍️"], [/pleje|apotek|sundhed|læge/i, "💊"],
   [/fritid|oplevelse|sport|fitness/i, "🎟️"], [/rejse|ferie/i, "✈️"], [/gave/i, "🎁"], [/løn/i, "💼"],
-  [/store køb|engangs/i, "💎"], [/indkomst|indtægt/i, "💰"], [/opsparing|investering/i, "🐷"], [/overførsel|egne konti/i, "🔁"],
+  [/store køb|engangs/i, "💎"], [/ignor/i, "🚫"], [/indkomst|indtægt/i, "💰"], [/opsparing|investering/i, "🐷"], [/overførsel|egne konti/i, "🔁"],
   [/fagforening|a-kasse/i, "🪪"], [/børn|barn/i, "🧸"], [/dyr|hund|kat/i, "🐾"], [/uddannelse|skole/i, "🎓"],
   [/gebyr|bank|renter|lån/i, "🏦"], [/telefon|mobil|internet/i, "📱"], [/andet/i, "📦"],
 ];
@@ -839,7 +880,7 @@ function iconOf(cat) {
   if (!cat) return "?";
   if (cat.icon) return cat.icon;
   for (const [re, ic] of ICONS) if (re.test(cat.name)) return ic;
-  return { income: "💰", transfer: "🔁" }[cat.kind] ?? "🧾";
+  return { income: "💰", transfer: "🔁", ignore: "🚫" }[cat.kind] ?? "🧾";
 }
 // Kategoriske farver (valideret for farveblindhed på den mørke baggrund). Fast rækkefølge, aldrig genbrugt.
 const PALETTE = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9"];
@@ -856,7 +897,7 @@ function assignColors() {
 
 // ---------- Tilstand ----------
 const state = {
-  cats: [], rules: [], txs: [], accounts: [], sessions: [], dbMissing: [],
+  cats: [], rules: [], txs: [], allTxs: [], accounts: [], sessions: [], dbMissing: [],
   goals: [], assets: [], history: [], challenges: [], planReady: false,
   gran: "month",
   period: todayIso().slice(0, 7),
@@ -950,14 +991,22 @@ async function loadManualIncome() {
   const { data, error } = await sb.from("manual_income").select("*").order("pay_date", { ascending: false });
   state.manualReady = !error;
   state.manual = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
-  state.txs = state.txs.filter((t) => !t.manual);
+  state.allTxs = (state.allTxs ?? []).filter((t) => !t.manual);
   const lon = salaryCat();
-  for (const m of state.manual) state.txs.push({
+  for (const m of state.manual) state.allTxs.push({
     id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: m.amount,
     description: m.note || "Løn (indtastet)", counterparty: null, category_id: m.category_id ?? lon?.id ?? null, category_source: "manual",
   });
-  state.txs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
+  state.allTxs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
+  syncVisible();
 }
+// state.allTxs = alle posteringer (til listen, regler og eksport). state.txs = dem, der tæller med i tal og grafer:
+// posteringer med en kategori af typen "Ignoreret" er helt ude.
+function syncVisible() {
+  const ign = new Set(state.cats.filter((c) => c.kind === "ignore").map((c) => String(c.id)));
+  state.txs = ign.size ? (state.allTxs ?? []).filter((t) => !ign.has(String(effCat(t)))) : (state.allTxs ?? []);
+}
+const isIgnored = (t) => catById(effCat(t))?.kind === "ignore";
 
 // Supabase sender højst 1000 rækker ad gangen, så vi henter i bidder
 async function fetchAll(build) {
@@ -989,7 +1038,7 @@ async function load() {
     state.accounts = accounts.data ?? [];
     const keyOf = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
     const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
-    state.txs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
+    state.allTxs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
     await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
@@ -1089,6 +1138,7 @@ function periodsWithData() {
 
 // ---------- Visning ----------
 function render() {
+  syncVisible();
   assignColors();
   renderPeriod();
   renderDashboard();
@@ -1846,7 +1896,7 @@ $("moreBtn").onclick = () => { state.shown += 100; renderTxs(); };
 function renderTxs() {
   const f = $("txFilter").value;
   const q = $("search").value.trim().toLowerCase();
-  let list = txsIn(state.period);
+  let list = state.allTxs.filter((t) => inPeriod(t, state.period));   // også ignorerede (de vises med mærke)
   if (state.catFilter) {
     const wantOut = state.catMode === "out";
     list = list.filter((t) => String(effCat(t) ?? "none") === state.catFilter && (wantOut ? isExp(t) : isInc(t)));
@@ -1879,7 +1929,7 @@ function renderTxs() {
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     html += `<div class="tx">
-      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
+      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
         : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
@@ -1969,7 +2019,7 @@ function renderQuick() {
     const { data: rule, error } = await sb.from("rules").insert({ pattern: k, category_id: catId, priority: 200 }).select().single();
     if (error) { toast("Kunne ikke gemme reglen: " + error.message); sel.disabled = false; return; }
     state.rules.push(rule);
-    const hits = state.txs.filter((t) => t.category_source !== "manual" && (groupKey(t) === k || matchesRule(t, k)));
+    const hits = state.allTxs.filter((t) => t.category_source !== "manual" && (groupKey(t) === k || matchesRule(t, k)));
     for (let i = 0; i < hits.length; i += 100) {
       await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).in("id", hits.slice(i, i + 100).map((t) => t.id));
     }
@@ -1996,7 +2046,7 @@ async function setCategory(txId, value) {
     if (!c) return renderTxs();
     catId = c.id;
   }
-  const tx = state.txs.find((t) => t.id === txId);
+  const tx = state.allTxs.find((t) => t.id === txId);
   const before = { category_id: tx.category_id ?? null, category_source: tx.category_source ?? null };
   const { error } = await sb.from("transactions").update({ category_id: catId, category_source: catId ? "manual" : null }).eq("id", txId);
   if (error) { toast("Fejl: " + error.message); return renderTxs(); }
@@ -2009,7 +2059,7 @@ async function setCategory(txId, value) {
     $("rulePattern").value = suggestion;
     const updateCount = () => {
       const p = $("rulePattern").value.trim().toLowerCase();
-      const n = p.length >= 3 ? state.txs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p)).length : 0;
+      const n = p.length >= 3 ? state.allTxs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p)).length : 0;
       $("ruleCount").textContent = p.length < 3 ? "Skriv mindst 3 tegn." : `${n} andre eksisterende posteringer bliver også opdateret.`;
     };
     $("rulePattern").oninput = updateCount; updateCount();
@@ -2028,7 +2078,7 @@ async function setCategory(txId, value) {
         else {
           state.rules.push(rule);
           // Opdater også eksisterende posteringer, du ikke selv har rettet
-          const matches = state.txs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p));
+          const matches = state.allTxs.filter((t) => t.id !== txId && t.category_source !== "manual" && matchesRule(t, p));
           for (let i = 0; i < matches.length; i += 100) {
             const ids = matches.slice(i, i + 100).map((m) => m.id);
             await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).in("id", ids);
@@ -2063,55 +2113,101 @@ function showTab(tab) {
 }
 document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 // Gentegn den aktive fane (bruges efter ændringer i data)
-function refresh() { if (currentTab === "app") render(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
+function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
 $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
 function renderSettings() {
   renderQuick();
-  const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel", oneoff: "Engangskøb" };
-  $("catList").innerHTML = state.cats.map((c) => `
-    <div class="set-cat" data-id="${c.id}">
-      <input class="icon" value="${esc(iconOf(c))}" aria-label="Ikon" maxlength="8">
-      <input class="name" value="${esc(c.name)}" aria-label="Navn">
-      <select class="kind" aria-label="Type">${Object.entries(kinds).map(([k, v]) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-      <input class="budget" type="number" inputmode="numeric" min="0" step="100" placeholder="Budget/md." value="${c.monthly_budget ?? ""}" aria-label="Budget pr. måned" ${c.kind === "expense" ? "" : "disabled"}>
-      <label class="roll small muted" title="Ubrugt budget overføres til næste måned (og overforbrug trækkes fra)"><input type="checkbox" class="rollover" ${c.rollover_from ? "checked" : ""} ${c.kind === "expense" && Number(c.monthly_budget) > 0 ? "" : "disabled"}> Overfør</label>
-      <button class="ghost danger del" title="Slet kategori" aria-label="Slet">✕</button>
-    </div>`).join("");
-  document.querySelectorAll(".set-cat").forEach((row) => {
-    const c = catById(row.dataset.id);
-    const save = async (patch) => {
-      const { error } = await sb.from("categories").update(patch).eq("id", c.id);
-      if (error) {
-        const m = error.message;
-        toast(m.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." :
-              m.includes("icon") ? "Egne ikoner kræver databaseopdatering 003 – se README." :
-              m.includes("rollover") ? "Overførsel af budget kræver databaseopdatering 004 – se README." :
-              m.includes("kind_check") ? "Typen Engangskøb kræver databaseopdateringen – se den gule boks / opdater.html." : "Fejl: " + m, 6000);
-        return renderSettings();
-      }
-      Object.assign(c, patch); toast("Gemt.", 1500);
-      if ("kind" in patch) renderSettings();
-    };
-    row.querySelector(".icon").onfocus = (e) => e.target.select();
-    row.querySelector(".icon").onchange = (e) => save({ icon: e.target.value.trim() || null });
-    row.querySelector(".name").onchange = (e) => e.target.value.trim() && save({ name: e.target.value.trim() });
-    row.querySelector(".kind").onchange = (e) => save({ kind: e.target.value });
-    row.querySelector(".budget").onchange = (e) => save({ monthly_budget: e.target.value === "" ? null : Number(e.target.value) }).then(renderSettings);
-    row.querySelector(".rollover").onchange = (e) => save({ rollover_from: e.target.checked ? todayIso().slice(0, 7) : null });
-    row.querySelector(".del").onclick = async () => {
-      const n = state.txs.filter((t) => String(t.category_id) === String(c.id)).length;
-      if (!confirm(`Slet "${c.name}"? ${n} posteringer bliver "Uden kategori", og kategoriens regler slettes.`)) return;
-      const { error } = await sb.from("categories").delete().eq("id", c.id);
-      if (error) return toast("Fejl: " + error.message);
-      state.cats = state.cats.filter((x) => x !== c);
-      state.rules = state.rules.filter((r) => String(r.category_id) !== String(c.id));
-      state.txs.forEach((t) => { if (String(t.category_id) === String(c.id)) { t.category_id = null; t.category_source = null; } });
-      renderSettings();
-    };
-  });
+  // Brug de seneste 12 måneder (alle posteringer, også ignorerede)
+  const since = addMonths(todayIso().slice(0, 7), -11) + "-01";
+  const use = new Map();
+  for (const t of state.allTxs) {
+    if (t.booking_date < since) continue;
+    const k = String(effCat(t) ?? "none"), u = use.get(k) ?? { n: 0, sum: 0 };
+    u.n++; u.sum += t.amount; use.set(k, u);
+  }
+  const groups = [["expense", "Udgifter"], ["income", "Indtægter"], ["transfer", "Overførsler og opsparing"], ["oneoff", "Engangskøb – holdt udenfor"], ["ignore", "Ignoreret – ude af tal og grafer"]];
+  const chev = '<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+  $("catList").innerHTML = groups.map(([kind, title]) => {
+    const cats = state.cats.filter((c) => c.kind === kind).sort((a, b) => a.name.localeCompare(b.name, "da"));
+    if (!cats.length && kind !== "ignore") return "";
+    return `<div class="cat-group"><div class="cg-h">${title} · ${cats.length}</div>${cats.map((c) => {
+      const u = use.get(String(c.id)) ?? { n: 0, sum: 0 };
+      const avg = Math.abs(u.sum) / 12;
+      const sub = u.n ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"} · ${kr(Math.round(avg))}/md. i snit` : "Ikke brugt det seneste år";
+      return `<button class="cat-row" data-id="${c.id}"><span class="ci">${esc(iconOf(c))}</span>
+        <span class="cn"><b>${esc(c.name)}</b><span class="cs">${sub}</span></span>
+        <span class="cb">${Number(c.monthly_budget) > 0 ? "Budget " + kr(Number(c.monthly_budget)) + (c.rollover_from ? " ↻" : "") : ""}</span>${chev}</button>`;
+    }).join("") || `<p class="small muted" style="margin:8px 0">Ingen endnu. <a href="#" id="mkIgnore" style="color:var(--accent)">Opret kategorien "Ignoreret"</a></p>`}</div>`;
+  }).join("");
+  document.querySelectorAll("#catList .cat-row").forEach((r) => r.onclick = () => editCategory(catById(r.dataset.id)));
+  if ($("mkIgnore")) $("mkIgnore").onclick = async (e) => {
+    e.preventDefault();
+    const { data, error } = await sb.from("categories").insert({ name: "Ignoreret", kind: "ignore", icon: "🚫" }).select().single();
+    if (error) return toast(/kind_check/.test(error.message) ? "Kræver databaseopdateringen – kør opdater.html (Indstillinger → Data og om appen)." : "Fejl: " + error.message, 6000);
+    state.cats.push(data); renderSettings(); toast("Oprettet.", 1500);
+  };
   renderRules();
+}
+
+async function editCategory(c) {
+  if (!c) return;
+  const n = state.allTxs.filter((t) => String(t.category_id) === String(c.id)).length;
+  const r = state.rules.filter((x) => String(x.category_id) === String(c.id)).length;
+  $("ceTitle").textContent = c.name;
+  $("ceIcon").value = iconOf(c); $("ceName").value = c.name; $("ceKind").value = c.kind;
+  $("ceBudget").value = c.monthly_budget ?? ""; $("ceRoll").checked = !!c.rollover_from;
+  const sync = () => $("ceBudgetBox").classList.toggle("hidden", $("ceKind").value !== "expense");
+  $("ceKind").onchange = sync; sync();
+  $("ceDelBox").classList.add("hidden"); $("ceDelBtn").classList.remove("hidden");
+  $("ceDelText").textContent = `"${c.name}" bruges af ${n} posteringer og ${r} regler.`;
+  $("ceMoveTo").innerHTML = `<option value="">Ingen – posteringerne bliver "Uden kategori"</option>` +
+    state.cats.filter((x) => x !== c).sort((a, b) => a.name.localeCompare(b.name, "da")).map((x) => `<option value="${x.id}">${esc(iconOf(x))} ${esc(x.name)}</option>`).join("");
+  $("ceDelBtn").onclick = () => { $("ceDelBox").classList.remove("hidden"); $("ceDelBtn").classList.add("hidden"); };
+
+  const res = await ask($("catEdit"), true);
+  if (res === "ok") {
+    const patch = {};
+    const icon = $("ceIcon").value.trim(), name = $("ceName").value.trim(), kind = $("ceKind").value;
+    if ((icon || null) !== (c.icon ?? null) && icon !== iconOf(c)) patch.icon = icon || null;
+    if (name && name !== c.name) patch.name = name;
+    if (kind !== c.kind) patch.kind = kind;
+    const budget = kind === "expense" && $("ceBudget").value !== "" ? Number($("ceBudget").value) : null;
+    if (budget !== (c.monthly_budget == null ? null : Number(c.monthly_budget))) patch.monthly_budget = budget;
+    const roll = kind === "expense" && budget > 0 && $("ceRoll").checked;
+    if (roll !== !!c.rollover_from) patch.rollover_from = roll ? (c.rollover_from ?? todayIso().slice(0, 7)) : null;
+    if (!Object.keys(patch).length) return;
+    const { error } = await sb.from("categories").update(patch).eq("id", c.id);
+    if (error) {
+      const m = error.message;
+      return toast(m.includes("kind_check") ? "Den type kræver databaseopdateringen – kør opdater.html." :
+        /monthly_budget|icon|rollover/.test(m) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + m, 6000);
+    }
+    Object.assign(c, patch); toast("Gemt.", 1500);
+  } else if (res === "del") {
+    const to = $("ceMoveTo").value ? Number($("ceMoveTo").value) : null;
+    if (to) {
+      // Flyt posteringer, indtastede beløb og regler over i den anden kategori, før denne slettes
+      const ids = state.allTxs.filter((t) => !t.manual && String(t.category_id) === String(c.id)).map((t) => t.id);
+      for (let i = 0; i < ids.length; i += 100) {
+        const { error } = await sb.from("transactions").update({ category_id: to }).in("id", ids.slice(i, i + 100));
+        if (error) return toast("Kunne ikke flytte posteringerne: " + error.message, 6000);
+      }
+      if (state.manualReady) await sb.from("manual_income").update({ category_id: to }).eq("category_id", c.id);
+      await sb.from("rules").update({ category_id: to }).eq("category_id", c.id);
+    }
+    const { error } = await sb.from("categories").delete().eq("id", c.id);
+    if (error) return toast("Fejl: " + error.message, 6000);
+    state.cats = state.cats.filter((x) => x !== c);
+    if (to) state.rules.forEach((x) => { if (String(x.category_id) === String(c.id)) x.category_id = to; });
+    else state.rules = state.rules.filter((x) => String(x.category_id) !== String(c.id));
+    state.allTxs.forEach((t) => { if (String(t.category_id) === String(c.id)) { t.category_id = to; if (!to) t.category_source = null; } });
+    (state.manual ?? []).forEach((x) => { if (String(x.category_id) === String(c.id)) x.category_id = to; });
+    toast(to ? `Slettet – ${n} posteringer flyttet til ${catById(to)?.name}.` : "Slettet.", 4000);
+  } else return;
+  syncVisible();
+  renderSettings();
 }
 
 function renderRules() {
@@ -2160,7 +2256,7 @@ function renderSetHome() {
     ? `Senest ${fmt(state.manual[0].pay_date, { day: "numeric", month: "short" })}: ${kr(state.manual[0].amount)}` : "Skriv din løn selv, hvis banken ikke viser den";
   $("ssRules").textContent = `${state.rules.filter((r) => r.priority >= 200).length} egne regler · ${state.rules.filter((r) => r.priority < 200).length} standard`;
   sb.auth.mfa.listFactors().then(({ data }) => { $("ssAcct").textContent = data?.totp?.some((f) => f.status === "verified") ? "Totrinsbekræftelse er slået til" : "Totrinsbekræftelse er slået fra"; }).catch(() => {});
-  $("ssData").textContent = state.dbMissing.length ? "Databasen mangler en opdatering" : `${state.txs.length} posteringer`;
+  $("ssData").textContent = state.dbMissing.length ? "Databasen mangler en opdatering" : `${state.allTxs.length} posteringer`;
   $("ssData").classList.toggle("warn-t", !!state.dbMissing.length);
 }
 
@@ -2247,7 +2343,7 @@ async function renderBank() {
   }
   const accs = [...byKey.values()];
   const keyOfUid = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
-  const count = new Map(); for (const t of state.txs) { const k = keyOfUid.get(t.account_uid); count.set(k, (count.get(k) ?? 0) + 1); }
+  const count = new Map(); for (const t of state.allTxs) { const k = keyOfUid.get(t.account_uid); count.set(k, (count.get(k) ?? 0) + 1); }
   $("bkAccounts").innerHTML = accs.length ? accs.map((a) => {
     const sess = state.sessions.find((s) => s.id === a.session_id);
     return `<div class="acc-row ${a.hidden ? "is-hidden" : ""}" data-uid="${esc(a.uid)}">
@@ -2484,8 +2580,8 @@ async function renderMfa() {
 
 // --- Data og om appen ---
 function renderData() {
-  const first = state.txs.map((t) => t.booking_date).sort()[0];
-  $("dtStats").innerHTML = `<span class="muted">Posteringer</span><span>${state.txs.length}</span>
+  const first = state.allTxs.map((t) => t.booking_date).sort()[0];
+  $("dtStats").innerHTML = `<span class="muted">Posteringer</span><span>${state.allTxs.length}</span>
     <span class="muted">Fra</span><span>${first ? fmt(first, { day: "numeric", month: "short", year: "numeric" }) : "–"}</span>
     <span class="muted">Kategorier / regler</span><span>${state.cats.length} / ${state.rules.length}</span>
     <span class="muted">Mål / formueposter</span><span>${state.goals.length} / ${state.assets.length}</span>`;
@@ -2498,8 +2594,8 @@ $("dtExport").onclick = () => {
   const accN = new Map(state.accounts.map((a) => [a.uid, accName(a)]));
   const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const lines = [["Dato", "Tekst", "Modpart", "Beløb", "Kategori", "Type", "Konto"].join(";")];
-  for (const t of [...state.txs].sort((a, b) => a.booking_date.localeCompare(b.booking_date)))
-    lines.push([t.booking_date, q(t.description), q(t.counterparty), String(t.amount).replace(".", ","), q(catById(t.category_id)?.name ?? ""), ({ expense: "Udgift", income: "Indtægt", transfer: "Overførsel", oneoff: "Engangskøb" })[kindOf(t)] ?? "", q(accN.get(t.account_uid) ?? "")].join(";"));
+  for (const t of [...state.allTxs].sort((a, b) => a.booking_date.localeCompare(b.booking_date)))
+    lines.push([t.booking_date, q(t.description), q(t.counterparty), String(t.amount).replace(".", ","), q(catById(t.category_id)?.name ?? ""), ({ expense: "Udgift", income: "Indtægt", transfer: "Overførsel", oneoff: "Engangskøb", ignore: "Ignoreret" })[kindOf(t)] ?? "", q(accN.get(t.account_uid) ?? "")].join(";"));
   const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `posteringer-${todayIso()}.csv`; a.click();

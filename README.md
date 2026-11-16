@@ -83,7 +83,7 @@ $$);
 ### Gode at vide
 - **Ret en kategori** → vælg *Gem som regel*, så lærer appen. ✕ eller *Fortryd valget* lukker/fortryder.
 - **Hurtig sortering** (Indstillinger) sorterer alle lignende posteringer med ét valg.
-- **Kategorityper:** *Udgift*, *Indtægt*, *Overførsel* (opsparing/egne konti – tæller ikke som forbrug) og *Engangskøb* (fx bilkøb – vises, men holdes uden for overskud, snit og prognoser).
+- **Kategorityper:** *Udgift*, *Indtægt*, *Overførsel* (opsparing/egne konti – tæller ikke som forbrug) *Engangskøb* (fx bilkøb – vises, men holdes uden for overskud, snit og prognoser) og *Ignoreret* (helt ude af tal og grafer – ses kun i posteringslisten).
 - **Modregning:** en indbetaling med en udgiftskategori trækkes fra udgiften – fx fremleje under *Husleje* eller en returvare under *Shopping*. Automatiske regler/AI giver aldrig løn en udgiftskategori.
 - **Løn** skal have kategorien *Løn*, så prognosen kan se den. Kommer lønnen ikke ind på en forbundet konto, kan du taste den selv under *Indstillinger → Indtastet løn*.
 - **Budget** pr. kategori, evt. med overførsel af ubrugt budget til næste måned.
