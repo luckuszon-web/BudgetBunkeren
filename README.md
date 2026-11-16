@@ -72,13 +72,15 @@ $$);
 
 **Overblik** – dit disponible beløb (pr. dag), forventet indkomst, faste og variable udgifter, økonomisk score (inkl. buffer og nettoformue), nøgletal (forbrug mod normalt, indtægter, kategorier over budget, ukategoriserede), forløb og historik, indsigter (fx prisstigninger på abonnementer), prognose for næste måned og cirkeldiagram. Vælg **År / Måned / Uge / Dag**.
 
+**Budget** – brugt mod budget pr. kategori (bjælker, der bliver gule/røde), *Sæt budget* direkte, fordeling og faste udgifter fundet automatisk med prisstigninger.
+
 **Posteringer** – søg, filtrér (ukategoriseret, engangskøb, udgifter, indtægter, AI), ret kategori og markér enkelte køb som *engangskøb*.
 
 **Lyst/mørkt tema** – knappen med sol/måne (følger ellers telefonens indstilling). På computer ligger menuen i venstre side.
 
 **Planlæg** – nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer.
 
-**Værktøjer** – kalender med kommende regninger/indtægter og saldoprognose, hvad-nu-hvis-beregner (bil, bolig, løn, rejse), årsprognose, kvartalsrapport og løn efter skat (et skøn – tjek skat.dk).
+**Værktøjer** (på mobil: via Planlæg) – kalender med kommende regninger/indtægter og saldoprognose, hvad-nu-hvis-beregner (bil, bolig, løn, rejse), årsprognose, kvartalsrapport og løn efter skat (et skøn – tjek skat.dk).
 
 **Rådgiver** – stil spørgsmål om din økonomi (kræver `ANTHROPIC_API_KEY`). Den får et sammendrag af dine tal, ikke de enkelte posteringer.
 

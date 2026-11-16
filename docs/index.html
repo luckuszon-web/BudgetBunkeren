@@ -232,6 +232,34 @@
   .desk-only { display: none !important; }
   .side-logo, .side-foot { display: none; }
 
+  /* Budget-fanen */
+  .bs-row { display: flex; justify-content: space-between; gap: 12px; }
+  .bs-l { font-size: 12.5px; color: var(--muted); } .bs-v { font-size: 20px; font-weight: 650; }
+  .bbar { display: block; position: relative; height: 8px; background: var(--track); border-radius: 99px; margin-top: 10px; }
+  .bbar > span, .bbar > div { display: block; height: 100%; border-radius: 99px; }
+  .bbar .b-ok { background: var(--accent); } .bbar .b-warn { background: var(--warn); } .bbar .b-bad { background: var(--red); }
+  .bbar .pace-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .35; border-radius: 1px; }
+  .bud-row { display: grid; width: 100%; text-align: left; background: none; border: 0; border-radius: 10px; padding: 10px 6px; color: var(--text); font: inherit; cursor: pointer; }
+  .bud-row:hover { background: var(--hover); }
+  .bud-row .br-top { display: flex; justify-content: space-between; gap: 10px; font-size: 14.5px; }
+  .bud-row .br-n, .nob .br-n { font-weight: 550; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bud-row .br-s { color: var(--text); font-weight: 600; }
+  .bud-row .bbar { margin-top: 8px; }
+  .bud-row .br-sub { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+  .nob { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+  #budDonut { width: 100%; max-width: 200px; display: block; margin: 0 auto; }
+  #budDonut .d-amt { fill: var(--text); font-size: 20px; font-weight: 750; } #budDonut .d-sub { fill: var(--muted); font-size: 11.5px; }
+  .bud-legend { display: grid; gap: 6px; margin-top: 12px; font-size: 14px; }
+  .bud-legend .bl { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+  .bud-legend .bl i { width: 10px; height: 10px; border-radius: 50%; } .bud-legend .bl span:nth-child(2) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .fx-row:last-child { border-bottom: 0; } .fx-n { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .plan-links button { display: grid; grid-template-columns: 22px 1fr; column-gap: 8px; text-align: left; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font-weight: 600; }
+  .plan-links svg { width: 20px; height: 20px; fill: var(--accent); grid-row: span 2; }
+  .plan-links span { grid-column: 2; font-size: 12px; color: var(--muted); font-weight: 400; }
+  @media (min-width: 900px) { .plan-links { display: none !important; } }
+
   /* Posteringer-fanen */
   .tx-bar { display: grid; gap: 10px; margin-bottom: 12px; }
   .tx-bar > * { min-width: 0; }
@@ -369,7 +397,6 @@
   details summary { cursor: pointer; }
 
   /* Faste udgifter */
-  .fixed { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; }
 
   /* Posteringer */
   .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
@@ -590,11 +617,6 @@
     </div>
     </div>
 
-    <details class="card fold" id="fixedCard">
-      <summary><h2>Faste udgifter</h2><span class="num small muted" id="fixedTotal"></span></summary>
-      <div class="fixed" id="fixedList"></div>
-      <div class="small muted" style="margin-top:8px">Findes automatisk: samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder.</div>
-    </details>
 
     <p class="small muted" id="footer"></p>
   </section>
@@ -624,6 +646,31 @@
       <button class="ghost small hidden" id="moreBtn" style="width:100%;margin-top:8px">Vis flere</button>
     </div>
   </section>
+
+  <!-- Budget -->
+  <section id="budget" class="hidden">
+    <div class="period tx-period" style="margin-bottom:12px">
+      <button id="budPrev" aria-label="Forrige måned">‹</button>
+      <div id="budLbl" class="tx-plbl"></div>
+      <button id="budNext" aria-label="Næste måned">›</button>
+    </div>
+    <div class="card" id="budSum"></div>
+    <div class="ov-mid">
+      <div class="card"><div class="head"><h2>Kategorier</h2><span class="small muted">Tryk for at ændre budget</span></div><div id="budList"></div></div>
+      <div class="card"><div class="head"><h2>Fordeling</h2></div>
+        <svg id="budDonut" viewBox="0 0 200 200" role="img" aria-label="Forbrug pr. kategori"></svg>
+        <div id="budLegend" class="bud-legend"></div></div>
+    </div>
+    <div class="card"><div class="head"><h2>Faste udgifter (fundet automatisk)</h2><span class="small muted" id="budFixedTot"></span></div>
+      <div id="budFixedList"></div>
+      <p class="small muted" style="margin:8px 0 0">Samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder. <span class="up">+beløb</span> = steget siden måneden før.</p></div>
+  </section>
+
+  <!-- Genveje på mobil under Planlæg (Værktøjer og Rådgiver ligger ikke i bundmenuen) -->
+  <div id="planLinks" class="plan-links hidden">
+    <button data-go="tools"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer<span>Kalender, hvad nu hvis, skat</span></button>
+    <button data-go="advisor"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver<span>Spørg om din økonomi</span></button>
+  </div>
 
   <!-- Planlæg, Værktøjer, Rådgiver (bygges af modulerne i js/) -->
   <section id="plan" class="hidden"></section>
@@ -818,8 +865,9 @@
   <div class="side-logo"><div class="logo-mark">B</div><span>BudgetBunkeren</span></div>
   <button data-tab="app" class="on"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg>Overblik</button>
   <button data-tab="txs"><svg viewBox="0 0 24 24"><path d="M3 5h2v2H3zm4 0h14v2H7zM3 11h2v2H3zm4 0h14v2H7zM3 17h2v2H3zm4 0h14v2H7z"/></svg>Posteringer</button>
+  <button data-tab="budget"><svg viewBox="0 0 24 24"><path d="M11 2v10h10A10 10 0 0 0 11 2zM9 4.1A9 9 0 1 0 19.9 15H9z"/></svg>Budget</button>
   <button data-tab="plan"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm0 4a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg>Planlæg</button>
-  <button data-tab="tools"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer</button>
+  <button data-tab="tools" class="desk-only"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer</button>
   <button data-tab="advisor" class="desk-only"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver</button>
   <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>Indstillinger</button>
   <div class="side-foot"><span class="small muted">Tema</span><button class="ghost icon-btn theme-btn" title="Skift mellem lyst og mørkt tema" aria-label="Skift tema"></button></div>
@@ -925,7 +973,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116201339";</script>
+<script>window.APP_VERSION = "20261116201648";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1275,7 +1323,6 @@ function render() {
   renderChart();
   renderPace();
   renderBars();
-  renderFixed();
   renderTxs();
 }
 
@@ -1456,7 +1503,7 @@ function renderDashboard() {
     kpi("Ukategoriseret", `${uncategorized} ${uncategorized === 1 ? "post" : "poster"}`, uncategorized ? "Tryk for at sortere" : "Alt er sorteret", uncategorized ? "warn" : "good", `data-go="none"`);
   document.querySelectorAll("#kpis .kpi[data-go]").forEach((k) => k.onclick = () => {
     if (k.dataset.go === "none") { state.txF = "none"; $("txFilter").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.f === "none")); showTab("txs"); }
-    else { showTab("settings"); setPage("cats"); }
+    else { state.budMonth = monthOf(state.period); showTab("budget"); }
   });
 
   renderScore();
@@ -2005,16 +2052,70 @@ function renderBars() {
   });
 }
 
-// Faste udgifter og abonnementer (pr. måned og pr. år)
-function renderFixed() {
-  const fixed = detectFixed(monthOf(state.period));
-  const total = fixed.reduce((s, f) => s + f.amount, 0);
-  $("fixedCard").classList.toggle("hidden", !fixed.length);
-  $("fixedTotal").innerHTML = fixed.length ? `${kr(total)}/md.` : "";
-  $("fixedList").innerHTML = fixed.map((f) => `
-    <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
-    <div class="num ${f.amount < 0 ? "pos" : ""}" style="text-align:right">${f.amount < 0 ? "+" + kr(-f.amount) : kr(f.amount)}<div class="muted small">${f.amount < 0 ? "modregnes" : f.priceChange >= 5 ? `<span class="up">▲ ${kr(f.priceChange)}</span>` : f.priceChange <= -5 ? `<span class="down">▼ ${kr(-f.priceChange)}</span>` : kr(f.amount * 12) + "/år"}</div></div>`).join("");
+// ---------- Budget-fanen ----------
+// Kategorier med budget (brugt / budget som bjælke), fordeling og de faste udgifter, appen selv har fundet.
+state.budMonth = todayIso().slice(0, 7);
+function renderBudget() {
+  const m = state.budMonth;
+  $("budLbl").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
+  $("budNext").disabled = m >= todayIso().slice(0, 7);
+  $("pageSub").textContent = `Kategorier for ${fmt(m + "-01", { month: "long" })}`;
+  const rows = monthTx(m);
+  const spentOf = (c) => sumOut(rows.filter((t) => String(effCat(t)) === String(c.id)));
+  const exp = state.cats.filter((c) => c.kind === "expense").map((c) => ({ c, spent: spentOf(c), budget: monthBudget(c, m) }));
+  const withB = exp.filter((x) => x.budget > 0).sort((a, b) => b.spent / b.budget - a.spent / a.budget);
+  const noB = exp.filter((x) => !(x.budget > 0) && x.spent > 0.5).sort((a, b) => b.spent - a.spent);
+  const live = isCurrentMonth(m), f = live ? elapsed(m) : 1;
+
+  // Samlet
+  const tb = withB.reduce((s, x) => s + x.budget, 0), ts = withB.reduce((s, x) => s + x.spent, 0);
+  $("budSum").innerHTML = withB.length ? `<div class="bs-row"><div><div class="bs-l">Brugt af budgetterne</div><div class="bs-v num">${kr(ts)} <span class="muted">/ ${kr(tb)}</span></div></div>
+      <div style="text-align:right"><div class="bs-l">${ts > tb ? "Over" : "Tilbage"}</div><div class="bs-v num ${ts > tb ? "neg" : "pos"}">${kr(Math.abs(tb - ts))}</div></div></div>
+      <div class="bbar"><div class="${barCls(ts / tb, f)}" style="width:${Math.min(100, ts / tb * 100)}%"></div>${live ? `<i class="pace-mark" style="left:${f * 100}%" title="Så langt er vi i måneden"></i>` : ""}</div>`
+    : `<p class="muted small" style="margin:0">Du har ingen budgetter endnu. Tryk <b>Sæt budget</b> ud for en kategori herunder.</p>`;
+
+  const row = (x) => {
+    const r = x.spent / x.budget, left = x.budget - x.spent;
+    return `<button class="bud-row" data-id="${x.c.id}">
+      <span class="br-top"><span class="br-n">${esc(iconOf(x.c))} ${esc(x.c.name)}</span><span class="num muted"><span class="br-s">${kr(x.spent)}</span> / ${kr(x.budget)}</span></span>
+      <span class="bbar"><span class="${barCls(r, f)}" style="width:${Math.min(100, r * 100)}%"></span>${live ? `<i class="pace-mark" style="left:${f * 100}%"></i>` : ""}</span>
+      <span class="br-sub ${left < 0 ? "neg" : ""}">${left < 0 ? `${kr(-left)} over budget` : `${kr(left)} tilbage`}${live && left > 0 && r > f * 1.1 ? " · bruger hurtigere end planlagt" : ""}</span></button>`;
+  };
+  $("budList").innerHTML = (withB.length ? withB.map(row).join("") : "") +
+    (noB.length ? `<div class="cg-h" style="margin-top:${withB.length ? 16 : 0}px">Uden budget</div>` + noB.map((x) => `<div class="nob">
+      <span class="br-n">${esc(iconOf(x.c))} ${esc(x.c.name)}</span><span class="num">${kr(x.spent)}</span><button class="small ghost" data-id="${x.c.id}">Sæt budget</button></div>`).join("") : "");
+  document.querySelectorAll("#budList [data-id]").forEach((b) => b.onclick = async () => { await editCategory(catById(b.dataset.id)); renderBudget(); });
+
+  // Fordeling (som cirkeldiagrammet på Overblik)
+  const parts = exp.filter((x) => x.spent > 0.5).sort((a, b) => b.spent - a.spent);
+  const none = sumOut(rows.filter((t) => isExp(t) && !effCat(t)));
+  if (none > 0.5) parts.push({ c: { id: "none", name: "Uden kategori" }, spent: none });
+  parts.sort((a, b) => b.spent - a.spent);
+  const total = parts.reduce((s, x) => s + x.spent, 0);
+  const segs = []; let rest = 0;
+  for (const x of parts) { const c = colorMap.get(String(x.c.id)); if (c && segs.length < 6) segs.push({ ...x, col: c }); else rest += x.spent; }
+  if (rest > 0.5) segs.push({ c: { id: "rest", name: "Øvrige" }, spent: rest, col: OTHER });
+  const R = 70, C = 2 * Math.PI * R; let acc = 0;
+  $("budDonut").innerHTML = `<circle cx="100" cy="100" r="${R}" fill="none" style="stroke:var(--track)" stroke-width="26"/>` +
+    segs.map((x) => { const len = x.spent / total * C, st = acc; acc += len;
+      return `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${x.col}" stroke-width="26" stroke-dasharray="${Math.max(0.5, len - 2)} ${C}" stroke-dashoffset="${-st}" transform="rotate(-90 100 100)"/>`; }).join("") +
+    `<text x="100" y="98" text-anchor="middle" class="d-sub">Brugt</text><text x="100" y="120" text-anchor="middle" class="d-amt">${kr(total)}</text>`;
+  $("budLegend").innerHTML = segs.map((x) => `<div class="bl"><i style="background:${x.col}"></i><span>${esc(x.c.name)}</span><span class="num">${kr(x.spent)}</span></div>`).join("");
+
+  // Faste udgifter
+  const fixed = detectFixed(m);
+  const tot = fixed.reduce((s, x) => s + x.amount, 0);
+  $("budFixedTot").textContent = fixed.length ? `${kr(tot)}/md. · ${kr(tot * 12)}/år` : "";
+  $("budFixedList").innerHTML = fixed.length ? fixed.map((x) => `<div class="fx-row">
+      <div style="min-width:0"><div class="fx-n">${esc(x.name)}</div><div class="muted small">${esc(catById(x.cat)?.name ?? "Uden kategori")} · senest ${E.formatDate(x.lastDate)} · ${x.months} mdr.</div></div>
+      <div style="text-align:right"><div class="num ${x.amount < 0 ? "pos" : ""}" style="font-weight:600">${x.amount < 0 ? "+" + kr(-x.amount) : kr(x.amount)}</div>
+        <div class="small">${x.amount < 0 ? `<span class="muted">modregnes</span>` : x.priceChange >= 5 ? `<span class="up">+${kr(x.priceChange)}</span>` : x.priceChange <= -5 ? `<span class="down">−${kr(-x.priceChange)}</span>` : `<span class="muted">${kr(x.amount * 12)}/år</span>`}</div></div></div>`).join("")
+    : `<p class="empty">Ingen faste udgifter fundet endnu – der skal være mindst 3 måneders posteringer.</p>`;
 }
+// Farve på bjælken: rød over budget, gul hvis forbruget løber foran måneden (eller over 85 %), ellers blå
+const barCls = (r, f = 1) => r > 1 ? "b-bad" : r > 0.85 || r > f * 1.15 ? "b-warn" : "b-ok";
+$("budPrev").onclick = () => { state.budMonth = addMonths(state.budMonth, -1); renderBudget(); };
+$("budNext").onclick = () => { state.budMonth = addMonths(state.budMonth, 1); renderBudget(); };
 
 state.txF = "all";
 $("txFilter").onclick = (e) => {
@@ -2247,7 +2348,7 @@ async function setCategory(txId, value) {
 
 // ---------- Indstillinger ----------
 // ---------- Faner ----------
-const TABS = { app: "Overblik", txs: "Posteringer", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
+const TABS = { app: "Overblik", txs: "Posteringer", budget: "Budget", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
 const modules = {};   // plan / tools / advisor – indlæses fra js/
 let currentTab = "app", lastTab = "app";
 function showTab(tab) {
@@ -2256,20 +2357,24 @@ function showTab(tab) {
   currentTab = tab;
   for (const t of Object.keys(TABS)) $(t).classList.toggle("hidden", t !== tab);
   // Rådgiveren ligger under Værktøjer på mobil
-  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab || (tab === "advisor" && b.dataset.tab === "tools" && innerWidth < 900)));
+  // På mobil ligger Værktøjer og Rådgiver under Planlæg
+  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab || (["tools", "advisor"].includes(tab) && b.dataset.tab === "plan" && innerWidth < 900)));
+  $("planLinks").classList.toggle("hidden", tab !== "plan");
   $("pageTitle").textContent = TABS[tab];
   $("pageSub").textContent = "";
   $("consentCard").dataset.tab = tab;
   if (tab === "settings") { setPage("home"); }
   else if (tab === "app") render();
   else if (tab === "txs") renderTxs();
+  else if (tab === "budget") renderBudget();
   else modules[tab]?.render();
   try { localStorage.setItem("tab", tab); } catch {}
   window.scrollTo(0, 0);
 }
 document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("#planLinks button").forEach((b) => b.onclick = () => showTab(b.dataset.go));
 // Gentegn den aktive fane (bruges efter ændringer i data)
-function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab === "txs") renderTxs(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
+function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab === "txs") renderTxs(); else if (currentTab === "budget") renderBudget(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
 $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
