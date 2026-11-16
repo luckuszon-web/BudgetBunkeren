@@ -60,8 +60,24 @@ Deno.serve(async (req) => {
       if (!/^[0-9a-f-]{20,64}$/i.test(appId)) return json({ error: "Application ID ser forkert ud – det er en lang kode med bindestreger." }, 400);
       if (!/BEGIN (RSA )?PRIVATE KEY/.test(String(body.private_key ?? ""))) return json({ error: "Filen ligner ikke en .pem-nøgle (den skal starte med -----BEGIN PRIVATE KEY-----)." }, 400);
       // Tjek at nøglen og ID'et passer sammen hos Enable Banking, før vi gemmer
-      try { await ebToken({ appId, key }); await eb("/aspsps?country=DK", {}, { appId, key }); }
-      catch (e) { return json({ error: "Enable Banking godkendte ikke nøglen og ID'et sammen: " + (e instanceof Error ? e.message : e) }, 400); }
+      // GET /application svarer, så snart nøgle og ID passer – også før appen er aktiveret – og fortæller om den er aktiv
+      try { await ebToken({ appId, key }); }
+      catch (e) { return json({ error: "Nøglen i .pem-filen kunne ikke læses: " + (e instanceof Error ? e.message : e) }, 400); }
+      // deno-lint-ignore no-explicit-any
+      let app: any;
+      try { app = await eb("/application", {}, { appId, key }); }
+      catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return json({ error: /\b(401|403)\b/.test(msg)
+          ? "Enable Banking afviste nøglen. Tjek at Application ID og .pem-filen hører til den SAMME app (filen hedder det samme som ID'et), og at appen er oprettet som Production. (" + msg + ")"
+          : "Enable Banking svarede med en fejl: " + msg }, 400);
+      }
+      if (app?.active === false) {
+        return json({ error: "Appen er ikke aktiveret endnu. Gå til Enable Banking → API applications → tryk \"Activate by linking accounts\" og log ind med dit eget MitID. Prøv derefter igen." }, 400);
+      }
+      if (String(app?.environment ?? "").toUpperCase() === "SANDBOX") {
+        return json({ error: "Det er en Sandbox-app (kun testdata). Opret en ny app og vælg Production." }, 400);
+      }
       const { error } = await db.from("eb_credentials").upsert({ user_id: user.id, app_id: appId, private_key: key });
       if (error) return json({ error: error.message.includes("eb_credentials") ? "Databaseopdatering 009 mangler – kør opdater-database.sql." : error.message }, 500);
       return json({ ok: true });
