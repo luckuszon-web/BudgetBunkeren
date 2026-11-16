@@ -187,6 +187,20 @@ export function init(ctx, root) {
   }
 
   // ---------- Opsparingsmål ----------
+  // Budget og mål hænger sammen: hvad betyder 500 kr. mere om måneden – og hvor kan de findes?
+  const EXTRA = 500;
+  function boost(g, left) {
+    const now = todayIso().slice(0, 7), per = Number(g.monthly_amount) || 0;
+    const nWith = Math.ceil(left / (per + EXTRA));
+    const top = ctx.topVariableCategory();
+    const where = top && top.avg >= EXTRA * 1.2 ? ` – fx ved at bruge ${kr(EXTRA)} mindre på <b>${esc(top.cat.name)}</b> (du bruger ${kr(top.avg)}/md.)` : "";
+    if (per > 0) {
+      const nNow = Math.ceil(left / per), gain = nNow - nWith;
+      if (gain < 1) return "";
+      return `<div class="g-boost">Med ${kr(EXTRA)} mere om måneden nås målet <b>${gain} ${gain === 1 ? "måned" : "måneder"} tidligere</b> (${fmt(addMonths(now, nWith) + "-01", { month: "long", year: "numeric" })})${where}.</div>`;
+    }
+    return `<div class="g-boost">Sparer du ${kr(EXTRA)} om måneden, nås målet ${fmt(addMonths(now, nWith) + "-01", { month: "long", year: "numeric" })}${where}.</div>`;
+  }
   function renderGoals() {
     const today = todayIso();
     $("goalList").innerHTML = state.goals.map((g) => {
@@ -216,6 +230,7 @@ export function init(ctx, root) {
         <div class="g-sub">${kr(saved)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
         ${g.linked_category_id ? `<div class="g-st"><span class="g-auto">Fyldes automatisk</span> ${auto > 0 ? `${kr(auto)} fra` : "fra"} ${esc(ctx.catById(g.linked_category_id)?.name ?? "?")} siden ${fmt(g.linked_since ?? todayIso(), { day: "numeric", month: "short", year: "numeric" })}</div>` : ""}
         <div class="g-st">${status}</div>
+        ${!done ? boost(g, left) : ""}
         <div class="g-act"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>
       </div>`;
     }).join("") || `<p class="empty">Ingen mål endnu. Opret fx "Buffer", "Ferie" eller "Ny bil".</p>`;

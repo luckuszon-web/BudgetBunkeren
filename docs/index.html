@@ -324,6 +324,7 @@
   .goal .bbar { margin-top: 8px; }
   .goal .g-sub { font-size: 13px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
   .goal .g-st { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .goal .g-boost { font-size: 12.5px; margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: var(--accent-soft); color: var(--text); }
   .g-auto { display: inline-block; font-size: 11px; color: var(--accent); border: 1px solid var(--accent-line); border-radius: 6px; padding: 0 5px; margin-right: 4px; }
   .goal .g-act { display: flex; gap: 6px; margin-top: 8px; }
   .plan-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
@@ -1189,7 +1190,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116220533";</script>
+<script>window.APP_VERSION = "20261116220807";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1771,6 +1772,23 @@ function detectFixed(baseMonth) {
   const ck = baseMonth + "|" + state.txs.length + "|" + state.cats.map((c) => c.kind).join("") + "|" + state.txs.filter((t) => t.one_off).length;
   if (!fixedCache.has(ck)) fixedCache.set(ck, E.detectRecurring(state.txs, baseMonth, { isExpense: isExp }));
   return fixedCache.get(ck);
+}
+
+// Den variable kategori, du bruger mest på (snit af de seneste hele måneder) – til forslag ved opsparingsmål
+function topVariableCategory() {
+  const now = todayIso().slice(0, 7), months = prevMonthsWithData(now, 3);
+  if (!months.length) return null;
+  const keys = new Set(months.flatMap((m) => detectFixed(m).map((f) => f.key)));
+  const sums = new Map();
+  for (const m of months) for (const t of monthTx(m)) {
+    if (!isExp(t) || keys.has(fixedKey(t)) || !effCat(t)) continue;
+    sums.set(String(effCat(t)), (sums.get(String(effCat(t))) ?? 0) - t.amount);
+  }
+  // Foretræk noget, man kan undvære (restaurant, shopping …) frem for nødvendigheder (mad, bolig, transport …)
+  const needs = /dagligvar|bolig|husleje|forsyning|transport|bil|forsikring|pleje|apotek|børn|institution|gæld|lån/i;
+  const sorted = [...sums.entries()].filter(([k]) => catById(k)).sort((a, b) => b[1] - a[1]);
+  const top = sorted.find(([k, v]) => !needs.test(catById(k).name) && v / months.length >= 300) ?? sorted[0];
+  return top ? { cat: catById(top[0]), avg: top[1] / months.length } : null;
 }
 
 // Opsparingsmål: det indtastede beløb + (hvis målet er koblet til en kategori) alt, der er flyttet dertil siden datoen
@@ -3799,7 +3817,7 @@ function makeCtx() {
     sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
     toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
     catById, iconOf, counts, kindOf, effCat, isExp, isInc, isOffset, isOneoff, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
-    detectFixed, fixedKey, totalSaved, goalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
+    detectFixed, fixedKey, totalSaved, goalSaved, topVariableCategory, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
     showTab: (t) => showTab(t),
   };
 }
