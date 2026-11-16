@@ -319,6 +319,16 @@
         <p class="small" style="margin-bottom:0"><a href="#" id="forgotLink" style="color:var(--accent)">Glemt adgangskode?</a></p>
       </form>
     </div>
+    <div class="card">
+      <a href="#" id="regToggle" class="small" style="color:var(--accent)">Har du en invitationskode? Opret bruger</a>
+      <form id="regForm" class="hidden" style="display:grid;gap:10px;margin-top:12px">
+        <input id="regEmail" type="email" autocomplete="email" placeholder="Din e-mail" required>
+        <input id="regCode" autocomplete="off" autocapitalize="characters" placeholder="Invitationskode (fx ABCDE-FGHIJ)" required>
+        <button class="primary">Opret bruger</button>
+        <p class="small muted" style="margin:0">Du får en mail med et link, hvor du vælger din adgangskode.</p>
+        <p id="regMsg" class="small" style="margin:0"></p>
+      </form>
+    </div>
   </section>
 
   <!-- Vælg adgangskode (efter invitation eller "glemt adgangskode") -->
@@ -588,6 +598,12 @@
           <button class="small">Skift adgangskode</button>
         </form>
       </div>
+      <div class="card hidden" id="inviteCard">
+        <div class="head"><h2>Invitér en bruger</h2><button class="small primary" id="invNew">Lav invitationskode</button></div>
+        <p class="small muted" style="margin-top:0">Koden kan bruges én gang og gælder i 14 dage. Den nye bruger opretter sig selv på login-siden og ser kun sine egne data – aldrig dine.</p>
+        <div id="invNewBox"></div>
+        <div id="invList"></div>
+      </div>
       <div class="card">
         <div class="head"><h2>Totrinsbekræftelse</h2><span id="mfaState" class="pill-s"></span></div>
         <p class="small muted" style="margin-top:0">Kræver en kode fra en authenticator-app (fx Google Authenticator, Microsoft Authenticator eller iPhones adgangskoder) hver gang du logger ind. Anbefales, da appen viser bankdata.</p>
@@ -595,6 +611,7 @@
       </div>
     </div>
 
+    <!-- (Invitér-kortet ligger under Login og sikkerhed) -->
     <!-- Data og om appen -->
     <div id="setData" class="set-page hidden">
       <button class="ghost small set-back">‹ Indstillinger</button>
@@ -680,7 +697,7 @@
   for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 </script>
-<script>window.APP_VERSION = "20261116162451";</script>
+<script>window.APP_VERSION = "20261116163030";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -883,6 +900,7 @@ async function load() {
     state.cats = cats.data ?? [];
     state.rules = rules;
     state.sessions = sessions.data ?? [];
+    if (!state.me) state.me = await callFn("bank-connect", { action: "credentials-status" }).catch(() => null);
     state.accounts = accounts.data ?? [];
     const hidden = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.uid));
     state.txs = txs.filter((t) => !hidden.has(t.account_uid)).map((t) => ({ ...t, amount: Number(t.amount) }));
@@ -924,6 +942,13 @@ async function loadPlan() {
 
 function renderConsent(s) {
   const card = $("consentCard");
+  if (!s && state.me && !state.me.owner && !state.me.own) {
+    card.classList.remove("hidden");
+    $("consentText").textContent = "Velkommen! Forbind din bank: læg først din egen Enable Banking-app ind.";
+    $("connectBtn").textContent = "Kom i gang";
+    $("connectBtn").onclick = () => { showTab("settings"); setPage("bank"); };
+    return;
+  }
   if (!s) { card.classList.remove("hidden"); $("consentText").textContent = "Ingen bank forbundet endnu."; return; }
   const days = Math.ceil((new Date(s.valid_until) - Date.now()) / 864e5);
   if (days <= 14) {
@@ -2141,6 +2166,7 @@ async function renderOwnApp() {
       const key = await file.text();   // læses kun lokalt og sendes direkte til serveren
       await callFn("bank-connect", { action: "save-credentials", app_id: $("ownAppId").value.trim(), private_key: key });
       toast("Din egen app er gemt. Tryk nu på + Forbind bank.", 6000);
+      state.me = null;   // hent status igen næste gang
       renderOwnApp();
     } catch (err) { toast(err.message, 9000); btn.disabled = false; btn.textContent = "Gem"; }
   };
@@ -2153,12 +2179,62 @@ async function connectBank(bank) {
 $("bkConnect").onclick = () => connectBank();
 $("bkSync").onclick = () => $("syncBtn").click();
 
+
+// ---------- Opret bruger med invitationskode (login-siden) ----------
+const inviteParam = new URLSearchParams(location.search).get("invite");
+$("regToggle").onclick = (e) => { e.preventDefault(); $("regForm").classList.toggle("hidden"); };
+if (inviteParam) { $("regForm").classList.remove("hidden"); $("regCode").value = inviteParam.toUpperCase(); }
+$("regForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  $("regMsg").className = "small"; $("regMsg").textContent = "Opretter …";
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/bank-connect`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ action: "register", email: $("regEmail").value.trim(), code: $("regCode").value.trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? res.statusText);
+    $("regMsg").className = "small pos";
+    $("regMsg").textContent = "Tjek din mail – vi har sendt et link, hvor du vælger din adgangskode.";
+    if (inviteParam) history.replaceState(null, "", location.pathname);
+  } catch (err) { $("regMsg").className = "small neg"; $("regMsg").textContent = err.message; btn.disabled = false; }
+};
+
+// ---------- Invitér en bruger (kun ejeren) ----------
+async function renderInvites() {
+  let r; try { r = await callFn("bank-connect", { action: "list-invites" }); } catch { r = { owner: false }; }
+  $("inviteCard").classList.toggle("hidden", !r.owner);
+  if (!r.owner) return;
+  const now = Date.now();
+  $("invList").innerHTML = (r.invites ?? []).length ? `<div class="small muted" style="margin:10px 0 4px">Seneste koder</div>` + r.invites.map((i) => {
+    const st = i.used_at ? `<span class="pill-s good-t">Brugt af ${esc(i.used_by_email)}</span>` : new Date(i.expires_at) < now ? `<span class="pill-s">Udløbet</span>` : `<span class="pill-s warn-t">Ikke brugt</span>`;
+    return `<div class="list-row"><span class="num">${esc(i.code)}</span>${st}</div>`;
+  }).join("") : "";
+}
+$("invNew").onclick = async () => {
+  try {
+    const { code } = await callFn("bank-connect", { action: "create-invite" });
+    const link = `${location.origin}${location.pathname}?invite=${encodeURIComponent(code)}`;
+    const text = `Du er inviteret til BudgetBunkeren. Åbn ${link} og tryk "Opret bruger" (koden er udfyldt: ${code}).`;
+    $("invNewBox").innerHTML = `<div class="sub-card" style="margin-top:6px">
+        <div class="small muted">Invitationskode</div><div class="big" style="font-size:24px;letter-spacing:.05em">${esc(code)}</div>
+        <div class="small" style="word-break:break-all">${esc(link)}</div>
+        <div class="row" style="gap:8px"><button class="small" id="invCopy">Kopiér besked</button>${navigator.share ? `<button class="small" id="invShare">Del …</button>` : ""}</div></div>`;
+    $("invCopy").onclick = () => navigator.clipboard?.writeText(text).then(() => toast("Beskeden er kopieret."));
+    if ($("invShare")) $("invShare").onclick = () => navigator.share({ title: "BudgetBunkeren", text }).catch(() => {});
+    renderInvites();
+  } catch (e) { toast(e.message, 6000); }
+};
+
 // --- Login og sikkerhed ---
 async function renderAcct() {
   const { data: { user } } = await sb.auth.getUser();
   $("acEmail").textContent = user?.email ?? "–";
   $("acLast").textContent = fmtDT(user?.last_sign_in_at);
   renderMfa();
+  renderInvites();
 }
 $("pwForm").onsubmit = async (e) => {
   e.preventDefault();

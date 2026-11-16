@@ -1,21 +1,58 @@
 // Forbinder din bank via Enable Banking.
 // action "start"  -> returnerer et link til Nordeas MitID-login
 // action "finish" -> modtager koden efter login, gemmer konti og henter posteringer
-import { admin, cors, credsFor, eb, ebToken, json, sha, syncAll, userFromRequest, toPkcs8 } from "../_shared/common.ts";
+import { admin, cors, credsFor, eb, ebToken, isOwner, json, sha, syncAll, userFromRequest, toPkcs8 } from "../_shared/common.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const user = await userFromRequest(req);
-    if (!user) return json({ error: "Ikke logget ind" }, 401);
     const db = admin();
     const body = await req.json().catch(() => ({}));
+
+    // --- Opret bruger med invitationskode (fra login-siden, ikke logget ind) ---
+    if (body.action === "register") {
+      const email = String(body.email ?? "").trim().toLowerCase();
+      const code = String(body.code ?? "").trim().toUpperCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "Skriv en gyldig e-mail." }, 400);
+      const { data: c } = await db.from("signup_codes").select("code, used_at, expires_at").eq("code", code).maybeSingle();
+      if (!c || c.used_at || new Date(c.expires_at) < new Date()) return json({ error: "Invitationskoden er ugyldig, brugt eller udløbet. Bed om en ny." }, 400);
+      // Markér koden som brugt først (så den ikke kan bruges to gange samtidig)
+      const { data: claimed } = await db.from("signup_codes").update({ used_at: new Date().toISOString(), used_by_email: email })
+        .eq("code", code).is("used_at", null).select("code");
+      if (!claimed?.length) return json({ error: "Invitationskoden er allerede brugt." }, 400);
+      const { error } = await db.auth.admin.inviteUserByEmail(email, { redirectTo: Deno.env.get("EB_REDIRECT_URL") ?? undefined });
+      if (error) {
+        await db.from("signup_codes").update({ used_at: null, used_by_email: null }).eq("code", code);   // giv koden tilbage
+        return json({ error: /already|registered|exists/i.test(error.message) ? "Der findes allerede en bruger med den e-mail. Brug \"Glemt adgangskode?\"." : "Kunne ikke oprette brugeren: " + error.message }, 400);
+      }
+      return json({ ok: true });
+    }
+
+    const user = await userFromRequest(req);
+    if (!user) return json({ error: "Ikke logget ind" }, 401);
+    const owner = await isOwner(user.id);
+
+    // --- Invitationskoder (kun ejeren) ---
+    if (body.action === "create-invite") {
+      if (!owner) return json({ error: "Kun ejeren kan invitere." }, 403);
+      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // uden O/0 og I/1, så den er let at skrive
+      const bytes = crypto.getRandomValues(new Uint8Array(10));
+      const code = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("").replace(/(.{5})/, "$1-");
+      const { error } = await db.from("signup_codes").insert({ code, created_by: user.id });
+      if (error) return json({ error: error.message.includes("signup_codes") ? "Databaseopdatering 010 mangler – kør opdater-database.sql." : error.message }, 500);
+      return json({ code });
+    }
+    if (body.action === "list-invites") {
+      if (!owner) return json({ invites: [], owner: false });
+      const { data } = await db.from("signup_codes").select("code, used_by_email, used_at, expires_at, created_at").order("created_at", { ascending: false }).limit(20);
+      return json({ invites: data ?? [], owner: true });
+    }
 
     // --- Egen Enable Banking-app (fx til en partner med egne konti) ---
     if (body.action === "credentials-status") {
       const { data, error } = await db.from("eb_credentials").select("app_id, created_at").eq("user_id", user.id).maybeSingle();
-      if (error) return json({ available: false });
-      return json({ available: true, own: !!data, app_id: data?.app_id ?? null, since: data?.created_at ?? null });
+      if (error) return json({ available: false, owner });
+      return json({ available: true, owner, own: !!data, app_id: data?.app_id ?? null, since: data?.created_at ?? null });
     }
     if (body.action === "save-credentials") {
       const appId = String(body.app_id ?? "").trim();
@@ -35,6 +72,9 @@ Deno.serve(async (req) => {
     }
 
     const creds = await credsFor(user.id);   // brugerens egen app – ellers ejerens fra hemmelighederne
+    if (!creds && !owner && (body.action === "start" || body.action === "finish")) {
+      return json({ error: "Læg først din egen Enable Banking-app ind under Indstillinger → Bank og konti (Enable Bankings gratis vilkår kræver det)." }, 403);
+    }
 
     // Liste over banker, man kan forbinde (Danmark)
     if (body.action === "banks") {

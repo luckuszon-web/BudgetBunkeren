@@ -110,6 +110,17 @@ async function mapTx(t: any, accountUid: string, accountKey: string, userId: str
   };
 }
 
+/** Ejeren = den første bruger, der blev oprettet. Kun ejeren må bruge appen fra hemmelighederne og lave invitationskoder. */
+let ownerId: string | null = null;
+export async function isOwner(userId: string): Promise<boolean> {
+  if (!ownerId) {
+    const { data } = await admin().auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const first = [...(data?.users ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
+    ownerId = first?.id ?? null;
+  }
+  return ownerId === userId;
+}
+
 /** Brugerens egen Enable Banking-app, hvis der er gemt en (tabellen kan kun læses af serveren). */
 export async function credsFor(userId: string): Promise<EbCreds | undefined> {
   const { data, error } = await admin().from("eb_credentials").select("app_id, private_key").eq("user_id", userId).maybeSingle();
