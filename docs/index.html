@@ -925,7 +925,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116201032";</script>
+<script>window.APP_VERSION = "20261116201339";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1388,7 +1388,7 @@ function renderDashboard() {
     const seen = new Set(list.filter((t) => t.amount < 0).map(fixedKey));
     const upcoming = fixedItems.filter((f) => !seen.has(f.key));
     const upSum = upcoming.reduce((s, f) => s + f.amount, 0);
-    const disp = expInc - out - Math.max(0, saved) - upSum;
+    const disp = E.available({ expectedIncome: expInc, spent: out, upcomingFixed: upSum, saved });
     const daysLeft = daysInMonth(m) - +todayIso().slice(8) + 1;
     $("heroLbl").textContent = "Dit disponible beløb";
     $("heroAmt").textContent = kr(disp);
@@ -1796,14 +1796,12 @@ function paceData() {
     const len = gran() === "week" ? 7 : new Date(Date.UTC(+p.slice(0, 4), +p.slice(5, 7), 0)).getUTCDate();
     return Array.from({ length: len }, (_, i) => addDays(start, i));
   };
-  const cumulative = (p) => {
-    const keys = subKeys(p);
-    const sub = gran() === "year" ? (d) => d.slice(0, 7) : (d) => d;
-    const byKey = new Map();
-    for (const t of txsIn(p)) if (isExp(t)) byKey.set(sub(t.booking_date), (byKey.get(sub(t.booking_date)) ?? 0) - t.amount);
-    let acc = 0;
-    return keys.map((k) => (acc += byKey.get(k) ?? 0));
-  };
+  // Kun variabelt forbrug: faste regninger (fx husleje d. 1.) får ellers kurven til at springe og skjuler tempoet.
+  // Faste poster findes pr. måned (som i hovedkortet); engangskøb, overførsler og ignorerede er allerede ude.
+  // Samme faste poster i alle de sammenlignede perioder (de valgte periodes + postens egen måned)
+  const baseFixed = new Set(detectFixed(monthOf(state.period)).map((f) => f.key));
+  const isVariable = (t) => isExp(t) && !baseFixed.has(fixedKey(t)) && !detectFixed(t.booking_date.slice(0, 7)).some((f) => f.key === fixedKey(t));
+  const cumulative = (p) => E.cumulative(txsIn(p).filter(isVariable), subKeys(p), gran() === "year" ? (t) => t.booking_date.slice(0, 7) : (t) => t.booking_date);
   const keys = subKeys(state.period);
   const L = keys.length;
   const cur = cumulative(state.period);
@@ -1828,12 +1826,14 @@ function renderPace() {
   $("barsWrap").classList.toggle("hidden", mode !== "bars");
   if (mode !== "pace") return;
   const { keys, L, cur, today, lastIdx, curShown, prevs, avg } = paceData();
-  let budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? periodBudget(c) : 0), 0);
+  // Budgetlinje for det variable forbrug: budgetterne minus de faste udgifter, der ligger i kategorier med budget
+  const fixedInBudget = detectFixed(monthOf(state.period)).filter((f) => Number(catById(f.cat)?.monthly_budget) > 0).reduce((s, f) => s + f.amount, 0) * budgetFactor();
+  let budget = Math.max(0, state.cats.reduce((s, c) => s + (c.kind === "expense" ? periodBudget(c) : 0), 0) - fixedInBudget);
   // Budgetlinjen giver kun mening, hvis budgetterne dækker det meste af forbruget
-  const normalOut = avgOf(prevPeriods(state.period).map((q) => totals(txsIn(q)).out));
+  const normalOut = avgOf(prevs.map((c) => c.at(-1) ?? 0));
   if (normalOut && budget < normalOut * 0.5) budget = 0;
 
-  $("paceTitle").textContent = { year: "Forbrug gennem året", month: "Forbrug gennem måneden", week: "Forbrug gennem ugen" }[gran()];
+  $("paceTitle").textContent = { year: "Variabelt forbrug gennem året", month: "Variabelt forbrug gennem måneden", week: "Variabelt forbrug gennem ugen" }[gran()];
   $("paceLbl").textContent = { year: "Dette år", month: "Denne måned", week: "Denne uge" }[gran()];
   $("paceAvgLbl").textContent = `Snit ${prevs.length || 3} forrige`;
   $("paceAvgLbl").parentElement.classList.toggle("hidden", !avg);

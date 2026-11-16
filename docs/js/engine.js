@@ -27,6 +27,27 @@ export const shiftMonth = (ym, n) => {
   return d.toISOString().slice(0, 7);
 };
 
+export const monthOf = (iso) => iso.slice(0, 7);
+export const daysInMonth = (ym) => new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate();
+
+// ---------- Forløb ----------
+/**
+ * Kumuleret forbrug pr. delperiode (dag eller måned). Udgifter tælles positivt; modregninger trækker fra.
+ * @param {Transaction[]} txs de posteringer, der skal med (fx kun variable udgifter)
+ * @param {string[]} keys delperioder i rækkefølge, fx ["2026-11-01", …]
+ * @param {(t: Transaction) => string} keyOf hvilken delperiode en postering hører til
+ * @returns {number[]}
+ */
+export function cumulative(txs, keys, keyOf) {
+  const by = new Map();
+  for (const t of txs) by.set(keyOf(t), (by.get(keyOf(t)) ?? 0) - t.amount);
+  let acc = 0;
+  return keys.map((k) => (acc += by.get(k) ?? 0));
+}
+
+/** Disponibelt = forventet indkomst − udgifter indtil nu − faste regninger, der mangler − opsparing. */
+export const available = ({ expectedIncome, spent, upcomingFixed = 0, saved = 0 }) => expectedIncome - spent - Math.max(0, saved) - upcomingFixed;
+
 // ---------- Faste udgifter ----------
 /** Nøgle, der samler samme modtager (uden numre, datoer og referencer). */
 export const recurringKey = (t) => (t.counterparty || t.description).toLowerCase()
