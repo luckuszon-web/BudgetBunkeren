@@ -63,13 +63,24 @@ export function init(ctx, root) {
     const m = calMonth, today = todayIso(), isNow = m === thisMonth(), isFuture = m > thisMonth();
     const dim = daysInMonth(m);
     const rows = monthTx(m);
+    // Lønnen fordeles ligeligt over månedens dage. Hver dag: dagens del af lønnen + andre indtægter − udgifter.
+    // Månedens løn = det, der er kommet ind med kategorien Løn; mangler den endnu, bruges snittet af de forrige måneder.
+    const sal = ctx.salaryCat();
+    const isSal = (t) => sal && String(ctx.effCat(t)) === String(sal.id) && t.amount > 0;
+    const salIn = rows.filter(isSal).reduce((s2, t) => s2 + t.amount, 0);
+    const salAvg = avgOf(fullMonths(3).map((q) => monthTx(q).filter(isSal).reduce((s2, t) => s2 + t.amount, 0)).filter((v) => v > 0));
+    const salary = salIn > 0 ? salIn : salAvg, salEstimated = !(salIn > 0) && salAvg > 0;
+    const perDay = salary / dim;
     const byDay = new Map();
     for (const t of rows) if (ctx.counts(t)) {
       const d = +t.booking_date.slice(8);
       const e = byDay.get(d) ?? { out: 0, inc: 0, n: 0 };
-      if (t.amount < 0) e.out -= t.amount; else e.inc += t.amount; e.n++;
+      if (ctx.isExp(t)) e.out -= t.amount;            // udgifter (modregninger trækker fra)
+      else if (ctx.isInc(t) && !isSal(t)) e.inc += t.amount;   // andre indtægter tæller på dagen
+      e.n++;
       byDay.set(d, e);
     }
+    const dayResult = (d) => { const e = byDay.get(d); return perDay + (e?.inc ?? 0) - (e?.out ?? 0); };
     // Forventede begivenheder (kun i dag og frem)
     const events = new Map();
     const addEv = (d, ev) => { if (!events.has(d)) events.set(d, []); events.get(d).push(ev); };
@@ -82,18 +93,22 @@ export function init(ctx, root) {
     }
     const c = (v) => { v = Math.round(v); return Math.abs(v) >= 10000 ? (v / 1000).toFixed(0) + "k" : v.toLocaleString("da-DK"); };
     const first = (new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7) - 1, 1)).getUTCDay() + 6) % 7;
-    const maxOut = Math.max(1, ...[...byDay.values()].map((e) => e.out));
+    const lastDay = isFuture ? 0 : isNow ? +today.slice(8) : dim;   // dage, der er gået (fremtidige dage farves ikke)
+    const results = Array.from({ length: lastDay }, (_, i) => dayResult(i + 1));
+    const maxAbs = Math.max(1, ...results.map(Math.abs));
+    const green = results.filter((r) => r >= 0).length, red = results.length - green;
+    const sumRes = results.reduce((s2, r) => s2 + r, 0);
     let cells = ["man", "tir", "ons", "tor", "fre", "lør", "søn"].map((d) => `<div class="cal-h">${d}</div>`).join("");
     for (let i = 0; i < first; i++) cells += `<div></div>`;
     for (let d = 1; d <= dim; d++) {
       const e = byDay.get(d), ev = events.get(d) ?? [];
       const ds = `${m}-${String(d).padStart(2, "0")}`;
-      const heat = e?.out ? 0.12 + 0.5 * Math.min(1, e.out / maxOut) : 0;
       const evIn = ev.filter((x) => x.amount > 0).reduce((s, x) => s + x.amount, 0), evOut = -ev.filter((x) => x.amount < 0).reduce((s, x) => s + x.amount, 0);
-      cells += `<div class="cal-d ${ds === today ? "today" : ""} ${ds > today ? "fut" : ""}" data-d="${d}" style="${heat ? `background:rgba(57,135,229,${heat})` : ""}">
+      const past = d <= lastDay && salary > 0, r = past ? results[d - 1] : 0;
+      const alpha = past ? (0.14 + 0.46 * Math.min(1, Math.abs(r) / maxAbs)).toFixed(2) : 0;
+      cells += `<div class="cal-d ${ds === today ? "today" : ""} ${ds > today ? "fut" : ""} ${past ? (r >= 0 ? "plus" : "minus") : ""}" data-d="${d}" style="${past ? `--a:${alpha}` : ""}">
         <span class="n">${d}</span>
-        ${e?.out ? `<span class="a">−${c(e.out)}</span>` : ""}
-        ${e?.inc ? `<span class="a pos">+${c(e.inc)}</span>` : ""}
+        ${past ? `<span class="a res">${r >= 0 ? "+" : "−"}${c(Math.abs(r))}</span>` : e?.out ? `<span class="a">−${c(e.out)}</span>` : ""}
         ${evIn ? `<span class="ev in" title="Forventet indtægt">+${c(evIn)}</span>` : ""}
         ${evOut ? `<span class="ev out" title="Forventet regning">−${c(evOut)}</span>` : ""}
       </div>`;
@@ -146,7 +161,10 @@ export function init(ctx, root) {
           <button id="calNext" aria-label="Næste måned" ${m >= addMonths(thisMonth(), 1) ? "disabled" : ""}>›</button>
         </div>
         <div class="cal">${cells}</div>
-        <div class="legend" style="margin-top:8px"><span><i style="background:rgba(57,135,229,.55)"></i>Forbrug (mørkere = mere)</span>
+        ${salary > 0 ? `<div class="cal-sum">Løn ${kr(salary)}${salEstimated ? " (forventet)" : ""} fordelt på ${dim} dage = <b>${kr(perDay)} pr. dag</b>${lastDay ? `<br>
+          <span class="pos">${green} ${green === 1 ? "dag" : "dage"} med overskud</span> · <span class="neg">${red} med underskud</span> · ${isNow ? "indtil nu" : "i alt"} <b class="${sumRes < 0 ? "neg" : "pos"}">${sumRes >= 0 ? "+" : "−"}${kr(Math.abs(sumRes))}</b>` : ""}</div>`
+          : `<div class="cal-sum muted">Ingen løn fundet – giv lønnen kategorien <b>Løn</b> (eller indtast den under Indstillinger → Indtastet løn), så fordeles den over månedens dage.</div>`}
+        <div class="legend" style="margin-top:8px"><span><i style="background:rgba(25,158,112,.55)"></i>Overskud på dagen</span><span><i style="background:rgba(217,72,72,.55)"></i>Underskud på dagen</span>
           <span><i style="background:transparent;border:1.5px dashed var(--green)"></i>Forventet indtægt</span><span><i style="background:transparent;border:1.5px dashed var(--warn)"></i>Forventet regning</span></div>
       </div>
       ${forecast}
@@ -157,9 +175,10 @@ export function init(ctx, root) {
     $("calNext").onclick = () => { calMonth = addMonths(calMonth, 1); renderCalendar(); };
     root.querySelectorAll(".cal-d").forEach((c) => c.onclick = () => {
       const d = +c.dataset.d, list = rows.filter((t) => +t.booking_date.slice(8) === d), ev = events.get(d) ?? [];
-      if (!list.length && !ev.length) return ctx.hideTip();
+      if (!list.length && !ev.length && !(d <= lastDay && salary > 0)) return ctx.hideTip();
       const r = c.getBoundingClientRect();
-      ctx.showTip(`<div style="margin-bottom:3px"><b>${d}. ${fmt(m + "-01", { month: "long" })}</b></div>` +
+      const res = d <= lastDay && salary > 0 ? `<div class="muted">Løn pr. dag ${kr(perDay)} → <b>${dayResult(d) >= 0 ? "+" : ""}${kr(dayResult(d))}</b></div>` : "";
+      ctx.showTip(`<div style="margin-bottom:3px"><b>${d}. ${fmt(m + "-01", { month: "long" })}</b></div>` + res +
         list.slice(0, 8).map((t) => `<div>${esc(t.counterparty || t.description)} <b>${kr(t.amount)}</b></div>`).join("") +
         (list.length > 8 ? `<div class="muted">+${list.length - 8} til</div>` : "") +
         ev.map((e) => `<div class="muted">Forventet: ${esc(e.name)} <b>${kr(e.amount)}</b></div>`).join(""), r.left + r.width / 2, r.top);
@@ -408,6 +427,9 @@ export function init(ctx, root) {
     .cal-d .ev.in { border-color: var(--green); color: var(--green); } .cal-d .ev.out { border-color: var(--warn); color: var(--warn); }
     .cal-d.today { outline: 2px solid var(--accent); }
     .cal-d.fut { background: var(--surface2); }
+    .cal-d.plus { background: rgba(25, 158, 112, var(--a)); } .cal-d.minus { background: rgba(217, 72, 72, var(--a)); }
+    .cal-d .res { font-weight: 650; }
+    .cal-sum { font-size: 13.5px; margin-top: 10px; line-height: 1.5; }
     .wi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .wi-grid label span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
     .wi-scroll { overflow-x: auto; margin-top: 12px; }

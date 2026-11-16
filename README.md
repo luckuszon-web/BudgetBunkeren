@@ -80,7 +80,7 @@ $$);
 
 **Planlæg** – nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer.
 
-**Værktøjer** (på mobil: via Planlæg) – kalender med kommende regninger/indtægter og saldoprognose, hvad-nu-hvis-beregner (bil, bolig, løn, rejse), årsprognose, kvartalsrapport og løn efter skat (et skøn – tjek skat.dk).
+**Værktøjer** (på mobil: via Planlæg) – kalender (lønnen fordelt ligeligt over dagene – grøn dag = overskud, rød = underskud – plus kommende regninger/indtægter og saldoprognose), hvad-nu-hvis-beregner (bil, bolig, løn, rejse), årsprognose, kvartalsrapport og løn efter skat (et skøn – tjek skat.dk).
 
 **Rådgiver** – stil spørgsmål om din økonomi (kræver `ANTHROPIC_API_KEY`). Den får et sammendrag af dine tal, ikke de enkelte posteringer.
 
