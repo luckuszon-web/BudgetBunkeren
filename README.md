@@ -78,14 +78,14 @@ $$);
 
 **Rådgiver** – stil spørgsmål om din økonomi (kræver `ANTHROPIC_API_KEY`). Den får et sammendrag af dine tal, ikke de enkelte posteringer.
 
-**Indstillinger** – bank og konti (adgang og udløb, forny/fjern, omdøb/skjul/slet konti, *Start forfra*), hurtig sortering, kategorier og budget, regler, login og sikkerhed (adgangskode, totrinsbekræftelse, invitationer), data (CSV-download, kategorisér igen, databasestatus).
+**Indstillinger** – bank og konti (adgang og udløb, forny/fjern, omdøb/skjul/slet konti, *Start forfra*), hurtig sortering, kategorier og budget, indtastet løn, regler, login og sikkerhed (adgangskode, totrinsbekræftelse, invitationer), data (CSV-download, kategorisér igen, databasestatus).
 
 ### Gode at vide
 - **Ret en kategori** → vælg *Gem som regel*, så lærer appen. ✕ eller *Fortryd valget* lukker/fortryder.
 - **Hurtig sortering** (Indstillinger) sorterer alle lignende posteringer med ét valg.
 - **Kategorityper:** *Udgift*, *Indtægt*, *Overførsel* (opsparing/egne konti – tæller ikke som forbrug) og *Engangskøb* (fx bilkøb – vises, men holdes uden for overskud, snit og prognoser).
 - **Modregning:** en indbetaling med en udgiftskategori trækkes fra udgiften – fx fremleje under *Husleje* eller en returvare under *Shopping*. Automatiske regler/AI giver aldrig løn en udgiftskategori.
-- **Løn** skal have kategorien *Løn*, så prognosen kan se den.
+- **Løn** skal have kategorien *Løn*, så prognosen kan se den. Kommer lønnen ikke ind på en forbundet konto, kan du taste den selv under *Indstillinger → Indtastet løn*.
 - **Budget** pr. kategori, evt. med overførsel af ubrugt budget til næste måned.
 - **Opdateringer:** når der er en ny version, kommer en bjælke frem – tryk *Opdater*.
 - **Fornyelse:** bankadgangen udløber ca. hvert halve år. Fra 14 dage før vises en gul boks med *Forny adgang*.

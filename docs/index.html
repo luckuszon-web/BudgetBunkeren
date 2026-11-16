@@ -148,6 +148,8 @@
   details.fold > summary::after { content: "›"; color: var(--muted); font-size: 22px; line-height: 1; transition: transform .15s; }
   details.fold[open] > summary { margin-bottom: 12px; }
   details.fold[open] > summary::after { transform: rotate(90deg); }
+  .mi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mi-grid label, #setIncome label { display: grid; gap: 4px; }
   .trend-sub { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
   .nm-more > summary { color: var(--accent); margin-top: 12px; }
   .ins-more { display: grid; gap: 8px; }
@@ -522,6 +524,7 @@
       <div class="set-group">
         <button class="set-row" data-page="quick"><span class="si"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span><span class="st"><b>Hurtig sortering</b><span id="ssQuick" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="cats"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></span><span class="st"><b>Kategorier og budget</b><span id="ssCats" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="set-row" data-page="income"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm2 2v8h14V8zm7 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg></span><span class="st"><b>Indtastet løn</b><span id="ssIncome" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="rules"><span class="si"><svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h10v2H4zm0 6h16v2H4z"/></svg></span><span class="st"><b>Regler</b><span id="ssRules" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
       <div class="set-group">
@@ -638,6 +641,29 @@
     </div>
 
     <!-- (Invitér-kortet ligger under Login og sikkerhed) -->
+    <!-- Indtastet løn -->
+    <div id="setIncome" class="set-page hidden">
+      <button class="ghost small set-back">‹ Indstillinger</button>
+      <div class="card">
+        <div class="head"><h2>Indtast løn</h2></div>
+        <p class="small muted" style="margin-top:0">Kommer din løn ikke ind på en forbundet konto, kan du skrive den her hver måned. Den tæller med som indtægt i overblik, prognose og rådgiver – præcis som løn fra banken.</p>
+        <form id="miForm" style="display:grid;gap:8px">
+          <div class="mi-grid">
+            <label class="small muted">Udbetalt den<input id="miDate" type="date" required></label>
+            <label class="small muted">Beløb (efter skat)<input id="miAmount" type="number" inputmode="decimal" min="1" step="0.01" placeholder="fx 32.500" required></label>
+          </div>
+          <label class="small muted">Kategori<select id="miCat"></select></label>
+          <label class="small muted">Note (valgfri)<input id="miNote" maxlength="80" placeholder="fx Løn inkl. provision"></label>
+          <div id="miWarn"></div>
+          <button class="primary" id="miSave">Gem</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="head"><h2>Indtastede beløb</h2><span class="small muted" id="miTotal"></span></div>
+        <div id="miList"></div>
+      </div>
+    </div>
+
     <!-- Data og om appen -->
     <div id="setData" class="set-page hidden">
       <button class="ghost small set-back">‹ Indstillinger</button>
@@ -740,7 +766,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116192210";</script>
+<script>window.APP_VERSION = "20261116193134";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -918,6 +944,21 @@ $("syncBtn").onclick = async () => {
 };
 
 // ---------- Data ----------
+// Indtægter, du selv har tastet ind (fx løn, der ikke kommer ind på en forbundet konto).
+// De lægges ind blandt posteringerne som "kunstige" posteringer, så alle beregninger tager dem med.
+async function loadManualIncome() {
+  const { data, error } = await sb.from("manual_income").select("*").order("pay_date", { ascending: false });
+  state.manualReady = !error;
+  state.manual = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
+  state.txs = state.txs.filter((t) => !t.manual);
+  const lon = salaryCat();
+  for (const m of state.manual) state.txs.push({
+    id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: m.amount,
+    description: m.note || "Løn (indtastet)", counterparty: null, category_id: m.category_id ?? lon?.id ?? null, category_source: "manual",
+  });
+  state.txs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
+}
+
 // Supabase sender højst 1000 rækker ad gangen, så vi henter i bidder
 async function fetchAll(build) {
   const out = [];
@@ -949,6 +990,7 @@ async function load() {
     const keyOf = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
     const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
     state.txs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
+    await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
     $("footer").textContent = last ? `Senest hentet fra banken ${new Date(last).toLocaleString("da-DK")}` : "";
@@ -964,6 +1006,7 @@ async function load() {
   if (!state.planReady) missing.push("spareudfordringer, opsparingsmål, formue og gæld");
   if (c0 && !state.cats.some((c) => c.kind === "oneoff")) missing.push("kategorien for store engangskøb");
   if (state.accounts[0] && !("hidden" in state.accounts[0])) missing.push("at omdøbe og skjule konti");
+  if (state.manualReady === false) missing.push("at indtaste løn selv");
   if (state.me && state.me.available === false) missing.push("invitationer og egen bankapp til ekstra brugere");
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
@@ -1510,12 +1553,22 @@ function renderInsights(fixedItems) {
   const oneoffSum = -list.filter(isOneoff).reduce((s, t) => s + t.amount, 0);
   if (oneoffSum > 0) items.push({ cls: "", e: "tag", w: 45, html: `${kr(oneoffSum)} i store køb og investeringer er holdt uden for overskud, snit og prognoser.` });
 
+  // 5c) Ingen løn registreret i sidste måned (eller i denne, når den er ved at være omme)
+  const salC = salaryCat();
+  if (salC && gran() === "month" && isCurrentMonth(state.period)) {
+    const hasSal = (mm) => monthTx(mm).some((t) => t.amount > 0 && String(effCat(t)) === String(salC.id));
+    const prevM = addMonths(state.period, -1), late = +todayIso().slice(8) >= daysInMonth(state.period) - 2;
+    const miss = late && !hasSal(state.period) ? state.period : state.txs.some((t) => t.booking_date < prevM + "-01") && !hasSal(prevM) ? prevM : null;
+    if (miss) items.push({ cls: "warn", e: "alert", w: 95, html: `Der er ingen løn registreret i ${fmt(miss + "-01", { month: "long" })}. <a href="#" class="go-income" data-m="${miss}" style="color:var(--accent)">Indtast den selv</a>` });
+  }
+
   // 6) Uden kategori
   const none = list.filter((t) => !effCat(t)).length;
   if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. <a href="#" class="go-quick" style="color:var(--accent)">Sortér dem hurtigt</a>` });
 
   items.sort((a, b) => b.w - a.w);
   setTimeout(() => document.querySelectorAll(".go-quick").forEach((a) => a.onclick = (e) => { e.preventDefault(); showTab("settings"); setPage("quick"); }));
+  setTimeout(() => document.querySelectorAll(".go-income").forEach((a) => a.onclick = (e) => { e.preventDefault(); state.miMonth = a.dataset.m; $("miDate").value = ""; showTab("settings"); setPage("income"); }));
   // De 3 vigtigste vises; resten bag en knap
   const one = (i) => `<div class="ins ${i.cls}"><div class="e">${icon(i.e)}</div><div>${i.html}</div></div>`;
   $("insights").innerHTML = items.length ? items.slice(0, 3).map(one).join("") + (items.length > 3
@@ -1828,13 +1881,15 @@ function renderTxs() {
     html += `<div class="tx">
       <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
-      <select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>
+      ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
+        : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
     </div>`;
   }
   $("txList").innerHTML = html || `<p class="muted">Ingen posteringer.</p>`;
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
+  document.querySelectorAll("#txList .mi-open").forEach((b) => b.onclick = () => { showTab("settings"); setPage("income"); });
 }
 
 // ---------- Dialoger ----------
@@ -2081,10 +2136,10 @@ function renderRules() {
 
 
 // ---------- Indstillinger: oversigt og undersider ----------
-const SET_PAGES = { home: "setHome", bank: "setBank", quick: "setQuick", cats: "setCats", rules: "setRules", acct: "setAcct", data: "setData" };
+const SET_PAGES = { home: "setHome", bank: "setBank", quick: "setQuick", cats: "setCats", rules: "setRules", income: "setIncome", acct: "setAcct", data: "setData" };
 function setPage(page) {
   for (const [k, id] of Object.entries(SET_PAGES)) $(id).classList.toggle("hidden", k !== page);
-  ({ home: renderSetHome, bank: renderBank, quick: renderQuick, cats: renderSettings, rules: renderRules, acct: renderAcct, data: renderData })[page]?.();
+  ({ home: renderSetHome, bank: renderBank, quick: renderQuick, cats: renderSettings, rules: renderRules, income: renderIncome, acct: renderAcct, data: renderData })[page]?.();
   window.scrollTo(0, 0);
 }
 document.querySelectorAll(".set-row").forEach((r) => r.onclick = () => setPage(r.dataset.page));
@@ -2101,11 +2156,67 @@ function renderSetHome() {
   const none = state.txs.filter((t) => !effCat(t)).length;
   $("ssQuick").textContent = none ? `${none} posteringer mangler kategori` : "Alle posteringer har en kategori";
   $("ssCats").textContent = `${state.cats.length} kategorier · ${state.cats.filter((c) => Number(c.monthly_budget) > 0).length} med budget`;
+  $("ssIncome").textContent = state.manualReady === false ? "Kræver databaseopdateringen" : state.manual?.length
+    ? `Senest ${fmt(state.manual[0].pay_date, { day: "numeric", month: "short" })}: ${kr(state.manual[0].amount)}` : "Skriv din løn selv, hvis banken ikke viser den";
   $("ssRules").textContent = `${state.rules.filter((r) => r.priority >= 200).length} egne regler · ${state.rules.filter((r) => r.priority < 200).length} standard`;
   sb.auth.mfa.listFactors().then(({ data }) => { $("ssAcct").textContent = data?.totp?.some((f) => f.status === "verified") ? "Totrinsbekræftelse er slået til" : "Totrinsbekræftelse er slået fra"; }).catch(() => {});
   $("ssData").textContent = state.dbMissing.length ? "Databasen mangler en opdatering" : `${state.txs.length} posteringer`;
   $("ssData").classList.toggle("warn-t", !!state.dbMissing.length);
 }
+
+// --- Indtastet løn ---
+function renderIncome() {
+  const incCats = state.cats.filter((c) => c.kind === "income");
+  const lon = salaryCat();
+  $("miCat").innerHTML = incCats.map((c) => `<option value="${c.id}" ${lon && c.id === lon.id ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+  // Foreslå sidste bankdag i måneden og samme beløb som sidst
+  if (!$("miDate").value) {
+    const m = state.miMonth || todayIso().slice(0, 7); state.miMonth = null;
+    let d = `${m}-${pad(daysInMonth(m))}`;
+    while ([0, 6].includes(D(d).getUTCDay())) d = addDays(d, -1);
+    $("miDate").value = d;
+  }
+  if (!$("miAmount").value && state.manual?.[0]) $("miAmount").value = state.manual[0].amount;
+  const ready = state.manualReady !== false;
+  $("miSave").disabled = !ready;
+  const checkDouble = () => {
+    const m = ($("miDate").value || "").slice(0, 7), cat = $("miCat").value;
+    const bank = state.txs.filter((t) => !t.manual && t.amount > 0 && t.booking_date.startsWith(m) && String(effCat(t)) === String(cat));
+    const typed = (state.manual ?? []).filter((x) => x.pay_date.startsWith(m) && String(x.category_id ?? lon?.id) === String(cat));
+    $("miWarn").innerHTML = !ready ? `<p class="small warn-t">Kræver databaseopdateringen – kør den via <a href="opdater.html" style="color:var(--accent)">opdater.html</a>.</p>`
+      : bank.length ? `<p class="small warn-t">Banken har allerede registreret ${kr(bank.reduce((s, t) => s + t.amount, 0))} som ${esc(catById(cat)?.name ?? "")} i ${fmt(m + "-01", { month: "long" })}. Gemmer du også her, tæller det dobbelt.</p>`
+      : typed.length ? `<p class="small warn-t">Du har allerede indtastet ${kr(typed.reduce((s, x) => s + x.amount, 0))} i ${fmt(m + "-01", { month: "long" })}. Det nye beløb lægges oveni.</p>` : "";
+  };
+  $("miDate").onchange = checkDouble; $("miCat").onchange = checkDouble; checkDouble();
+
+  const list = state.manual ?? [];
+  $("miTotal").textContent = list.length ? `${list.length} stk.` : "";
+  $("miList").innerHTML = list.length ? list.map((x) => `<div class="list-row" data-mid="${x.id}" style="grid-template-columns:1fr auto auto">
+      <div style="min-width:0"><div>${fmt(x.pay_date, { day: "numeric", month: "long", year: "numeric" })}</div>
+        <div class="sub">${esc(catById(x.category_id ?? lon?.id)?.name ?? "Indtægt")}${x.note ? " · " + esc(x.note) : ""}</div></div>
+      <span class="num pos">${kr(x.amount)}</span>
+      <button class="small ghost danger mi-del" title="Slet">Slet</button></div>`).join("")
+    : `<p class="empty">Ingen indtastede beløb endnu.</p>`;
+  document.querySelectorAll("#miList .mi-del").forEach((b) => b.onclick = async () => {
+    const id = Number(b.closest(".list-row").dataset.mid);
+    if (!confirm("Slet dette beløb?")) return;
+    const { error } = await sb.from("manual_income").delete().eq("id", id);
+    if (error) return toast("Kunne ikke slette: " + error.message);
+    await loadManualIncome(); refresh(); renderIncome(); toast("Slettet.", 1500);
+  });
+}
+$("miForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const amount = Number($("miAmount").value);
+  if (!(amount > 0)) return toast("Skriv et beløb større end 0.");
+  $("miSave").disabled = true;
+  const { error } = await sb.from("manual_income").insert({ pay_date: $("miDate").value, amount, category_id: Number($("miCat").value) || null, note: $("miNote").value.trim() || null });
+  $("miSave").disabled = false;
+  if (error) return toast(/manual_income/.test(error.message) ? "Databaseopdateringen mangler – kør opdater.html." : "Kunne ikke gemme: " + error.message, 6000);
+  $("miNote").value = "";
+  await loadManualIncome(); refresh(); renderIncome();
+  toast(`Gemt: ${kr(amount)} den ${fmt($("miDate").value, { day: "numeric", month: "long" })}.`);
+};
 
 // --- Bank og konti ---
 async function renderBank() {
