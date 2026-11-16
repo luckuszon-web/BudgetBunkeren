@@ -1,4 +1,4 @@
--- ALLE DATABASEOPDATERINGER I ÉN FIL (002–013).
+-- ALLE DATABASEOPDATERINGER I ÉN FIL (002–016).
 -- Kør hele filen i Supabase → SQL Editor. Den kan køres flere gange uden problemer.
 
 -- ===== 002_budget =====
@@ -605,3 +605,70 @@ where not exists (select 1 from public.categories c where c.user_id = u.user_id 
 -- men holdes uden for snit, prognoser og score). Kan køres flere gange.
 alter table public.transactions add column if not exists one_off boolean not null default false;
 grant update (category_id, category_source, one_off) on public.transactions to authenticated;
+
+-- ===== 014_goal_link =====
+-- Opsparingsmål, der fylder sig selv: kobl et mål til en kategori (fx "Opsparing & investering"),
+-- så tæller pengene, du flytter dertil, som indbetalinger fra en bestemt dato. Kan køres flere gange.
+alter table public.goals add column if not exists linked_category_id bigint references public.categories on delete set null;
+alter table public.goals add column if not exists linked_since date;
+
+-- ===== 015_notes_splits =====
+-- Noter på posteringer og opdeling af én postering i flere kategorier. Kan køres flere gange.
+alter table public.transactions add column if not exists note text;
+-- Browseren må kun ændre kategori, engangskøb og note – ikke beløb, dato osv.
+alter table public.transactions add column if not exists one_off boolean not null default false;
+grant update (category_id, category_source, one_off, note) on public.transactions to authenticated;
+
+-- Dele af en postering: hver del har sin kategori og sit beløb (samme fortegn som posteringen).
+-- Det, der ikke er fordelt, bliver på posteringens egen kategori.
+create table if not exists public.tx_splits (
+  id bigint generated always as identity primary key,
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  tx_id text not null references public.transactions on delete cascade,
+  category_id bigint references public.categories on delete set null,
+  amount numeric(14, 2) not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists tx_splits_tx on public.tx_splits (tx_id);
+alter table public.tx_splits enable row level security;
+do $$ begin
+  create policy own_tx_splits on public.tx_splits for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+exception when duplicate_object then null; end $$;
+
+-- ===== 016_sharing =====
+-- Fællesøkonomi: del udvalgte konti med en anden bruger (fx din partner). Den anden kan kun SE kontoen,
+-- dens posteringer og dine kategorinavne – aldrig ændre noget. Delinger oprettes af serveren (bank-connect),
+-- fordi den skal finde partnerens bruger ud fra e-mail. Kan køres flere gange.
+create table if not exists public.account_shares (
+  owner_id uuid not null default auth.uid() references auth.users on delete cascade,
+  account_key text not null,
+  shared_with uuid not null references auth.users on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (owner_id, account_key, shared_with)
+);
+alter table public.account_shares enable row level security;
+do $$ begin
+  create policy read_shares on public.account_shares for select using (owner_id = auth.uid() or shared_with = auth.uid());
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy delete_own_shares on public.account_shares for delete using (owner_id = auth.uid());
+exception when duplicate_object then null; end $$;
+
+-- Læseadgang for den, der har fået delt
+do $$ begin
+  create policy shared_accounts_read on public.accounts for select using (exists (
+    select 1 from public.account_shares s where s.owner_id = accounts.user_id and s.account_key = accounts.account_key and s.shared_with = auth.uid()));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy shared_transactions_read on public.transactions for select using (exists (
+    select 1 from public.accounts a join public.account_shares s on s.owner_id = a.user_id and s.account_key = a.account_key
+    where a.uid = transactions.account_uid and s.shared_with = auth.uid()));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy shared_categories_read on public.categories for select using (exists (
+    select 1 from public.account_shares s where s.owner_id = categories.user_id and s.shared_with = auth.uid()));
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy shared_splits_read on public.tx_splits for select using (exists (
+    select 1 from public.transactions t where t.id = tx_splits.tx_id));
+exception when duplicate_object then null; end $$;

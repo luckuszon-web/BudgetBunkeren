@@ -78,7 +78,7 @@ export function init(ctx, root) {
       største_udgifter_denne_måned: biggest,
       faste_udgifter: ctx.detectFixed(now).map((f) => ({ navn: f.name, kategori: catName(f.cat), pr_måned: Math.round(f.amount), trækdag: f.day })),
       budgetter: state.cats.filter((c) => Number(c.monthly_budget) > 0).map((c) => ({ kategori: c.name, budget: Number(c.monthly_budget), budget_inkl_overført: Math.round(ctx.monthBudget(c, now)) })),
-      opsparingsmål: state.goals.map((g) => ({ navn: g.name, mål: g.target_amount, sparet: g.saved_amount, pr_måned: g.monthly_amount, dato: g.target_date })),
+      opsparingsmål: state.goals.map((g) => ({ navn: g.name, mål: g.target_amount, sparet: Math.round(ctx.goalSaved(g)), pr_måned: g.monthly_amount, dato: g.target_date })),
       aktiver: state.assets.filter((a) => !["loan", "mortgage", "credit"].includes(a.kind)).map((a) => ({ navn: a.name, type: a.kind, værdi: a.value, afkast_pct: a.rate, indskudt: a.invested })),
       gæld: state.assets.filter((a) => ["loan", "mortgage", "credit"].includes(a.kind)).map((a) => ({ navn: a.name, type: a.kind, restgæld: a.value, rente_pct: a.rate, ydelse: a.monthly_payment })),
       spareudfordringer: state.challenges.filter((c) => c.month === now).map((c) => ({ titel: c.title, loft: c.limit_amount })),

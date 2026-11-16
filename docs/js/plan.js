@@ -190,8 +190,9 @@ export function init(ctx, root) {
   function renderGoals() {
     const today = todayIso();
     $("goalList").innerHTML = state.goals.map((g) => {
-      const left = Math.max(0, g.target_amount - g.saved_amount);
-      const frac = g.saved_amount / g.target_amount;
+      const saved = ctx.goalSaved(g), auto = saved - g.saved_amount;
+      const left = Math.max(0, g.target_amount - saved);
+      const frac = saved / g.target_amount;
       const done = left <= 0;
       let status = "", pill = "";
       if (done) { status = "Målet er nået!"; pill = `<span class="pill good">Nået</span>`; }
@@ -212,7 +213,8 @@ export function init(ctx, root) {
       return `<div class="goal" data-id="${g.id}">
         <div class="g-top"><span class="g-n">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</span>${pill}<span class="num muted">${pctNum}%</span></div>
         <div class="bbar"><span class="${done ? "b-done" : "b-ok"}" style="width:${pctNum}%"></span></div>
-        <div class="g-sub">${kr(g.saved_amount)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
+        <div class="g-sub">${kr(saved)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
+        ${g.linked_category_id ? `<div class="g-st"><span class="g-auto">Fyldes automatisk</span> ${auto > 0 ? `${kr(auto)} fra` : "fra"} ${esc(ctx.catById(g.linked_category_id)?.name ?? "?")} siden ${fmt(g.linked_since ?? todayIso(), { day: "numeric", month: "short", year: "numeric" })}</div>` : ""}
         <div class="g-st">${status}</div>
         <div class="g-act"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>
       </div>`;
@@ -231,8 +233,8 @@ export function init(ctx, root) {
     const saved = Math.max(0, g.saved_amount + v.amount);
     const { error } = await sb.from("goals").update({ saved_amount: saved }).eq("id", g.id);
     if (error) return toast("Fejl: " + error.message);
-    const before = g.saved_amount; g.saved_amount = saved;
-    if (before < g.target_amount && saved >= g.target_amount) toast(`Tillykke – du har nået målet "${g.name}"!`, 5000);
+    const before = ctx.goalSaved(g); g.saved_amount = saved;
+    if (before < g.target_amount && ctx.goalSaved(g) >= g.target_amount) toast(`Tillykke – du har nået målet "${g.name}"!`, 5000);
     else toast(`${kr(v.amount)} indbetalt.`);
     render();
   }
@@ -248,14 +250,25 @@ export function init(ctx, root) {
         { name: "target_amount", label: "Mål (kr.)", type: "number", value: g?.target_amount, required: true, half: true, min: 1 },
         { name: "saved_amount", label: "Sparet indtil nu (kr.)", type: "number", value: g?.saved_amount ?? 0, half: true, min: 0 },
         { name: "monthly_amount", label: "Jeg sparer op pr. måned (kr.)", type: "number", value: g?.monthly_amount, min: 0, hint: "Bruges til at beregne, hvornår målet nås." },
+        { name: "linked_category_id", label: "Fyld automatisk fra kategori (valgfrit)", type: "select", value: g?.linked_category_id ?? "",
+          options: [["", "Nej – jeg indbetaler selv"], ...state.cats.filter((c) => c.kind !== "income" && c.kind !== "ignore")
+            .sort((a, b) => (a.kind === "transfer" ? 0 : 1) - (b.kind === "transfer" ? 0 : 1) || a.name.localeCompare(b.name, "da")).map((c) => [c.id, c.name])],
+          hint: "Penge, du flytter til kategorien (fx en fast overførsel til opsparing), lægges til målet automatisk." },
+        { name: "linked_since", label: "Tæl overførsler fra og med", type: "date", value: g?.linked_since ?? todayIso() },
       ],
       submitLabel: isNew ? "Opret" : "Gem", danger: isNew ? null : "Slet",
     });
     if (!v) return;
     let error;
     if (v.__danger) { if (!confirm(`Slet målet "${g.name}"?`)) return; ({ error } = await sb.from("goals").delete().eq("id", g.id)); }
-    else ({ error } = isNew ? await sb.from("goals").insert({ ...v, saved_amount: v.saved_amount ?? 0 }) : await sb.from("goals").update({ ...v, saved_amount: v.saved_amount ?? 0 }).eq("id", g.id));
-    if (error) return toast("Fejl: " + error.message);
+    else {
+      const row = { ...v, saved_amount: v.saved_amount ?? 0, linked_category_id: v.linked_category_id ? Number(v.linked_category_id) : null };
+      if (!row.linked_category_id) row.linked_since = null;
+      // Uden databaseopdatering 014 findes kolonnerne ikke – gem så resten
+      if (!row.linked_category_id && !g?.linked_category_id) { delete row.linked_category_id; delete row.linked_since; }
+      ({ error } = isNew ? await sb.from("goals").insert(row) : await sb.from("goals").update(row).eq("id", g.id));
+    }
+    if (error) return toast(/linked_/.test(error.message) ? "Automatisk opfyldning kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000);
     await ctx.loadPlan(); render();
   }
 
