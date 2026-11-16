@@ -11,8 +11,26 @@ Deno.serve(async (req) => {
     const db = admin();
     const body = await req.json().catch(() => ({}));
 
+    // Liste over banker, man kan forbinde (Danmark)
+    if (body.action === "banks") {
+      const list = await eb(`/aspsps?country=${Deno.env.get("EB_COUNTRY") ?? "DK"}`);
+      // deno-lint-ignore no-explicit-any
+      return json({ banks: (list.aspsps ?? []).map((a: any) => a.name).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b, "da")) });
+    }
+
+    // Fjern adgang: træk samtykket tilbage hos Enable Banking. Posteringerne bevares.
+    if (body.action === "disconnect") {
+      const { data: s } = await db.from("bank_sessions").select("id, user_id").eq("id", body.session_id).maybeSingle();
+      if (!s || s.user_id !== user.id) return json({ error: "Forbindelsen blev ikke fundet" }, 404);
+      try { await eb(`/sessions/${encodeURIComponent(s.id)}`, { method: "DELETE" }); }
+      catch (e) { console.warn("Kunne ikke slette sessionen hos Enable Banking (måske allerede udløbet)", e); }
+      await db.from("accounts").update({ session_id: null }).eq("session_id", s.id).eq("user_id", user.id);
+      await db.from("bank_sessions").delete().eq("id", s.id);
+      return json({ ok: true });
+    }
+
     if (body.action === "start") {
-      const aspspName = Deno.env.get("EB_ASPSP_NAME") ?? "Nordea";
+      const aspspName = typeof body.bank === "string" && body.bank ? body.bank : (Deno.env.get("EB_ASPSP_NAME") ?? "Nordea");
       const country = Deno.env.get("EB_COUNTRY") ?? "DK";
 
       // Brug bankens maksimale samtykke-periode (typisk 180 dage)

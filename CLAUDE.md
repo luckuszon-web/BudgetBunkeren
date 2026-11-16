@@ -22,7 +22,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
 - `supabase/migrations/005_more_rules.sql` – ~320 ekstra standardregler (prioritet 100) for danske butikker/betalinger; tilføjer kun manglende.
 - `supabase/migrations/006_oneoff.sql` – kategoritypen `oneoff` + kategorien "Store køb & investeringer".
-- `supabase/opdater-database.sql` – 002–006 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- `supabase/migrations/007_accounts.sql` – `accounts.display_name`, `accounts.hidden` + update-policy (kun de to kolonner). Skjulte konti filtreres fra i frontend og hentes ikke i `syncAll`.
+- `supabase/opdater-database.sql` – 002–007 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
 - Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
@@ -72,6 +73,9 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 
 ## Idéer til senere (ikke bygget)
 - Flere banker/kreditkort, opsætning af totrinsbekræftelse i UI'et.
+
+## Indstillinger (5. fane i bundmenuen)
+- Oversigt (`setHome`) med undersider via `setPage()`: Bank og konti (forbindelser med udløb, forny/fjern via `bank-connect` action `disconnect`, vælg bank via action `banks`, omdøb/skjul konti), Hurtig sortering, Kategorier og budget, Regler, Login og sikkerhed (skift adgangskode, TOTP-MFA via `sb.auth.mfa.enroll`), Data og om appen (CSV-eksport, kategorisér igen, databasestatus `state.dbMissing`).
 
 ## App-fornemmelse
 - Zoom er slået fra (viewport + gesturestart/touchmove i index.html + touch-action: manipulation). Felter er 16 px på mobil, så iPhone ikke auto-zoomer.

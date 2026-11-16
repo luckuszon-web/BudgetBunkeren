@@ -1,4 +1,4 @@
--- ALLE DATABASEOPDATERINGER I ÉN FIL (002–006).
+-- ALLE DATABASEOPDATERINGER I ÉN FIL (002–007).
 -- Kør hele filen i Supabase → SQL Editor. Den kan køres flere gange uden problemer.
 
 -- ===== 002_budget =====
@@ -510,4 +510,17 @@ insert into public.categories (user_id, name, kind, icon)
 select u.user_id, 'Store køb & investeringer', 'oneoff', '💎'
 from (select distinct user_id from public.categories) u
 where not exists (select 1 from public.categories c where c.user_id = u.user_id and c.name = 'Store køb & investeringer');
+
+-- ===== 007_accounts =====
+-- Konti kan omdøbes og skjules fra overblikket (skjulte konti hentes heller ikke længere).
+-- Kør i Supabase → SQL Editor. Kan køres flere gange.
+alter table public.accounts add column if not exists display_name text;
+alter table public.accounts add column if not exists hidden boolean not null default false;
+
+-- Browseren må kun ændre navn og synlighed på egne konti – intet andet.
+do $$ begin
+  create policy update_own_accounts on public.accounts for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+exception when duplicate_object then null; end $$;
+revoke update on public.accounts from anon, authenticated;
+grant update (display_name, hidden) on public.accounts to authenticated;
 

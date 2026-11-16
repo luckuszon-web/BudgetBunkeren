@@ -127,7 +127,7 @@ async function fetchBooked(uid: string, accountKey: string, userId: string, from
 /** Henter nye posteringer for alle aktive konti (evt. kun én bruger). */
 export async function syncAll(onlyUserId?: string) {
   const db = admin();
-  let q = db.from("accounts").select("uid, user_id, account_key, session_id, bank_sessions!inner(valid_until)");
+  let q = db.from("accounts").select("*, bank_sessions!inner(valid_until)");
   if (onlyUserId) q = q.eq("user_id", onlyUserId);
   const { data: accounts, error } = await q;
   if (error) throw error;
@@ -135,7 +135,7 @@ export async function syncAll(onlyUserId?: string) {
   const report: Record<string, unknown>[] = [];
   const users = new Set<string>();
 
-  for (const acc of accounts ?? []) {
+  for (const acc of (accounts ?? []).filter((a) => !a.hidden)) {   // skjulte konti hentes ikke
     // deno-lint-ignore no-explicit-any
     const validUntil = new Date((acc as any).bank_sessions.valid_until);
     if (validUntil < new Date()) {

@@ -91,6 +91,7 @@ delete from public.goals where demo; delete from public.assets where demo; delet
 - **Rådgiver:** Stil spørgsmål som "Hvor kan jeg spare 1.000 kr. om måneden?". Kræver `ANTHROPIC_API_KEY` og at serverfunktionerne er lagt op (trin 4–5). Rådgiveren får et sammendrag af dine tal, ikke de enkelte posteringer.
 
 ## Daglig brug
+- **Indstillinger** (fanen nederst til højre): bank og konti (se adgang og udløb, forny, fjern, omdøb eller skjul konti, forbind flere banker), kategorier, regler, login og totrinsbekræftelse, download af posteringer (CSV).
 - **Hurtig sortering:** Under ⚙ Indstillinger ser du de posteringer uden kategori, der går igen. Vælg en kategori, så får alle lignende posteringer den – også fremover. **Kategorisér igen** kører alle regler (og AI) forfra.
 - **Overfør ubrugt budget:** Sæt flueben i *Overfør* ud for en kategori under Indstillinger. Ubrugt budget lægges til næste måned (og overforbrug trækkes fra).
 - **Dit disponible beløb** øverst viser, hvad der er tilbage resten af måneden: forventet indkomst (snit af de 3 forrige måneder, hvis lønnen ikke er kommet endnu) minus det brugte, de faste regninger der mangler, og det du har sat til side. For afsluttede perioder vises periodens resultat.
