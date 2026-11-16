@@ -321,6 +321,9 @@
   .sel-bar select { max-width: 150px; padding: 6px 8px; }
   @media (min-width: 900px) { .sel-bar { bottom: 20px; margin-left: 116px; }
     .tx.pickable { grid-template-columns: 26px minmax(0, 1fr) 120px; } .tx.pickable .desc { grid-column: 2; } .tx.pickable > .num { grid-column: 3; } .tx.pickable .tx-note { grid-column: 2 / -1; } }
+  .kind-note { font-size: 12.5px; color: var(--muted); background: var(--surface); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+  .kind-note summary span { color: var(--accent); }
+  .kind-note ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 3px; }
   .tx .desc[data-open] { cursor: pointer; }
   .tx .desc[data-open]:hover { text-decoration: underline; text-decoration-color: var(--line2); }
   .tx-note { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -704,6 +707,13 @@
     </div>
     <div class="card tx-card">
       <div class="head"><h2 id="txTitle">Posteringer</h2><div class="row" style="gap:6px"><button class="ghost small hidden" id="clearCat">Vis alle ✕</button><button class="small" id="selToggle">Vælg</button></div></div>
+      <details class="kind-note"><summary>Ikke alle kategorier tæller med i forbruget – <span>se hvilke</span></summary>
+        <ul>
+          <li><b>Overførsel</b> (fx opsparing, egne konti): tæller ikke som udgift eller indtægt, men vises som "sat til side".</li>
+          <li><b>Engangskøb</b> (fx bilkøb – eller flueben ved en enkelt postering): vises, men holdes uden for snit, prognoser og score.</li>
+          <li><b>Ignoreret</b>: helt ude af alle tal og grafer – ses kun her i listen.</li>
+        </ul>
+        De står nederst i kategori-listen under hver deres overskrift.</details>
       <div id="txList"></div>
       <button class="ghost small hidden" id="moreBtn" style="width:100%;margin-top:8px">Vis flere</button>
     </div>
@@ -1079,7 +1089,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116205835";</script>
+<script>window.APP_VERSION = "20261116210305";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1440,7 +1450,22 @@ function renderConsent(s) {
 }
 
 // ---------- Hjælpere ----------
-const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
+const catById = (id) => state.cats.find((c) => String(c.id) === String(id)) ?? state.sharedCats?.find((c) => String(c.id) === String(id));
+
+// Kategorier i en vælger: almindelige udgifter og indtægter først; de særlige typer (som ikke tæller med
+// i det normale forbrug) nederst i hver deres gruppe med en kort forklaring som overskrift.
+const CAT_GROUPS = [
+  ["expense", "Udgifter"], ["income", "Indtægter"],
+  ["transfer", "Overførsel – tæller ikke som forbrug (opsparing, egne konti)"],
+  ["oneoff", "Engangskøb – vises, men holdes uden for snit og prognoser"],
+  ["ignore", "Ignoreret – helt ude af tal og grafer"],
+];
+function catOptions(sel, { skip = [] } = {}) {
+  return CAT_GROUPS.filter(([k]) => !skip.includes(k)).map(([k, label]) => {
+    const cats = state.cats.filter((c) => c.kind === k).sort((a, b) => a.name.localeCompare(b.name, "da"));
+    return cats.length ? `<optgroup label="${esc(label)}">${cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</optgroup>` : "";
+  }).join("");
+}
 // En automatisk kategori (regel/AI), der vender forkert – fx løn med en udgiftskategori – ignoreres.
 // Kun dine egne valg og dine egne regler (prioritet 200) må gå imod retningen (fx fremleje under Bolig).
 function autoMismatch(t) {
@@ -2447,9 +2472,7 @@ function renderTxs() {
   $("clearCat").classList.toggle("hidden", !state.catFilter);
 
   const sum = list.reduce((s, t) => s + t.amount, 0);
-  const options = (sel) => `<option value="">Vælg kategori …</option>` +
-    state.cats.map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("") +
-    `<option value="__new">+ Ny kategori…</option>`;
+  const options = (sel) => `<option value="">Vælg kategori …</option>` + catOptions(sel) + `<option value="__new">+ Ny kategori…</option>`;
 
   let html = list.length ? `<div class="small muted">${list.length} posteringer · i alt <span class="num">${kr(sum)}</span></div>` : "";
   let lastDay = "";
@@ -2549,7 +2572,7 @@ function renderQuick() {
   }
   const list = [...groups.values()].filter((g) => g.n >= 2).sort((a, b) => b.n - a.n || Math.abs(b.sum) - Math.abs(a.sum)).slice(0, 25);
   const none = state.txs.filter((t) => !effCat(t)).length;
-  const options = `<option value="">Vælg kategori …</option>` + state.cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  const options = `<option value="">Vælg kategori …</option>` + catOptions(null);
   $("quickList").innerHTML = list.length ? `<div class="small muted" style="margin-bottom:4px">${none} posteringer mangler kategori – her er de ${list.length} hyppigste grupper</div>` +
     list.map((g) => `<div class="list-row qrow" data-k="${esc(g.k)}" style="grid-template-columns:1fr auto">
       <div style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.sample)}</div>
@@ -2592,7 +2615,7 @@ function renderSelBar() {
   if (!state.selMode) return;
   const n = state.sel.size;
   $("selCount").textContent = n ? `${n} valgt` : "Tryk på posteringer";
-  $("selCat").innerHTML = `<option value="">Giv kategori …</option>` + state.cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("selCat").innerHTML = `<option value="">Giv kategori …</option>` + catOptions(null);
   $("selCat").disabled = $("selOneOff").disabled = !n;
   const all = n && [...state.sel].every((id) => state.allTxs.find((t) => t.id === id)?.one_off);
   $("selOneOff").textContent = all ? "Ikke engangskøb" : "Engangskøb";
@@ -2630,7 +2653,7 @@ async function openTx(id) {
   $("tdSub").textContent = `${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${kr(t.amount)} · ${catById(effCat(t))?.name ?? "Uden kategori"}`;
   $("tdNote").value = t.note ?? "";
   $("tdOneOff").checked = !!t.one_off;
-  const opts = (sel) => state.cats.filter((c) => c.kind !== "ignore" || String(c.id) === String(sel)).map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+  const opts = (sel) => catOptions(sel, { skip: catById(sel)?.kind === "ignore" ? [] : ["ignore"] });
   const partRow = (p = {}) => `<div class="td-part"><select class="tp-cat" aria-label="Kategori">${opts(p.category_id)}</select>
     <input type="number" class="tp-amt" inputmode="decimal" min="0" step="0.01" value="${p.amount ? Math.abs(p.amount) : ""}" placeholder="Beløb" aria-label="Beløb">
     <button type="button" class="ghost danger tp-del" aria-label="Fjern">✕</button></div>`;
