@@ -4,7 +4,7 @@
 const h = require('./harness');
 
 const SIZES = [['iPhone 16 Plus', 430, 932, true], ['iPhone SE', 320, 568, true], ['computer', 1280, 900, false]];
-const VIEWS = [['app'], ['txs'], ['budget'], ['plan'], ['tools', 'cal'], ['tools', 'whatif'], ['tools', 'year'], ['tools', 'quarter'], ['tools', 'tax'], ['advisor'],
+const VIEWS = [['app'], ['txs'], ['budget'], ['plan'], ['pot'], ['tools', 'cal'], ['tools', 'whatif'], ['tools', 'year'], ['tools', 'quarter'], ['tools', 'tax'], ['advisor'],
   ['settings', 'home'], ['settings', 'bank'], ['settings', 'quick'], ['settings', 'cats'], ['settings', 'income'], ['settings', 'share'], ['settings', 'rules'], ['settings', 'acct'], ['settings', 'data']];
 
 let failures = 0;

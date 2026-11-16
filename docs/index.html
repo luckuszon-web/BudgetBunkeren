@@ -267,16 +267,22 @@
   .sug-row .sug-v { padding: 6px 8px; text-align: right; }
 
   /* Fællesøkonomi */
-  .sh-accs { display: grid; gap: 4px; }
-  .sh-accs label { display: flex; gap: 8px; align-items: center; font-size: 14.5px; padding: 6px 2px; }
-  .sh-accs input { width: auto; accent-color: var(--accent); }
-  .hh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .hh-p { background: var(--surface); border-radius: 12px; padding: 10px 12px; }
-  .hh-p .hh-n { font-weight: 650; margin-bottom: 4px; }
-  .hh-p .hh-r { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--muted); }
-  .hh-p .hh-r b { color: var(--text); font-weight: 600; }
-  .hh-fair { margin-top: 12px; font-size: 14px; }
+  .pot-p .hh-n { font-weight: 650; margin-bottom: 4px; }
+  .pot-p .hh-r { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--muted); }
+  .pot-p .hh-r b { color: var(--text); font-weight: 600; }
+  .pot-p .hh-r b.pos { color: var(--green); } .pot-p .hh-r b.neg { color: var(--red); }
   .tag.partner { color: var(--accent); border-color: var(--accent-line); }
+  .pot-bal { border-color: var(--accent-line); }
+  .pot-bal.plus { background: linear-gradient(160deg, var(--good-soft), var(--card) 70%); } .pot-bal.minus { background: linear-gradient(160deg, var(--warn-soft), var(--card) 70%); }
+  .pot-bal-v { font-size: 22px; font-weight: 700; margin: 4px 0; }
+  .pot-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .pot-p { background: var(--surface); border-radius: 12px; padding: 10px 12px; }
+  .pot-cat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; font-size: 14px; margin-bottom: 10px; }
+  .pot-cat .bbar { grid-column: 1 / -1; margin-top: 2px; height: 6px; }
+  .pot-item { display: grid; grid-template-columns: minmax(0, 1fr) auto 30px; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .pot-item .pi-d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pot-item.settle .pi-d { color: var(--green); }
+  .pot-item button { padding: 2px 0; }
 
   /* Månedsrapport */
   .report { border-color: var(--accent-line); background: linear-gradient(160deg, var(--accent-soft), var(--card) 70%); }
@@ -601,10 +607,6 @@
   <section id="app" class="hidden">
 
     <div class="card" id="summaryCard">
-      <div class="seg hh-seg hidden" id="hhSel" style="display:flex;margin-bottom:8px" title="Husstand = dig + de konti, din partner har delt med dig">
-        <button data-h="me" style="flex:1" class="on">Mig</button>
-        <button data-h="house" style="flex:1">Husstand</button>
-      </div>
       <div class="seg gran" id="granSel" style="display:flex;margin-bottom:10px">
         <button data-g="year" style="flex:1">År</button>
         <button data-g="month" style="flex:1" class="on">Måned</button>
@@ -642,9 +644,6 @@
 
     <!-- Nøgletal -->
     <div class="kpis" id="kpis"></div>
-
-    <!-- Husstand: hvem har betalt hvad, og hvad er fair? -->
-    <div class="card hidden" id="hhCard"></div>
 
     <!-- Forløb + indsigter -->
     <div class="ov-mid">
@@ -741,6 +740,7 @@
       <span id="selCount" class="sel-count"></span>
       <select id="selCat" aria-label="Giv de valgte en kategori"></select>
       <button class="small" id="selOneOff">Engangskøb</button>
+      <button class="small hidden" id="selPot">Læg i fælles</button>
       <button class="small ghost" id="selAll">Vælg alle</button>
       <button class="small ghost" id="selDone">Færdig</button>
     </div>
@@ -766,10 +766,14 @@
       <p class="small muted" style="margin:8px 0 0">Samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder. <span class="up">+beløb</span> = steget siden måneden før.</p></div>
   </section>
 
+  <!-- Fælles post -->
+  <section id="pot" class="hidden"><div id="potBody"></div></section>
+
   <!-- Genveje på mobil under Planlæg (Værktøjer og Rådgiver ligger ikke i bundmenuen) -->
   <div id="planLinks" class="plan-links hidden">
     <button data-go="tools"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer<span>Kalender, hvad nu hvis, skat</span></button>
     <button data-go="advisor"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver<span>Spørg om din økonomi</span></button>
+    <button data-go="pot"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm8 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM2 20c0-3.3 2.7-6 6-6s6 2.7 6 6zm13.5 0c0-1.9-.7-3.6-1.9-4.9A5 5 0 0 1 22 20z"/></svg>Fælles<span>Jeres fælles køb og balance</span></button>
   </div>
 
   <!-- Planlæg, Værktøjer, Rådgiver (bygges af modulerne i js/) -->
@@ -937,17 +941,18 @@
     <!-- Fællesøkonomi -->
     <div id="setShare" class="set-page hidden">
       <button class="ghost small set-back">‹ Indstillinger</button>
-      <div class="card">
-        <div class="head"><h2>Del konti med din partner</h2></div>
-        <p class="small muted" style="margin-top:0">Din partner skal have sin egen bruger i BudgetBunkeren. De konti, du deler, kan din partner <b>se</b> (posteringer og kategorier) – men aldrig ændre. Så kan I hver især slå <b>Husstand</b> til på Overblik og se jeres samlede økonomi og en fair fordeling af udgifterne.</p>
-        <form id="shForm" style="display:grid;gap:8px">
-          <input id="shEmail" type="email" placeholder="Din partners e-mail (den, der logges ind med)" autocomplete="off" required>
-          <div id="shAccs" class="sh-accs"></div>
-          <button class="primary">Del de valgte konti</button>
+      <div class="card" id="potSetup">
+        <div class="head"><h2>Fælles post</h2></div>
+        <p class="small muted" style="margin-top:0">En fælles post til jer to: I lægger hver især de køb ind, der er fælles (fx mad og husleje). I kan begge se alle de fælles køb, hvem der har betalt hvad, og hvem der skylder hvem. <b>Jeres egne konti forbliver private.</b> Din partner skal have sin egen bruger i BudgetBunkeren.</p>
+        <form id="potForm" style="display:grid;gap:8px">
+          <label class="field" style="margin:0"><span>Navn</span><input id="potName" value="Fælles husholdning" maxlength="40"></label>
+          <label class="field" style="margin:0"><span>Din partners e-mail</span><input id="potEmail" type="email" autocomplete="off" required></label>
+          <label class="field" style="margin:0"><span>Din andel af de fælles udgifter</span>
+            <select id="potPct"><option value="50">50 % – lige deling</option><option value="60">60 %</option><option value="40">40 %</option><option value="70">70 %</option><option value="30">30 %</option></select></label>
+          <button class="primary">Opret fælles post</button>
         </form>
       </div>
-      <div class="card"><div class="head"><h2>Det deler du</h2></div><div id="shOut"></div></div>
-      <div class="card"><div class="head"><h2>Delt med dig</h2></div><div id="shIn"></div></div>
+      <div class="card hidden" id="potInfo"></div>
     </div>
 
     <div id="setData" class="set-page hidden">
@@ -985,6 +990,7 @@
   <button data-tab="budget"><svg viewBox="0 0 24 24"><path d="M11 2v10h10A10 10 0 0 0 11 2zM9 4.1A9 9 0 1 0 19.9 15H9z"/></svg>Budget</button>
   <button data-tab="plan"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm0 4a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg>Planlæg</button>
   <button data-tab="tools" class="desk-only"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer</button>
+  <button data-tab="pot" class="desk-only"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm8 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM2 20c0-3.3 2.7-6 6-6s6 2.7 6 6zm13.5 0c0-1.9-.7-3.6-1.9-4.9A5 5 0 0 1 22 20z"/></svg>Fælles</button>
   <button data-tab="advisor" class="desk-only"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver</button>
   <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>Indstillinger</button>
   <div class="side-foot"><span class="small muted">Tema</span><button class="ghost icon-btn theme-btn" title="Skift mellem lyst og mørkt tema" aria-label="Skift tema"></button></div>
@@ -1018,7 +1024,8 @@
     <p style="margin:0 30px 2px 0"><b id="tdTitle"></b></p>
     <p class="small muted" id="tdSub" style="margin:0 0 12px"></p>
     <label class="field"><span>Note</span><input id="tdNote" maxlength="200" placeholder="Fx gave til mor, kvittering i mail …"></label>
-    <label class="small row" style="gap:8px;margin:-2px 0 12px"><input type="checkbox" id="tdOneOff" style="width:auto"> Engangskøb (holdes uden for snit, prognoser og score)</label>
+    <label class="small row" style="gap:8px;margin:-2px 0 8px"><input type="checkbox" id="tdOneOff" style="width:auto"> Engangskøb (holdes uden for snit, prognoser og score)</label>
+    <label class="small row hidden" id="tdPotRow" style="gap:8px;margin:0 0 12px"><input type="checkbox" id="tdPot" style="width:auto"> <span id="tdPotLbl">Læg i den fælles post</span></label>
     <div class="td-split">
       <div class="row between"><b class="small">Del i flere kategorier</b><button type="button" class="small" id="tdAdd">+ Tilføj del</button></div>
       <div id="tdParts"></div>
@@ -1029,6 +1036,22 @@
       <button value="cancel" formnovalidate>Annuller</button>
       <button value="ok" class="primary">Gem</button>
     </div>
+  </form>
+</dialog>
+
+<!-- Dialog: fælles køb / afregning -->
+<dialog id="potDialog">
+  <form method="dialog">
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
+    <p style="margin-top:0"><b id="pdTitle">Tilføj fælles køb</b></p>
+    <label class="field"><span>Hvad</span><input id="pdDesc" maxlength="80" placeholder="Fx Netto, kontant"></label>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <label class="field"><span>Beløb (kr.)</span><input id="pdAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required></label>
+      <label class="field"><span>Dato</span><input id="pdDate" type="date"></label>
+    </div>
+    <label class="field"><span>Kategori</span><select id="pdCat" style="width:100%"></select></label>
+    <label class="field"><span>Note (valgfri)</span><input id="pdNote" maxlength="120"></label>
+    <div class="actions"><button value="cancel" formnovalidate>Annuller</button><button value="ok" class="primary">Gem</button></div>
   </form>
 </dialog>
 
@@ -1125,7 +1148,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116210752";</script>
+<script>window.APP_VERSION = "20261116211645";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1307,71 +1330,6 @@ $("syncBtn").onclick = async () => {
 // ---------- Data ----------
 // Indtægter, du selv har tastet ind (fx løn, der ikke kommer ind på en forbundet konto).
 // De lægges ind blandt posteringerne som "kunstige" posteringer, så alle beregninger tager dem med.
-// ---------- Fællesøkonomi ----------
-// Konti, som en partner har delt med dig (kun læseadgang via databasens regler). Partnerens kategorier
-// kobles til dine efter navn, så "Dagligvarer" er samme kategori i husstandsvisningen.
-async function loadShared(since) {
-  const { data: shares, error } = await sb.from("account_shares").select("owner_id, account_key").eq("shared_with", state.uid);
-  state.sharesReady = !error;
-  state.shares = shares ?? [];
-  state.sharedTxs = []; state.sharedCats = []; state.sharedOwners = [];
-  if (!state.shares.length) { state.household = false; return; }
-  const [cats, accs, txs] = await Promise.all([
-    sb.from("categories").select("*").neq("user_id", state.uid),
-    sb.from("accounts").select("uid, user_id, account_key, name, display_name").neq("user_id", state.uid),
-    fetchAll(() => sb.from("transactions").select(TX_COLS + (state.oneOffReady ? ", one_off" : "")).neq("user_id", state.uid)
-      .gte("booking_date", since).order("booking_date", { ascending: false }).order("id")).catch(() => []),
-  ]);
-  state.sharedCats = (cats.data ?? []).map((c) => ({ ...c, shared: true }));
-  const mine = new Map(state.cats.map((c) => [c.name.toLowerCase(), c.id]));
-  const ownerOf = new Map((accs.data ?? []).map((a) => [a.uid, a.user_id]));
-  state.sharedOwners = [...new Set(state.shares.map((x) => x.owner_id))];
-  state.sharedTxs = txs.map((t) => {
-    const pc = state.sharedCats.find((c) => String(c.id) === String(t.category_id));
-    return { ...t, amount: Number(t.amount), shared: true, owner: ownerOf.get(t.account_uid),
-      category_id: pc ? (mine.get(pc.name.toLowerCase()) ?? pc.id) : null, category_source: t.category_id ? "manual" : null };
-  });
-  try { state.household = localStorage.getItem("household") === "1"; } catch {}
-  // Navne på dem, der deler (e-mail hentes af serveren)
-  const ls = await callFn("bank-connect", { action: "list-shares" }).catch(() => null);
-  state.shareEmails = Object.fromEntries((ls?.incoming ?? []).map((x) => [x.owner_id, x.email]));
-}
-// Navn på en partner (fra e-mailen, hvis den er hentet)
-const ownerName = (id) => { const e = state.shareEmails?.[id]; return e ? e.split("@")[0].replace(/^./, (c) => c.toUpperCase()) : "Partner"; };
-// Grundlaget for tal og liste: dine egne posteringer – plus partnerens delte i husstandsvisning
-const baseTxs = () => state.household && state.sharedTxs?.length ? state.allTxs.concat(state.sharedTxs) : state.allTxs;
-
-// Mig / Husstand på Overblik
-$("hhSel").onclick = (e) => {
-  const b = e.target.closest("button[data-h]"); if (!b) return;
-  state.household = b.dataset.h === "house";
-  try { localStorage.setItem("household", state.household ? "1" : "0"); } catch {}
-  fixedCache.clear(); refresh();
-};
-function renderHousehold() {
-  const has = !!state.sharedTxs?.length;
-  $("hhSel").classList.toggle("hidden", !has);
-  $("hhSel").querySelectorAll("button").forEach((b) => b.classList.toggle("on", (b.dataset.h === "house") === !!(state.household && has)));
-  const card = $("hhCard");
-  card.classList.toggle("hidden", !(state.household && has));
-  if (!(state.household && has)) return;
-  // Pr. person i perioden: indtægter og udgifter (efter kategoriernes type, som resten af appen)
-  const list = txsIn(state.period);
-  const people = [{ id: state.uid, name: "Dig" }, ...state.sharedOwners.map((id) => ({ id, name: ownerName(id) }))];
-  const stats = people.map((p) => { const t = totals(list.filter((x) => (x.shared ? x.owner : state.uid) === p.id)); return { ...p, inc: t.inc, out: t.out }; });
-  const totInc = stats.reduce((s2, x) => s2 + x.inc, 0), totOut = stats.reduce((s2, x) => s2 + x.out, 0);
-  const fair = stats.map((x) => ({ ...x, should: totInc ? totOut * x.inc / totInc : totOut / stats.length }));
-  const me = fair[0], diff = me.out - me.should;   // positiv = du har betalt mere end din andel
-  card.innerHTML = `<div class="head"><h2>Husstand</h2><span class="small muted">${esc(periodLabel(state.period))}</span></div>
-    <div class="hh-grid">${fair.map((x) => `<div class="hh-p"><div class="hh-n">${esc(x.name)}</div>
-      <div class="hh-r"><span>Indtægter</span><b class="num">${kr(x.inc)}</b></div>
-      <div class="hh-r"><span>Udgifter</span><b class="num">${kr(x.out)}</b></div>
-      <div class="hh-r"><span>Andel af udgifter</span><b class="num">${totOut ? Math.round(x.out / totOut * 100) : 0}%</b></div></div>`).join("")}</div>
-    <div class="hh-fair">${totOut ? `Fordelt efter indkomst skulle du betale <b>${kr(me.should)}</b> (${totInc ? Math.round(me.inc / totInc * 100) : 50}%) af husstandens udgifter på ${kr(totOut)} ` +
-      (Math.abs(diff) < 50 ? "– det passer næsten præcis." : diff > 0 ? `– du har betalt <b class="pos">${kr(diff)} mere</b> end din andel.` : `– du har betalt <b class="neg">${kr(-diff)} mindre</b> end din andel.`) +
-      `<div class="small muted" style="margin-top:4px">Ved 50/50 skulle hver betale ${kr(totOut / stats.length)} – kun de konti, der er delt, tæller med for din partner.</div>` : "Ingen udgifter i perioden."}</div>`;
-}
-
 // Opdelinger af posteringer (kræver databaseopdatering 015)
 async function loadSplits() {
   const { data, error } = await sb.from("tx_splits").select("id, tx_id, category_id, amount").eq("user_id", state.uid);
@@ -1400,7 +1358,7 @@ function syncVisible() {
   const bySplit = new Map();
   for (const sp of state.splits ?? []) { if (!bySplit.has(sp.tx_id)) bySplit.set(sp.tx_id, []); bySplit.get(sp.tx_id).push(sp); }
   const expanded = [];
-  for (const t of baseTxs() ?? []) {
+  for (const t of state.allTxs ?? []) {
     const parts = bySplit.get(t.id);
     if (!parts) { expanded.push(t); continue; }
     const sum = parts.reduce((s, p) => s + p.amount, 0);
@@ -1458,7 +1416,7 @@ async function load() {
     const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
     state.allTxs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
     await loadSplits();
-    await loadShared(since);
+    await loadPot();
     await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
@@ -1478,7 +1436,7 @@ async function load() {
   if (state.manualReady === false) missing.push("at indtaste løn selv");
   if (state.oneOffReady === false) missing.push("engangskøb på den enkelte postering");
   if (state.noteReady === false || state.splitsReady === false) missing.push("noter og opdeling af posteringer");
-  if (state.sharesReady === false) missing.push("fællesøkonomi");
+  if (state.potReady === false) missing.push("fællesøkonomi");
   if (state.me && state.me.available === false) missing.push("invitationer og egen bankapp til ekstra brugere");
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
@@ -1491,7 +1449,7 @@ async function load() {
 // De sidst hentede data gemmes i browseren på denne enhed, så appen kan vise dem med det samme ved næste åbning
 // (og så hente nye i baggrunden). Ryddes ved log ud.
 const CACHE_KEYS = ["cats", "rules", "sessions", "accounts", "splits", "manual", "goals", "assets", "history", "challenges", "planReady", "me",
-  "oneOffReady", "noteReady", "splitsReady", "manualReady", "dbMissing", "shares", "sharedTxs", "sharedCats", "sharedOwners", "shareEmails", "household", "sharesReady"];
+  "oneOffReady", "noteReady", "splitsReady", "manualReady", "dbMissing", "pot", "potMembers", "potItems", "potReady"];
 const cacheKey = () => "bb-cache-" + state.uid;
 function saveCache() {
   if (!state.uid) return;
@@ -1553,7 +1511,7 @@ function renderConsent(s) {
 }
 
 // ---------- Hjælpere ----------
-const catById = (id) => state.cats.find((c) => String(c.id) === String(id)) ?? state.sharedCats?.find((c) => String(c.id) === String(id));
+const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
 
 // Kategorier i en vælger: almindelige udgifter og indtægter først; de særlige typer (som ikke tæller med
 // i det normale forbrug) nederst i hver deres gruppe med en kort forklaring som overskrift.
@@ -1838,7 +1796,6 @@ function renderDashboard() {
   });
 
   renderScore();
-  renderHousehold();
   renderReport();
   renderInsights(fixedItems, isFixed);
   renderNextMonth();
@@ -2552,7 +2509,7 @@ function renderTxs() {
   const f = state.txF || "all";
   const q = $("search").value.trim().toLowerCase();
   // Søgning gælder alle perioder; ellers den valgte periode (også ignorerede – de vises med mærke)
-  let list = q ? baseTxs() : baseTxs().filter((t) => inPeriod(t, state.period));
+  let list = q ? state.allTxs : state.allTxs.filter((t) => inPeriod(t, state.period));
   $("txPeriodLbl").textContent = q ? "Alle perioder" : periodLabel(state.period);
   $("txNext").disabled = !!q || stepP(state.period, 1) > keyOf(todayIso());
   $("txPrev").disabled = !!q;
@@ -2587,13 +2544,13 @@ function renderTxs() {
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const nSplit = (state.splits ?? []).filter((x) => x.tx_id === t.id).length;
-    const pickable = state.selMode && !t.manual && !t.shared;
+    const pickable = state.selMode && !t.manual;
     html += `<div class="tx ${t.note ? "has-note" : ""} ${pickable ? "pickable" : ""} ${pickable && state.sel.has(t.id) ? "picked" : ""}" ${pickable ? `data-pick="${esc(t.id)}"` : ""}>
-      <span class="desc" ${t.manual || t.shared ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
+      <span class="desc" ${t.manual ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${state.pot && potItemOf(t.id) ? `<span class="tag partner" title="Lagt i ${esc(state.pot.name)}">fælles</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       ${t.note ? `<span class="tx-note">${esc(t.note)}</span>` : ""}
-      ${t.manual || t.shared ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
-      ${t.shared ? `<span class="small muted sh-cat"><span class="tag partner">${esc(ownerName(t.owner))}</span> ${esc(catById(effCat(t))?.name ?? "Uden kategori")}</span>` : t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
+      ${t.manual ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
+      ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
         : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
     </div>`;
   }
@@ -2601,7 +2558,7 @@ function renderTxs() {
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
-  state.visibleIds = list.slice(0, state.shown).filter((t) => !t.manual && !t.shared).map((t) => t.id);
+  state.visibleIds = list.slice(0, state.shown).filter((t) => !t.manual).map((t) => t.id);
   document.querySelectorAll("#txList [data-pick]").forEach((r) => r.onclick = (e) => {
     e.preventDefault(); e.stopPropagation();
     const id = r.dataset.pick; state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id);
@@ -2720,7 +2677,8 @@ function renderSelBar() {
   const n = state.sel.size;
   $("selCount").textContent = n ? `${n} valgt` : "Tryk på posteringer";
   $("selCat").innerHTML = `<option value="">Giv kategori …</option>` + catOptions(null);
-  $("selCat").disabled = $("selOneOff").disabled = !n;
+  $("selCat").disabled = $("selOneOff").disabled = $("selPot").disabled = !n;
+  $("selPot").classList.toggle("hidden", !state.pot);
   const all = n && [...state.sel].every((id) => state.allTxs.find((t) => t.id === id)?.one_off);
   $("selOneOff").textContent = all ? "Ikke engangskøb" : "Engangskøb";
 }
@@ -2742,6 +2700,11 @@ $("selCat").onchange = () => {
   const id = Number($("selCat").value); if (!id) return;
   updateMany({ category_id: id, category_source: "manual" }, `fik kategorien ${catById(id)?.name}`);
 };
+$("selPot").onclick = async () => {
+  const txs = state.allTxs.filter((t) => state.sel.has(t.id) && t.amount < 0 && !potItemOf(t.id));
+  let n = 0; for (const t of txs) if (await addPotItem(potRowFromTx(t))) n++;
+  toast(`${n} køb lagt i ${state.pot.name}.`); state.sel.clear(); renderTxs();
+};
 $("selOneOff").onclick = () => {
   const all = [...state.sel].every((id) => state.allTxs.find((t) => t.id === id)?.one_off);
   updateMany({ one_off: !all }, all ? "tæller med igen" : "er markeret som engangskøb");
@@ -2757,6 +2720,10 @@ async function openTx(id) {
   $("tdSub").textContent = `${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${kr(t.amount)} · ${catById(effCat(t))?.name ?? "Uden kategori"}`;
   $("tdNote").value = t.note ?? "";
   $("tdOneOff").checked = !!t.one_off;
+  const potIt = potItemOf(id);
+  $("tdPotRow").classList.toggle("hidden", !state.pot || (t.amount >= 0 && !potIt));
+  $("tdPot").checked = !!potIt;
+  if (state.pot) $("tdPotLbl").textContent = `Læg i ${state.pot.name} (fælles med ${potOther()?.name ?? "din partner"})`;
   const opts = (sel) => catOptions(sel, { skip: catById(sel)?.kind === "ignore" ? [] : ["ignore"] });
   const partRow = (p = {}) => `<div class="td-part"><select class="tp-cat" aria-label="Kategori">${opts(p.category_id)}</select>
     <input type="number" class="tp-amt" inputmode="decimal" min="0" step="0.01" value="${p.amount ? Math.abs(p.amount) : ""}" placeholder="Beløb" aria-label="Beløb">
@@ -2779,6 +2746,10 @@ async function openTx(id) {
   if (rest() < -0.005) return toast("Delene kan ikke være større end posteringen – prøv igen.", 5000);
 
   const note = $("tdNote").value.trim() || null, oneOff = $("tdOneOff").checked;
+  if (state.pot && $("tdPot").checked !== !!potIt) {
+    if ($("tdPot").checked) await addPotItem(potRowFromTx({ ...t, note }));
+    else await removePotItem(potIt.id);
+  }
   const patch = {};
   if ((t.note ?? null) !== note) patch.note = note;
   if (!!t.one_off !== oneOff) patch.one_off = oneOff;
@@ -2870,7 +2841,7 @@ async function setCategory(txId, value) {
 
 // ---------- Indstillinger ----------
 // ---------- Faner ----------
-const TABS = { app: "Overblik", txs: "Posteringer", budget: "Budget", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
+const TABS = { app: "Overblik", txs: "Posteringer", budget: "Budget", plan: "Planlæg", pot: "Fælles", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
 const modules = {};   // plan / tools / advisor – indlæses fra js/
 let currentTab = "app", lastTab = "app";
 function showTab(tab) {
@@ -2880,7 +2851,7 @@ function showTab(tab) {
   for (const t of Object.keys(TABS)) $(t).classList.toggle("hidden", t !== tab);
   // Rådgiveren ligger under Værktøjer på mobil
   // På mobil ligger Værktøjer og Rådgiver under Planlæg
-  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab || (["tools", "advisor"].includes(tab) && b.dataset.tab === "plan" && innerWidth < 900)));
+  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab || (["tools", "advisor", "pot"].includes(tab) && b.dataset.tab === "plan" && innerWidth < 900)));
   $("planLinks").classList.toggle("hidden", tab !== "plan");
   $("pageTitle").textContent = TABS[tab];
   $("pageSub").textContent = "";
@@ -2889,6 +2860,7 @@ function showTab(tab) {
   else if (tab === "app") render();
   else if (tab === "txs") renderTxs();
   else if (tab === "budget") renderBudget();
+  else if (tab === "pot") renderPot();
   else modules[tab]?.render();
   try { localStorage.setItem("tab", tab); } catch {}
   window.scrollTo(0, 0);
@@ -2896,7 +2868,7 @@ function showTab(tab) {
 document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 document.querySelectorAll("#planLinks button").forEach((b) => b.onclick = () => showTab(b.dataset.go));
 // Gentegn den aktive fane (bruges efter ændringer i data)
-function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab === "txs") renderTxs(); else if (currentTab === "budget") renderBudget(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
+function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab === "txs") renderTxs(); else if (currentTab === "budget") renderBudget(); else if (currentTab === "pot") renderPot(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
 $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
@@ -3037,43 +3009,168 @@ function renderSetHome() {
   $("ssCats").textContent = `${state.cats.length} kategorier · ${state.cats.filter((c) => Number(c.monthly_budget) > 0).length} med budget`;
   $("ssIncome").textContent = state.manualReady === false ? "Kræver databaseopdateringen" : state.manual?.length
     ? `Senest ${fmt(state.manual[0].pay_date, { day: "numeric", month: "short" })}: ${kr(state.manual[0].amount)}` : "Skriv din løn selv, hvis banken ikke viser den";
-  $("ssShare").textContent = state.sharedTxs?.length ? `${Object.values(state.shareEmails ?? {}).join(", ") || "En partner"} deler konti med dig` : "Del konti med din partner";
+  $("ssShare").textContent = state.pot ? `${state.pot.name} med ${potOther()?.name ?? "din partner"}` : "Fælles post til jeres fælles køb";
   $("ssRules").textContent = `${state.rules.filter((r) => r.priority >= 200).length} egne regler · ${state.rules.filter((r) => r.priority < 200).length} standard`;
   sb.auth.mfa.listFactors().then(({ data }) => { $("ssAcct").textContent = data?.totp?.some((f) => f.status === "verified") ? "Totrinsbekræftelse er slået til" : "Totrinsbekræftelse er slået fra"; }).catch(() => {});
   $("ssData").textContent = state.dbMissing.length ? "Databasen mangler en opdatering" : `${state.allTxs.length} posteringer`;
   $("ssData").classList.toggle("warn-t", !!state.dbMissing.length);
 }
 
-// --- Fællesøkonomi (Indstillinger) ---
-async function renderShare() {
-  const accs = state.accounts.filter((a) => a.uid !== "demo-konto");
-  const byKey = new Map(); for (const a of accs) if (!byKey.has(a.account_key ?? a.uid)) byKey.set(a.account_key ?? a.uid, a);
-  $("shAccs").innerHTML = byKey.size ? [...byKey.entries()].map(([k, a]) => `<label><input type="checkbox" value="${esc(k)}"> ${esc(accName(a))}${a.iban_last4 ? ` <span class="muted small">••${esc(a.iban_last4)}</span>` : ""}</label>`).join("")
-    : `<p class="small muted" style="margin:0">Du har ingen konti at dele endnu – forbind din bank først.</p>`;
-  $("shOut").innerHTML = $("shIn").innerHTML = `<p class="small muted" style="margin:0">Henter …</p>`;
-  const r = await callFn("bank-connect", { action: "list-shares" }).catch((e) => ({ error: e.message }));
-  if (r.error || r.available === false) { $("shOut").innerHTML = $("shIn").innerHTML = `<p class="small warn-t" style="margin:0">${r.error ? esc(r.error) : "Kræver databaseopdateringen – kør opdater.html."}</p>`; return; }
-  const group = (rows, idKey) => { const m = new Map(); for (const x of rows) { if (!m.has(x[idKey])) m.set(x[idKey], { email: x.email, items: [] }); m.get(x[idKey]).items.push(x); } return m; };
-  const out = group(r.outgoing, "shared_with"), inc = group(r.incoming, "owner_id");
-  $("shOut").innerHTML = out.size ? [...out.entries()].map(([id, g]) => `<div class="list-row" style="grid-template-columns:1fr auto"><div><div>${esc(g.email)}</div>
-      <div class="sub">${g.items.map((x) => esc(x.account)).join(", ")}</div></div><button class="small ghost danger" data-unshare="${esc(id)}">Stop deling</button></div>`).join("")
-    : `<p class="small muted" style="margin:0">Du deler ingen konti.</p>`;
-  $("shIn").innerHTML = inc.size ? [...inc.values()].map((g) => `<div class="list-row"><div><div>${esc(g.email)}</div><div class="sub">${g.items.map((x) => esc(x.account)).join(", ")}</div></div></div>`).join("") +
-      `<p class="small muted" style="margin:8px 0 0">Slå <b>Husstand</b> til øverst på Overblik for at se det samlede billede.</p>`
-    : `<p class="small muted" style="margin:0">Ingen har delt konti med dig.</p>`;
-  document.querySelectorAll("[data-unshare]").forEach((b) => b.onclick = async () => {
-    if (!confirm("Stop med at dele dine konti med denne person?")) return;
-    try { await callFn("bank-connect", { action: "unshare", shared_with: b.dataset.unshare }); toast("Delingen er stoppet."); renderShare(); }
-    catch (e) { toast("Fejl: " + e.message, 6000); }
+// ---------- Fælles post ----------
+// I lægger hver især fælles køb ind (fra jeres egne posteringer eller manuelt). Alle i posten kan se købene,
+// hvem der har betalt, og hvem der skylder hvem. Fordelingen: opretteren har owner_pct %, partneren resten.
+async function loadPot() {
+  state.pot = null; state.potMembers = []; state.potItems = [];
+  const { data: mem, error } = await sb.from("pot_members").select("pot_id").eq("user_id", state.uid).limit(1);
+  state.potReady = !error;
+  if (error || !mem?.length) return;
+  const id = mem[0].pot_id;
+  const [p, m, items] = await Promise.all([
+    sb.from("shared_pots").select("*").eq("id", id).maybeSingle(),
+    sb.from("pot_members").select("pot_id, user_id, name").eq("pot_id", id),
+    fetchAll(() => sb.from("pot_items").select("*").eq("pot_id", id).order("item_date", { ascending: false }).order("id")).catch(() => []),
+  ]);
+  state.pot = p.data ? { ...p.data, owner_pct: Number(p.data.owner_pct) } : null;
+  state.potMembers = m.data ?? [];
+  state.potItems = items.map((x) => ({ ...x, amount: Number(x.amount) }));
+}
+const potOther = () => state.potMembers.find((m) => m.user_id !== state.uid);
+const potName = (uid) => uid === state.uid ? "Dig" : state.potMembers.find((m) => m.user_id === uid)?.name ?? "Partner";
+const potShare = (uid) => !state.pot ? 0.5 : (uid === state.pot.created_by ? state.pot.owner_pct : 100 - state.pot.owner_pct) / 100;
+const potItemOf = (txId) => state.potItems.find((x) => x.tx_id === txId && x.user_id === state.uid);
+// Balance pr. medlem: betalt − egen andel af udgifterne (+ afregninger). Positiv = de andre skylder dig.
+function potBalance(items = state.potItems) {
+  const total = items.filter((x) => x.kind === "expense").reduce((s, x) => s + x.amount, 0);
+  const bal = new Map(state.potMembers.map((m) => [m.user_id, -potShare(m.user_id) * total]));
+  for (const x of items) {
+    bal.set(x.user_id, (bal.get(x.user_id) ?? 0) + x.amount);   // betalt (eller afregnet til den anden)
+    if (x.kind === "settle") for (const m of state.potMembers) if (m.user_id !== x.user_id) bal.set(m.user_id, (bal.get(m.user_id) ?? 0) - x.amount);
+  }
+  return { total, bal };
+}
+async function addPotItem(row) {
+  const { data, error } = await sb.from("pot_items").insert({ pot_id: state.pot.id, ...row }).select().single();
+  if (error) { toast(/pot_items/.test(error.message) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000); return null; }
+  state.potItems.unshift({ ...data, amount: Number(data.amount) });
+  return data;
+}
+async function removePotItem(id) {
+  const { error } = await sb.from("pot_items").delete().eq("id", id);
+  if (error) { toast("Fejl: " + error.message, 6000); return false; }
+  state.potItems = state.potItems.filter((x) => x.id !== id);
+  return true;
+}
+// Læg en egen postering i den fælles post (kopi af dato, beløb, tekst og kategorinavn – ikke selve kontoen)
+const potRowFromTx = (t) => ({ kind: "expense", tx_id: t.id, item_date: t.booking_date, amount: Math.abs(t.amount), description: t.counterparty || t.description,
+  category: catById(effCat(t))?.name ?? null, note: t.note ?? null });
+
+state.potMonth = todayIso().slice(0, 7);
+function renderPot() {
+  const root = $("potBody");
+  $("pageTitle").textContent = state.pot?.name ?? "Fælles";
+  if (!state.pot) {
+    root.innerHTML = `<div class="card"><p style="margin-top:0">Med en <b>fælles post</b> lægger du og din partner hver især de fælles køb ind – og I kan begge se, hvem der har betalt hvad, og hvem der skylder hvem.</p>
+      <button class="primary" id="potSetupGo">Opret fælles post</button></div>`;
+    $("potSetupGo").onclick = () => { showTab("settings"); setPage("share"); };
+    return;
+  }
+  const other = potOther();
+  const { bal } = potBalance();
+  const mine = bal.get(state.uid) ?? 0;
+  const m = state.potMonth, monthItems = state.potItems.filter((x) => x.item_date.startsWith(m));
+  const exp = monthItems.filter((x) => x.kind === "expense");
+  const tot = exp.reduce((s2, x) => s2 + x.amount, 0);
+  const paid = (uid) => exp.filter((x) => x.user_id === uid).reduce((s2, x) => s2 + x.amount, 0);
+  const byCat = new Map(); for (const x of exp) byCat.set(x.category || "Uden kategori", (byCat.get(x.category || "Uden kategori") ?? 0) + x.amount);
+  const cats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
+  const people = state.potMembers.map((p) => ({ ...p, paid: paid(p.user_id), should: potShare(p.user_id) * tot }));
+  let lastDay = "";
+  root.innerHTML = `
+    <div class="card pot-bal ${Math.abs(mine) < 1 ? "" : mine > 0 ? "plus" : "minus"}">
+      <div class="bs-l">Balance (alt i alt)</div>
+      <div class="pot-bal-v">${Math.abs(mine) < 1 ? "I er kvit" : mine > 0 ? `${esc(other?.name ?? "Partner")} skylder dig <span class="num">${kr(mine)}</span>` : `Du skylder ${esc(other?.name ?? "partner")} <span class="num">${kr(-mine)}</span>`}</div>
+      <div class="small muted">Fordeling: dig ${Math.round(potShare(state.uid) * 100)} % · ${esc(other?.name ?? "partner")} ${Math.round(potShare(other?.user_id) * 100)} %</div>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="primary small" id="potAdd">+ Tilføj fælles køb</button>
+        ${Math.abs(mine) >= 1 && mine < 0 ? `<button class="small" id="potSettle">Registrér at jeg har betalt ${kr(-mine)}</button>` : ""}
+      </div>
+      <p class="small muted" style="margin:8px 0 0">Læg dine egne køb ind fra <b>Posteringer</b>: tryk på et køb → "Læg i ${esc(state.pot.name)}" – eller vælg flere ad gangen.</p>
+    </div>
+    <div class="period tx-period" style="margin-bottom:12px">
+      <button id="potPrev" aria-label="Forrige måned">‹</button><div class="tx-plbl">${fmt(m + "-01", { month: "long", year: "numeric" })}</div><button id="potNext" aria-label="Næste måned" ${m >= todayIso().slice(0, 7) ? "disabled" : ""}>›</button>
+    </div>
+    <div class="ov-two">
+      <div class="card"><div class="head"><h2>Hvem har betalt</h2><span class="num small muted">I alt ${kr(tot)}</span></div>
+        <div class="pot-people">${people.map((p) => `<div class="pot-p"><div class="hh-n">${esc(potName(p.user_id))}</div>
+          <div class="hh-r"><span>Betalt</span><b class="num">${kr(p.paid)}</b></div>
+          <div class="hh-r"><span>Andel (${Math.round(potShare(p.user_id) * 100)} %)</span><b class="num">${kr(p.should)}</b></div>
+          <div class="hh-r"><span>Forskel</span><b class="num ${p.paid - p.should >= 0 ? "pos" : "neg"}">${p.paid - p.should >= 0 ? "+" : "−"}${kr(Math.abs(p.paid - p.should))}</b></div></div>`).join("")}</div></div>
+      <div class="card"><div class="head"><h2>Fordeling</h2></div>
+        ${cats.length ? cats.map(([n, v]) => `<div class="pot-cat"><span>${esc(n)}</span><span class="num">${kr(v)}</span><span class="bbar"><span class="b-ok" style="width:${v / cats[0][1] * 100}%"></span></span></div>`).join("") : `<p class="empty">Ingen fælles køb i måneden.</p>`}</div>
+    </div>
+    <div class="card"><div class="head"><h2>Fælles køb</h2><span class="small muted">${monthItems.length} i ${fmt(m + "-01", { month: "long" })}</span></div>
+      ${monthItems.map((x) => { const day = x.item_date !== lastDay ? `<div class="day">${fmt(x.item_date, { weekday: "long", day: "numeric", month: "long" })}</div>` : ""; lastDay = x.item_date;
+        return day + `<div class="pot-item ${x.kind}"><div style="min-width:0"><div class="pi-d">${x.kind === "settle" ? "Afregning" : esc(x.description)}</div>
+          <div class="small muted"><span class="tag ${x.user_id === state.uid ? "" : "partner"}">${x.user_id === state.uid ? "Du" : esc(potName(x.user_id))} betalte</span> ${x.kind === "settle" ? `til ${esc(other?.name ?? "partner")}` : esc(x.category ?? "")}${x.note ? " · " + esc(x.note) : ""}</div></div>
+          <span class="num">${kr(x.amount)}</span>${x.user_id === state.uid ? `<button class="ghost small danger" data-del="${x.id}" aria-label="Fjern">✕</button>` : "<span></span>"}</div>`; }).join("") || `<p class="empty">Ingen fælles køb i ${fmt(m + "-01", { month: "long" })} endnu.</p>`}
+    </div>`;
+  $("potPrev").onclick = () => { state.potMonth = addMonths(m, -1); renderPot(); };
+  $("potNext").onclick = () => { state.potMonth = addMonths(m, 1); renderPot(); };
+  $("potAdd").onclick = () => potDialog("expense");
+  if ($("potSettle")) $("potSettle").onclick = () => potDialog("settle", -mine);
+  root.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => {
+    if (!confirm("Fjern købet fra den fælles post?")) return;
+    if (await removePotItem(Number(b.dataset.del))) { renderPot(); }
   });
 }
-$("shForm").onsubmit = async (e) => {
+async function potDialog(kind, amount = null) {
+  $("pdTitle").textContent = kind === "settle" ? `Afregning til ${potOther()?.name ?? "partner"}` : "Tilføj fælles køb";
+  $("pdDesc").closest("label").classList.toggle("hidden", kind === "settle");
+  $("pdCat").closest("label").classList.toggle("hidden", kind === "settle");
+  $("pdDesc").value = ""; $("pdAmount").value = amount ? Math.round(amount * 100) / 100 : ""; $("pdDate").value = todayIso(); $("pdNote").value = "";
+  $("pdDesc").required = kind !== "settle";
+  $("pdCat").innerHTML = state.cats.filter((c) => c.kind === "expense").sort((a, b) => a.name.localeCompare(b.name, "da")).map((c) => `<option>${esc(c.name)}</option>`).join("");
+  if (!(await ask($("potDialog")))) return;
+  const amt = Number($("pdAmount").value);
+  if (!(amt > 0)) return toast("Skriv et beløb.");
+  await addPotItem({ kind, item_date: $("pdDate").value || todayIso(), amount: amt, description: kind === "settle" ? "Afregning" : $("pdDesc").value.trim(), category: kind === "settle" ? null : $("pdCat").value, note: $("pdNote").value.trim() || null });
+  toast("Gemt.", 1500); renderPot();
+}
+
+// Indstillinger → Fællesøkonomi
+function renderShare() {
+  $("potSetup").classList.toggle("hidden", !!state.pot);
+  $("potInfo").classList.toggle("hidden", !state.pot);
+  if (state.potReady === false) { $("potSetup").insertAdjacentHTML("beforeend", `<p class="small warn-t">Kræver databaseopdateringen – kør opdater.html.</p>`); return; }
+  if (!state.pot) return;
+  const owner = state.pot.created_by === state.uid, other = potOther();
+  $("potInfo").innerHTML = `<div class="head"><h2>${esc(state.pot.name)}</h2></div>
+    <div class="kv2"><span class="muted">Medlemmer</span><span>Dig og ${esc(other?.name ?? "?")}</span>
+      <span class="muted">Fælles køb</span><span>${state.potItems.filter((x) => x.kind === "expense").length}</span></div>
+    <label class="field" style="margin-top:12px"><span>Din andel af de fælles udgifter</span>
+      <select id="potPctEdit">${[50, 60, 40, 70, 30, 55, 45, 65, 35].sort((a, b) => a - b).map((v) => `<option value="${v}" ${Math.round(potShare(state.uid) * 100) === v ? "selected" : ""}>${v} %</option>`).join("")}</select></label>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" id="potOpen">Åbn ${esc(state.pot.name)}</button>
+      <button class="small ghost danger" id="potDel">${owner ? "Slet den fælles post" : "Forlad den fælles post"}</button></div>`;
+  $("potPctEdit").onchange = async (e) => {
+    const mine = Number(e.target.value), owner_pct = owner ? mine : 100 - mine;
+    const { error } = await sb.from("shared_pots").update({ owner_pct }).eq("id", state.pot.id);
+    if (error) return toast("Fejl: " + error.message, 6000);
+    state.pot.owner_pct = owner_pct; toast("Fordelingen er gemt.", 1500);
+  };
+  $("potOpen").onclick = () => showTab("pot");
+  $("potDel").onclick = async () => {
+    if (!confirm(owner ? "Slet den fælles post og alle de fælles køb i den? (Jeres egne posteringer røres ikke.)" : "Forlad den fælles post?")) return;
+    try { await callFn("bank-connect", { action: "pot-delete", pot_id: state.pot.id }); await loadPot(); toast("Færdig."); renderShare(); }
+    catch (err) { toast("Fejl: " + err.message, 6000); }
+  };
+}
+$("potForm").onsubmit = async (e) => {
   e.preventDefault();
-  const keys = [...$("shAccs").querySelectorAll("input:checked")].map((i) => i.value);
-  if (!keys.length) return toast("Vælg mindst én konto.");
   const btn = e.target.querySelector("button"); btn.disabled = true;
-  try { const r = await callFn("bank-connect", { action: "share-accounts", email: $("shEmail").value.trim(), account_keys: keys }); toast(`${r.shared} ${r.shared === 1 ? "konto" : "konti"} delt.`); $("shEmail").value = ""; renderShare(); }
-  catch (err) { toast(err.message, 7000); }
+  try {
+    await callFn("bank-connect", { action: "pot-create", email: $("potEmail").value.trim(), my_pct: Number($("potPct").value), name: $("potName").value.trim() });
+    await loadPot(); toast("Den fælles post er oprettet – din partner kan se den næste gang appen åbnes.", 6000); renderShare();
+  } catch (err) { toast(err.message, 7000); }
   btn.disabled = false;
 };
 

@@ -97,7 +97,7 @@ $$);
 - **Fornyelse:** bankadgangen udløber ca. hvert halve år. Fra 14 dage før vises en gul boks med *Forny adgang*.
 
 ## Flere brugere
-- **Fællesøkonomi:** del udvalgte konti med din partner (Indstillinger → Fællesøkonomi). Partneren kan kun se dem. Slå *Husstand* til på Overblik for det samlede billede og en fair fordeling af udgifterne.
+- **Fællesøkonomi:** opret en *fælles post* med din partner (Indstillinger → Fællesøkonomi). I lægger hver især de fælles køb ind (tryk på et køb → *Læg i …*, eller vælg flere). Begge ser købene, hvem der har betalt, fordelingen og hvem der skylder hvem. Jeres egne konti forbliver private.
 - Ejeren laver en **invitationskode** (Indstillinger → Login og sikkerhed). Den nye bruger vælger *Opret bruger* på login-siden, får en mail og vælger adgangskode.
 - Hver bruger ser **kun sine egne data**.
 - Enable Bankings gratis vilkår kræver, at hver person bruger **sin egen** gratis Enable Banking-app til sine egne konti. Den nye bruger lægger App ID og `.pem` ind under *Bank og konti* (vejledning med *Kopiér*-knapper står dér).

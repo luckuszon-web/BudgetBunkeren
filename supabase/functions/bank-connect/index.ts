@@ -48,12 +48,11 @@ Deno.serve(async (req) => {
       return json({ invites: data ?? [], owner: true });
     }
 
-    // --- Fællesøkonomi: del udvalgte konti (kun læseadgang) med en anden bruger af appen ---
-    const emailOf = async (id: string) => (await db.auth.admin.getUserById(id)).data?.user?.email ?? "?";
-    if (body.action === "share-accounts") {
+    // --- Fællesøkonomi: en fælles post, som I begge lægger fælles køb ind i ---
+    if (body.action === "pot-create") {
       const email = String(body.email ?? "").trim().toLowerCase();
-      const keys: string[] = Array.isArray(body.account_keys) ? body.account_keys.map(String) : [];
-      if (!email || !keys.length) return json({ error: "Skriv en e-mail, og vælg mindst én konto." }, 400);
+      const pct = Math.min(100, Math.max(0, Number(body.my_pct ?? 50)));
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "Skriv din partners e-mail." }, 400);
       // Find brugeren med den e-mail (få brugere, så en enkel gennemgang er nok)
       let partner: { id: string; email?: string } | undefined;
       for (let page = 1; page <= 20 && !partner; page++) {
@@ -63,33 +62,24 @@ Deno.serve(async (req) => {
         if (data.users.length < 100) break;
       }
       if (!partner) return json({ error: "Der findes ingen bruger af BudgetBunkeren med den e-mail. Personen skal først oprettes (invitationskode)." }, 404);
-      if (partner.id === user.id) return json({ error: "Du kan ikke dele med dig selv." }, 400);
-      const { data: mine } = await db.from("accounts").select("account_key").eq("user_id", user.id).in("account_key", keys);
-      const ok = [...new Set((mine ?? []).map((a) => a.account_key))];
-      if (!ok.length) return json({ error: "Kontiene blev ikke fundet." }, 400);
-      const { error } = await db.from("account_shares").upsert(ok.map((k) => ({ owner_id: user.id, account_key: k, shared_with: partner!.id })));
-      if (error) return json({ error: error.message.includes("account_shares") ? "Databaseopdatering 016 mangler – kør opdater.html." : error.message }, 500);
-      return json({ ok: true, shared: ok.length });
+      if (partner.id === user.id) return json({ error: "Skriv din partners e-mail – ikke din egen." }, 400);
+      const nameOf = (e?: string) => (e ?? "?").split("@")[0].replace(/^./, (c) => c.toUpperCase());
+      const { data: pot, error } = await db.from("shared_pots").insert({ name: String(body.name ?? "").trim() || "Fælles husholdning", created_by: user.id, owner_pct: pct }).select().single();
+      if (error) return json({ error: error.message.includes("shared_pots") ? "Databaseopdatering 016 mangler – kør opdater.html." : error.message }, 500);
+      const { error: mErr } = await db.from("pot_members").insert([
+        { pot_id: pot.id, user_id: user.id, name: nameOf(user.email) },
+        { pot_id: pot.id, user_id: partner.id, name: nameOf(partner.email) },
+      ]);
+      if (mErr) { await db.from("shared_pots").delete().eq("id", pot.id); return json({ error: mErr.message }, 500); }
+      return json({ ok: true, pot_id: pot.id });
     }
-    if (body.action === "unshare") {
-      let q = db.from("account_shares").delete().eq("owner_id", user.id).eq("shared_with", String(body.shared_with ?? ""));
-      if (body.account_key) q = q.eq("account_key", String(body.account_key));
-      const { error } = await q;
-      if (error) return json({ error: error.message }, 500);
+    if (body.action === "pot-delete") {
+      // Den, der oprettede posten, kan slette den (med alle købene); et andet medlem kan forlade den
+      const { data: pot } = await db.from("shared_pots").select("id, created_by").eq("id", Number(body.pot_id)).maybeSingle();
+      if (!pot) return json({ error: "Den fælles post blev ikke fundet." }, 404);
+      if (pot.created_by === user.id) await db.from("shared_pots").delete().eq("id", pot.id);
+      else await db.from("pot_members").delete().eq("pot_id", pot.id).eq("user_id", user.id);
       return json({ ok: true });
-    }
-    if (body.action === "list-shares") {
-      const { data: rows, error } = await db.from("account_shares").select("owner_id, account_key, shared_with, created_at").or(`owner_id.eq.${user.id},shared_with.eq.${user.id}`);
-      if (error) return json({ available: false, outgoing: [], incoming: [] });
-      const ids = [...new Set((rows ?? []).flatMap((r) => [r.owner_id, r.shared_with]).filter((x) => x !== user.id))];
-      const emails = new Map(await Promise.all(ids.map(async (id) => [id, await emailOf(id)] as [string, string])));
-      const { data: accs } = await db.from("accounts").select("user_id, account_key, name, display_name, iban_last4").in("account_key", [...new Set((rows ?? []).map((r) => r.account_key))]);
-      const accName = (owner: string, key: string) => { const a = (accs ?? []).find((x) => x.user_id === owner && x.account_key === key); return a ? (a.display_name || a.name || "Konto") + (a.iban_last4 ? ` ••${a.iban_last4}` : "") : "Konto"; };
-      return json({
-        available: true,
-        outgoing: (rows ?? []).filter((r) => r.owner_id === user.id).map((r) => ({ shared_with: r.shared_with, email: emails.get(r.shared_with), account_key: r.account_key, account: accName(user.id, r.account_key) })),
-        incoming: (rows ?? []).filter((r) => r.shared_with === user.id).map((r) => ({ owner_id: r.owner_id, email: emails.get(r.owner_id), account_key: r.account_key, account: accName(r.owner_id, r.account_key) })),
-      });
     }
 
     // --- Egen Enable Banking-app (fx til en partner med egne konti) ---
