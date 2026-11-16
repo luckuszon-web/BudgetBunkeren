@@ -288,6 +288,10 @@
   dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
     width: min(420px, calc(100vw - 32px)); }
   dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog form { position: relative; }
+  .dlg-x { position: absolute; top: -8px; right: -8px; width: 36px; height: 36px; padding: 0; border: 0; background: transparent;
+    color: var(--muted); font-size: 18px; border-radius: 50%; }
+  .dlg-x:hover { background: var(--field); color: var(--text); }
   dialog p { margin: 0 0 12px; }
   dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
   label.field { display: block; margin-bottom: 10px; }
@@ -595,6 +599,7 @@
 <!-- Dialog: ny kategori -->
 <dialog id="catDialog">
   <form method="dialog" id="catForm">
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
     <p><b>Ny kategori</b></p>
     <label class="field"><span>Navn</span><input id="newCatName" required></label>
     <label class="field"><span>Type</span>
@@ -614,12 +619,14 @@
 <!-- Dialog: gem som regel -->
 <dialog id="ruleDialog">
   <form method="dialog">
-    <p id="ruleText"></p>
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
+    <p id="ruleText" style="padding-right:28px"></p>
     <label class="field"><span>Posteringer, hvis tekst indeholder:</span><input id="rulePattern"></label>
     <p class="small muted" id="ruleCount"></p>
     <div class="actions">
+      <button value="undo" class="ghost" style="margin-right:auto">Fortryd valget</button>
       <button value="cancel">Kun denne ene</button>
-      <button value="ok" class="primary">Gem som regel</button>
+      <button value="ok" class="primary" autofocus>Gem som regel</button>
     </div>
   </form>
 </dialog>
@@ -1713,13 +1720,20 @@ function renderTxs() {
 }
 
 // ---------- Dialoger ----------
-function ask(dialog) {
+function ask(dialog, raw = false) {
   return new Promise((resolve) => {
     dialog.returnValue = "";
-    dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
+    dialog.addEventListener("close", () => resolve(raw ? dialog.returnValue : dialog.returnValue === "ok"), { once: true });
     dialog.showModal();
   });
 }
+// Tryk uden for en dialog (på den mørke baggrund) lukker den – ligesom ✕ / Annuller
+document.addEventListener("click", (e) => {
+  if (e.target.tagName === "DIALOG" && e.target.open) {
+    const r = e.target.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.target.close("close");
+  }
+});
 
 async function newCategory() {
   $("newCatName").value = ""; $("newCatKind").value = "expense";
@@ -1810,6 +1824,7 @@ async function setCategory(txId, value) {
     catId = c.id;
   }
   const tx = state.txs.find((t) => t.id === txId);
+  const before = { category_id: tx.category_id ?? null, category_source: tx.category_source ?? null };
   const { error } = await sb.from("transactions").update({ category_id: catId, category_source: catId ? "manual" : null }).eq("id", txId);
   if (error) { toast("Fejl: " + error.message); return renderTxs(); }
   tx.category_id = catId; tx.category_source = catId ? "manual" : null;
@@ -1825,7 +1840,14 @@ async function setCategory(txId, value) {
       $("ruleCount").textContent = p.length < 3 ? "Skriv mindst 3 tegn." : `${n} andre eksisterende posteringer bliver også opdateret.`;
     };
     $("rulePattern").oninput = updateCount; updateCount();
-    if (await ask($("ruleDialog"))) {
+    $("rulePattern").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); $("ruleDialog").close("ok"); } };
+    const choice = await ask($("ruleDialog"), true);
+    if (choice === "undo") {
+      // Fortryd: sæt posteringen tilbage, som den var
+      const { error: uErr } = await sb.from("transactions").update(before).eq("id", txId);
+      if (uErr) toast("Kunne ikke fortryde: " + uErr.message);
+      else { Object.assign(tx, before); toast("Fortrudt.", 1500); }
+    } else if (choice === "ok") {
       const p = $("rulePattern").value.trim().toLowerCase();
       if (p.length >= 3) {
         const { data: rule, error: rErr } = await sb.from("rules").insert({ pattern: p, category_id: catId, priority: 200 }).select().single();
