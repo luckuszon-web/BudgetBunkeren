@@ -19,7 +19,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
 - `supabase/opdater-database.sql` – 002+003+004 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
-- Status hos brugeren (16. nov.): alle migrationer (001–004) er kørt og verificeret. Bankforbindelse (README trin 3–7) mangler stadig.
+- Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
 - `supabase/functions/_shared/common.ts` – Enable Banking JWT (RS256, `kid` = app-id), sync, kategorisering, AI-kald.
@@ -32,11 +32,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Edge Functions er deployet (16. nov.) via workflow med `--yes` (ny CLI kræver det). Alle tre svarer 401 uden login.
 
 ## Status
-- Koden er skrevet og typetjekket (`deno check`), men **ikke testet mod rigtige tjenester** endnu.
+- Hele flowet virker mod rigtige tjenester (login → MitID → hentning). Endnu ikke verificeret: første natlige kørsel og AI-kategorisering/rådgiver (afhænger af ANTHROPIC_API_KEY).
 - Repo: `luckuszon-web/BudgetBunkeren`. Side-URL: `https://luckuszon-web.github.io/BudgetBunkeren/`.
 - Konti genkendes på `accounts.account_key` (hash af IBAN), fordi Enable Bankings konto-uid skifter ved hver fornyelse. Posterings-id = hash(account_key + bankreference), så fornyelse ikke giver dubletter.
-- Næste skridt: Brugeren følger README fra trin 1 (opret Supabase-projekt). Hjælp brugeren igennem trinene og test hele flowet:
-  login → Forbind Nordea (MitID) → posteringer hentes → kategorisering → natlig kørsel.
+- Næste skridt: tjek at natlig kørsel lykkes ("Senest hentet" opdateres), at løn får kategorien Løn, og hjælp brugeren med at rette kategorier/regler.
 - Ting at verificere ved første rigtige kørsel: Enable Banking-navnet på Nordea DK (`EB_ASPSP_NAME`, default "Nordea"),
   formatet på `.pem`-nøglen (`toPkcs8()` i common.ts accepterer nu både PKCS8 og PKCS1, også med `\n` på én linje – testet), felterne i transaktions-svaret, og at RLS blokerer en ikke-indlogget bruger.
 
