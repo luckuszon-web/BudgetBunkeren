@@ -80,7 +80,7 @@ delete from public.goals where demo; delete from public.assets where demo; delet
 ```
 
 ## Siden består af fire faner
-- **Overblik:** Dit disponible beløb, nøgletal, økonomisk score, ugens status, indsigter, grafer, kategorier og posteringer.
+- **Overblik:** Dit disponible beløb, nøgletal, økonomisk score, ugens status, **prognose for næste måned** (med interval for svingende løn og dit eget skøn), indsigter, grafer, kategorier og posteringer.
 - **Planlæg:** Nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer. Værdierne indtaster du selv – opdatér dem fx en gang om måneden.
 - **Værktøjer:** Økonomisk kalender med forventede regninger og indtægter og en prognose for saldoen, hvad-nu-hvis-beregner (bil, bolig, lønforhøjelse, rejse), årsprognose, kvartalsrapport og en beregner for løn efter skat (et skøn – tjek skat.dk).
 - **Rådgiver:** Stil spørgsmål som "Hvor kan jeg spare 1.000 kr. om måneden?". Kræver `ANTHROPIC_API_KEY` og at serverfunktionerne er lagt op (trin 4–5). Rådgiveren får et sammendrag af dine tal, ikke de enkelte posteringer.

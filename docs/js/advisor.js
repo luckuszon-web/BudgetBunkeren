@@ -83,6 +83,10 @@ export function init(ctx, root) {
       gæld: state.assets.filter((a) => ["loan", "mortgage", "credit"].includes(a.kind)).map((a) => ({ navn: a.name, type: a.kind, restgæld: a.value, rente_pct: a.rate, ydelse: a.monthly_payment })),
       spareudfordringer: state.challenges.filter((c) => c.month === now).map((c) => ({ titel: c.title, loft: c.limit_amount })),
       opsparing_i_alt: Math.round(ctx.totalSaved()),
+      prognose_næste_måned: (() => { const f = ctx.forecastNextMonth(); return f && {
+        måned: f.next, forventet_til_overs: Math.round(f.exp), svag_måned: Math.round(f.low), god_måned: Math.round(f.high),
+        løn_skøn: Math.round(f.salExp), løn_laveste: Math.round(f.salStats.min || 0), løn_højeste: Math.round(f.salStats.max || 0), eget_lønskøn: f.own,
+        faste_udgifter: Math.round(f.fixedSum), variabelt_forbrug_snit: Math.round(f.varAvg) }; })(),
     };
   }
 

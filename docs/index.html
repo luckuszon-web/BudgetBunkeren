@@ -179,6 +179,28 @@
   .tabs button.on { color: var(--accent); }
   .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
 
+  /* Næste måned */
+  .pill-s { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+  .nm-big { font-size: 30px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .range { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #5a2c2c var(--zero), #2a2f3b var(--zero)); margin: 14px 0 4px; }
+  .range .rng { position: absolute; top: 0; bottom: 0; background: rgba(57,135,229,.55); border-radius: 5px; }
+  .range .mk { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; background: var(--text); border-radius: 2px; }
+  .range-lbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .nm-sec { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
+  .nm-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 14px; }
+  .nm-row .muted { font-size: 12.5px; }
+  .sal { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin: 10px 0 2px; position: relative; }
+  .sal .b { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
+  .sal .b > div { width: 100%; max-width: 30px; background: #2c5a46; border-radius: 4px 4px 1px 1px; min-height: 2px; }
+  .sal .b span { font-size: 10.5px; color: var(--muted); }
+  .sal .avg { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
+  .pay { display: grid; grid-template-columns: 42px 1fr auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; align-items: center; }
+  .pay:first-child { border-top: 0; }
+  .pay .d { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .est { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin-top: 8px; align-items: center; }
+  .est input { padding: 6px 10px; }
+  details summary { cursor: pointer; }
+
   /* Faste udgifter */
   .fixed { display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; align-items: center; }
 
@@ -302,6 +324,12 @@
     </div>
 
     <!-- Indsigter og advarsler -->
+    <!-- Prognose for næste måned -->
+    <div class="card" id="nextCard">
+      <div class="head"><h2 id="nextTitle">Næste måned</h2><span class="pill-s">Prognose</span></div>
+      <div id="nextBody"></div>
+    </div>
+
     <div class="card" id="insightsCard">
       <div class="head"><h2>Indsigter</h2></div>
       <div id="insights" class="insights"></div>
@@ -908,6 +936,139 @@ function renderDashboard() {
   renderScore();
   renderWeek();
   renderInsights(fixedItems, isFixed);
+  renderNextMonth();
+}
+
+
+// ---------- Prognose for næste måned ----------
+// Bygget til svingende indkomst (fx provisionsløn): lønnen vises som interval (laveste–højeste af de seneste 6 måneder),
+// og du kan selv skrive, hvad du forventer at få.
+const median = (arr) => { const a = [...arr].sort((x, y) => x - y); return a.length ? a[Math.floor(a.length / 2)] : 0; };
+function forecastNextMonth() {
+  const now = todayIso().slice(0, 7), next = addMonths(now, 1), dimN = daysInMonth(next);
+  const full6 = prevMonthsWithData(now, 6), full3 = full6.slice(0, 3);
+  if (!full3.length) return null;
+  const sal = salaryCat();
+  const isSal = (t) => sal && String(t.category_id) === String(sal.id) && t.amount > 0;
+
+  // Løn pr. måned (ældste først) og typisk udbetalingsdag
+  const salMonths = [...full6].reverse();
+  const salVals = salMonths.map((m) => monthTx(m).filter(isSal).reduce((s, t) => s + t.amount, 0));
+  const hasSal = salVals.some((v) => v > 0);
+  const salTx = state.txs.filter((t) => isSal(t) && full6.includes(t.booking_date.slice(0, 7)));
+  const fromEnd = median(salTx.map((t) => daysInMonth(t.booking_date.slice(0, 7)) - +t.booking_date.slice(8)));
+  const salDay = salTx.length ? (fromEnd <= 3 ? dimN - fromEnd : Math.min(dimN, median(salTx.map((t) => +t.booking_date.slice(8))))) : null;
+  const pos = salVals.filter((v) => v > 0);
+  const salStats = { avg: avgOf(pos), min: Math.min(...pos), max: Math.max(...pos), months: salMonths, vals: salVals };
+  let own = null; try { const v = localStorage.getItem("forecastIncome-" + next); own = v ? Number(v) : null; } catch {}
+
+  // Andre faste indtægter (fx lejeindtægt): samme afsender i mindst 3 af de 4 seneste hele måneder, stabilt beløb
+  const groups = new Map();
+  for (const m of full6.slice(0, 4)) for (const t of monthTx(m)) {
+    if (t.amount <= 0 || !counts(t) || isSal(t)) continue;
+    const k = fixedKey(t);
+    if (!groups.has(k)) groups.set(k, { name: t.counterparty || t.description, byMonth: new Map(), days: [] });
+    const g = groups.get(k); g.byMonth.set(m, (g.byMonth.get(m) ?? 0) + t.amount); g.days.push(+t.booking_date.slice(8));
+  }
+  const otherInc = [...groups.values()].filter((g) => g.byMonth.size >= 3).map((g) => {
+    const vals = [...g.byMonth.values()], md = median(vals);
+    return vals.every((v) => Math.abs(v - md) <= md * 0.2) ? { name: g.name, amount: md, day: Math.min(dimN, median(g.days)) } : null;
+  }).filter(Boolean);
+
+  // Faste udgifter (ud fra de 4 seneste hele måneder) og variabelt forbrug
+  const fixed = detectFixed(now).map((f) => ({ ...f, day: Math.min(dimN, f.day) }));
+  const fixedKeys = new Set(fixed.map((f) => f.key));
+  const varVals = full3.map((m) => { const r = monthTx(m); return sumOut(r) - sumOut(r.filter((t) => t.amount < 0 && fixedKeys.has(fixedKey(t)))); });
+  const savedAvg = Math.max(0, avgOf(full3.map((m) => totals(monthTx(m)).saved)));
+  // Opsparing, der allerede er med som fast "udgift" (fx fast overførsel), må ikke tælles to gange
+  const fixedSum = fixed.reduce((s, f) => s + f.amount, 0);
+  const otherSum = otherInc.reduce((s, x) => s + x.amount, 0);
+  // Indtægter uden for løn og faste indtægter (fx MobilePay fra venner) – snit
+  const looseInc = avgOf(full3.map((m) => monthTx(m).filter((t) => t.amount > 0 && counts(t) && !isSal(t) && !otherInc.some((o) => fixedKey(t) === fixedKey({ counterparty: o.name, description: o.name })))
+    .reduce((s, t) => s + t.amount, 0)));
+
+  const salExp = own ?? (hasSal ? salStats.avg : 0), salLow = own ?? (hasSal ? salStats.min : 0), salHigh = own ?? (hasSal ? salStats.max : 0);
+  const varAvg = avgOf(varVals), varMin = Math.min(...varVals), varMax = Math.max(...varVals);
+  const base = otherSum + looseInc - fixedSum - savedAvg;
+  return {
+    next, sal, hasSal, salStats, salDay, own, otherInc, fixed, fixedSum, varAvg, varMin, varMax, savedAvg, looseInc,
+    exp: salExp + base - varAvg, low: salLow + base - varMax, high: salHigh + base - varMin, salExp,
+  };
+}
+
+function renderNextMonth() {
+  const f = forecastNextMonth();
+  $("nextCard").classList.toggle("hidden", !f);
+  if (!f) return;
+  const monthName = fmt(f.next + "-01", { month: "long" });
+  $("nextTitle").textContent = `Næste måned · ${monthName}`;
+
+  // Interval-bar fra laveste til højeste skøn
+  const lo = Math.min(f.low, 0), hi = Math.max(f.high, 0), span = hi - lo || 1;
+  const pct = (v) => ((v - lo) / span * 100).toFixed(1) + "%";
+  const variation = f.hasSal && f.salStats.avg ? Math.round((f.salStats.max - f.salStats.min) / f.salStats.avg * 100) : 0;
+
+  // Lønnens udvikling (de seneste måneder)
+  const sMax = Math.max(1, ...f.salStats.vals);
+  const salChart = f.hasSal ? `<div class="sal">${f.salStats.months.map((m, i) => `<div class="b" title="${fmt(m + "-01", { month: "long" })}: ${kr(f.salStats.vals[i])}">
+      <div style="height:${f.salStats.vals[i] / sMax * 80}%"></div><span>${fmt(m + "-01", { month: "short" }).replace(".", "")}</span></div>`).join("")}
+      <div class="avg" style="bottom:calc(${f.salStats.avg / sMax * 80}% * (70 - 16) / 70 + 16px)" title="Snit ${kr(f.salStats.avg)}"></div></div>` : "";
+
+  // Alle forventede betalinger i måneden, sorteret efter dato
+  const pays = [
+    ...(f.hasSal || f.own ? [{ day: f.salDay ?? daysInMonth(f.next), name: (f.sal?.name ?? "Løn") + (f.own ? " (dit skøn)" : " (snit)"), amount: f.salExp }] : []),
+    ...f.otherInc.map((o) => ({ day: o.day, name: o.name, amount: o.amount })),
+    ...f.fixed.map((x) => ({ day: x.day, name: x.name, amount: -x.amount })),
+  ].sort((a, b) => a.day - b.day);
+
+  $("nextBody").innerHTML = `
+    <div class="small muted">Forventet til overs</div>
+    <div class="nm-big ${f.exp < 0 ? "neg" : ""}">${kr(f.exp)}</div>
+    <div class="range" style="--zero:${pct(0)}" title="Fra ${kr(f.low)} i en svag måned til ${kr(f.high)} i en god måned">
+      <div class="rng" style="left:${pct(f.low)};width:calc(${pct(f.high)} - ${pct(f.low)})"></div>
+      <div class="mk" style="left:${pct(f.exp)}"></div>
+    </div>
+    <div class="range-lbl"><span>Svag måned ${kr(f.low)}</span><span>God måned ${kr(f.high)}</span></div>
+
+    <div class="nm-sec">
+      <div class="nm-row"><span><b>Løn</b>${variation >= 15 ? ` <span class="pill-s">svinger ±${Math.round(variation / 2)}%</span>` : ""}</span><b class="num pos">${kr(f.salExp)}</b>
+        <span class="muted">${f.hasSal ? `Seneste ${f.salStats.vals.filter((v) => v > 0).length} mdr.: laveste ${kr(f.salStats.min)} · snit ${kr(f.salStats.avg)} · højeste ${kr(f.salStats.max)}${f.salDay ? ` · udbetales ca. d. ${f.salDay}.` : ""}` : "Ingen løn fundet – giv lønnen kategorien Løn."}</span><span></span></div>
+      ${salChart}
+      <form class="est" id="estForm">
+        <input id="estIncome" type="number" inputmode="numeric" step="500" min="0" placeholder="Min forventede løn i ${monthName}" value="${f.own ?? ""}" aria-label="Forventet løn">
+        <button class="small primary">Brug</button>
+        ${f.own != null ? `<button type="button" class="small ghost" id="estReset">Nulstil</button>` : ""}
+      </form>
+      <div class="note" style="margin-top:4px">Kender du din provision for næste måned, så skriv den her – så regnes prognosen ud fra dit tal.</div>
+    </div>
+
+    <div class="nm-sec nm-row">
+      ${f.otherInc.length ? `<span>Andre faste indtægter</span><span class="num pos">+${kr(f.otherInc.reduce((s, x) => s + x.amount, 0))}</span>` : ""}
+      ${f.looseInc >= 100 ? `<span>Andre indbetalinger (snit)</span><span class="num pos">+${kr(f.looseInc)}</span>` : ""}
+      <span>Faste udgifter</span><span class="num">−${kr(f.fixedSum)}</span>
+      <span>Variabelt forbrug<div class="muted">snit ${kr(f.varAvg)} · mellem ${kr(f.varMin)} og ${kr(f.varMax)}</div></span><span class="num">−${kr(f.varAvg)}</span>
+      ${f.savedAvg >= 100 ? `<span>Opsparing (snit)</span><span class="num">−${kr(f.savedAvg)}</span>` : ""}
+      <span><b>Forventet til overs</b></span><b class="num ${f.exp < 0 ? "neg" : "pos"}">${kr(f.exp)}</b>
+    </div>
+
+    <details class="nm-sec">
+      <summary class="small">Kommende betalinger i ${monthName} (${pays.length})</summary>
+      <div style="margin-top:6px">${pays.map((p) => `<div class="pay"><span class="d">${p.day}. ${fmt(f.next + "-01", { month: "short" }).replace(".", "")}</span>
+        <span>${esc(p.name)}</span><span class="num ${p.amount > 0 ? "pos" : ""}">${p.amount > 0 ? "+" : ""}${kr(p.amount)}</span></div>`).join("")}</div>
+    </details>
+
+    ${variation >= 25 ? `<div class="ins warn" style="margin-top:12px"><div class="e">${icon("alert")}</div><div>Din løn har svinget med op til ${kr(f.salStats.max - f.salStats.min)} mellem månederne.
+      Læg budgettet ud fra en svag måned (${kr(f.salStats.min)}), og sæt resten til side i de gode måneder. En buffer på mindst én måneds faste udgifter (${kr(f.fixedSum)}) giver ro i de svage perioder.</div></div>` : ""}
+    ${f.low < 0 && variation < 25 ? `<div class="ins warn" style="margin-top:12px"><div class="e">${icon("alert")}</div><div>I en svag måned kan du komme ${kr(-f.low)} i minus. Hav en buffer klar.</div></div>` : ""}`;
+
+  const key = "forecastIncome-" + f.next;
+  $("estForm").onsubmit = (e) => {
+    e.preventDefault();
+    const v = $("estIncome").value;
+    try { v ? localStorage.setItem(key, String(Number(v))) : localStorage.removeItem(key); } catch {}
+    renderNextMonth();
+  };
+  if ($("estReset")) $("estReset").onclick = () => { try { localStorage.removeItem(key); } catch {} renderNextMonth(); };
 }
 
 // Økonomisk score 0-100: opsparing (40), budget (30), forbrugsudvikling (30)
@@ -1499,7 +1660,7 @@ function makeCtx() {
     sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
     toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
     catById, iconOf, counts, kindOf, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
-    detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat,
+    detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
     showTab: (t) => showTab(t),
   };
 }

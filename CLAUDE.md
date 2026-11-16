@@ -47,6 +47,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Score: opsparingsrate 40 + budget 30 + forbrug mod snit 30, normaliseret når budget mangler. Igangværende måned fremskrives (faste fuldt, variable skaleret).
 - Indsigter: budgetadvarsler (tempo + 80 % + over), kategoriændringer ≥20 % (samme dage ved igangværende måned), milepæle (10k/25k/50k/100k…), abonnementer pr. år, største udgift, manglende kategorier.
 
+## Prognose for næste måned (Overblik, `forecastNextMonth()`)
+- Til svingende/provisionsløn: løn (kategorien "Løn") vises som laveste/snit/højeste af de seneste 6 hele måneder; brugeren kan skrive eget skøn (localStorage `forecastIncome-YYYY-MM`).
+- Faste indtægter (≥3 af 4 mdr., ±20 %) + andre indbetalinger (snit) − faste udgifter (`detectFixed`) − variabelt forbrug (snit/min/maks af 3 mdr.) − opsparing (snit) = forventet til overs med interval svag/god måned. Liste over kommende betalinger med dato. Sendes også til AI-rådgiveren.
+
 ## Køreplan – fase 2 og 3 er bygget (nov. 2026); bankforbindelsen er bevidst udskudt
 - Design: emojis kun på kategorier og opsparingsmål (brugerens ønske); ellers ensfarvede SVG-ikoner (`icon()` i index.html).
 
