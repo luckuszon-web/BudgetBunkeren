@@ -263,7 +263,8 @@
   .nw-row:hover { background: var(--hover); }
   .nw-row .nw-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nw-row .nw-k { color: var(--muted); font-size: 12.5px; margin-left: 8px; }
-  .goal-list { display: grid; gap: 18px; }
+  .goal-list { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+  .goal { min-width: 0; }
   .goal .g-top { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
   .goal .g-n { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .goal .bbar { margin-top: 8px; }
@@ -989,7 +990,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116201905";</script>
+<script>window.APP_VERSION = "20261116202005";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
