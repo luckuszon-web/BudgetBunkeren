@@ -20,12 +20,14 @@ Deno.serve(async (req) => {
   try {
     const user = await userFromRequest(req);
     if (!user) return json({ error: "Ikke logget ind" }, 401);
-    if (!Deno.env.get("ANTHROPIC_API_KEY")) {
-      return json({ error: "AI-rådgiveren er ikke slået til. Tilføj ANTHROPIC_API_KEY under Supabase → Edge Functions → Secrets." }, 400);
-    }
     const raw = await req.text();
     if (raw.length > 200_000) return json({ error: "Forespørgslen er for stor." }, 413);
     const body = JSON.parse(raw || "{}");
+    // Sundhedstjek fra appen: er nøglen sat op? (kalder ikke AI'en)
+    if (body.ping) return json({ ok: true, hasKey: !!Deno.env.get("ANTHROPIC_API_KEY") });
+    if (!Deno.env.get("ANTHROPIC_API_KEY")) {
+      return json({ error: "AI-rådgiveren er ikke slået til. Tilføj ANTHROPIC_API_KEY under Supabase → Edge Functions → Secrets." }, 400);
+    }
     const history: { role: "user" | "assistant"; content: string }[] = (Array.isArray(body.messages) ? body.messages : [])
       .filter((m: { role?: string; content?: unknown }) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
       .slice(-12)

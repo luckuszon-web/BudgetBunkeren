@@ -35,7 +35,7 @@ async function setup(page, db, log){
     if (m==='OPTIONS') return route.fulfill({status:200, headers:{'access-control-allow-origin':'*','access-control-allow-headers':'*','access-control-allow-methods':'*'}});
     log.push(`${m} ${u.pathname}${u.search}`);
     if (u.pathname.startsWith('/rest/v1/rpc/')) return json(null);
-    if (u.pathname.startsWith('/functions/v1/advisor')) { const b = JSON.parse(req.postData()); log.push('ADVISOR '+JSON.stringify(b).length); global.lastAdvisor = b; return json({ answer: 'Du har brugt **28% mere** på restaurant.\n- Spar på Wolt\n- Lav madpakker' }); }
+    if (u.pathname.startsWith('/functions/v1/advisor')) { const b = JSON.parse(req.postData()); log.push('ADVISOR '+JSON.stringify(b).length); global.lastAdvisor = b; if (b.ping) return json({ ok: true, hasKey: true }); return json({ answer: 'Du har brugt **28% mere** på restaurant.\n- Spar på Wolt\n- Lav madpakker' }); }
     if (u.pathname.startsWith('/functions/v1/bank-connect')) { const b = JSON.parse(req.postData()||'{}'); log.push('BANK '+b.action); if (b.action==='register') { log.push('REGISTER '+b.email+' '+b.code+' auth='+(req.headers()['authorization']||'').slice(0,12)); return b.code==='GOOD1-CODE2' ? json({ ok:true }) : json({ error:'Invitationskoden er ugyldig, brugt eller udløbet. Bed om en ny.' }, 400); }
       if (b.action==='create-invite') { global.invites=(global.invites||[]); global.invites.unshift({ code:'ABCDE-FGHJK', used_at:null, expires_at:new Date(Date.now()+864e5*14).toISOString() }); return json({ code:'ABCDE-FGHJK' }); }
       if (b.action==='list-invites') return json({ owner: global.isOwner !== false, invites: global.invites||[] });
