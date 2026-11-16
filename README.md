@@ -78,7 +78,7 @@ $$);
 
 **Rådgiver** – stil spørgsmål om din økonomi (kræver `ANTHROPIC_API_KEY`). Den får et sammendrag af dine tal, ikke de enkelte posteringer.
 
-**Indstillinger** – bank og konti (adgang og udløb, forny/fjern, omdøb/skjul konti), hurtig sortering, kategorier og budget, regler, login og sikkerhed (adgangskode, totrinsbekræftelse, invitationer), data (CSV-download, kategorisér igen, databasestatus).
+**Indstillinger** – bank og konti (adgang og udløb, forny/fjern, omdøb/skjul/slet konti, *Start forfra*), hurtig sortering, kategorier og budget, regler, login og sikkerhed (adgangskode, totrinsbekræftelse, invitationer), data (CSV-download, kategorisér igen, databasestatus).
 
 ### Gode at vide
 - **Ret en kategori** → vælg *Gem som regel*, så lærer appen. ✕ eller *Fortryd valget* lukker/fortryder.

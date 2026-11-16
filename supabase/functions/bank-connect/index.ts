@@ -83,6 +83,26 @@ Deno.serve(async (req) => {
       return json({ banks: (list.aspsps ?? []).map((a: any) => a.name).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b, "da")) });
     }
 
+    // Slet konti og deres posteringer (fx for at starte forfra). Kun egne konti; posteringer slettes via "on delete cascade".
+    if (body.action === "delete-accounts") {
+      const { data: mine } = await db.from("accounts").select("uid, account_key, session_id").eq("user_id", user.id);
+      const keys: string[] = Array.isArray(body.account_keys) ? body.account_keys.map(String) : [];
+      const targets = (mine ?? []).filter((a) => body.all === true || keys.includes(a.account_key ?? a.uid));
+      if (!targets.length) return json({ error: "Ingen konti at slette." }, 400);
+      // Aktive forbindelser til de konti trækkes også tilbage, så de ikke hentes igen i nat
+      const sessions = [...new Set(targets.map((a) => a.session_id).filter(Boolean))] as string[];
+      for (const sid of sessions) {
+        const stillUsed = (mine ?? []).some((a) => a.session_id === sid && !targets.includes(a));
+        if (stillUsed) continue;
+        try { await eb(`/sessions/${encodeURIComponent(sid)}`, { method: "DELETE" }, await credsFor(user.id)); } catch { /* fx allerede udløbet */ }
+        await db.from("bank_sessions").delete().eq("id", sid).eq("user_id", user.id);
+      }
+      const { error } = await db.from("accounts").delete().eq("user_id", user.id).in("uid", targets.map((a) => a.uid));
+      if (error) return json({ error: error.message }, 500);
+      if (body.all === true) await db.from("bank_sessions").delete().eq("user_id", user.id);
+      return json({ ok: true, deleted: targets.length });
+    }
+
     // Fjern adgang: træk samtykket tilbage hos Enable Banking. Posteringerne bevares.
     if (body.action === "disconnect") {
       const { data: s } = await db.from("bank_sessions").select("id, user_id").eq("id", body.session_id).maybeSingle();
