@@ -299,6 +299,16 @@
   .chips::-webkit-scrollbar { display: none; }
   .chips button { flex-shrink: 0; border: 0; background: transparent; color: var(--muted); padding: 7px 12px; border-radius: 9px; font-size: 14px; }
   .chips button.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .tx .desc[data-open] { cursor: pointer; }
+  .tx .desc[data-open]:hover { text-decoration: underline; text-decoration-color: var(--line2); }
+  .tx-note { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tx-note { grid-row: 2; }
+  .tx.has-note select, .tx.has-note .oo, .tx.has-note .mi-open { grid-row: 3; }
+  @media (min-width: 900px) { .tx-note { grid-column: 1; grid-row: 2; } .tx.has-note select, .tx.has-note .oo, .tx.has-note .mi-open { grid-row: 1; } }
+  .td-split { border-top: 1px solid var(--line); padding-top: 10px; }
+  .td-part { display: grid; grid-template-columns: minmax(0, 1fr) 110px 34px; gap: 6px; margin-top: 8px; }
+  .td-part input { text-align: right; }
+  .td-part button { padding: 0; }
   .oo { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); white-space: nowrap; cursor: pointer; }
   .oo input { width: auto; margin: 0; accent-color: var(--accent); }
 
@@ -922,6 +932,27 @@
   </form>
 </dialog>
 
+<!-- Dialog: detaljer om en postering (note, engangskøb, opdeling) -->
+<dialog id="txDialog">
+  <form method="dialog">
+    <button type="button" class="dlg-x" aria-label="Luk" onclick="this.closest('dialog').close('close')">✕</button>
+    <p style="margin:0 30px 2px 0"><b id="tdTitle"></b></p>
+    <p class="small muted" id="tdSub" style="margin:0 0 12px"></p>
+    <label class="field"><span>Note</span><input id="tdNote" maxlength="200" placeholder="Fx gave til mor, kvittering i mail …"></label>
+    <label class="small row" style="gap:8px;margin:-2px 0 12px"><input type="checkbox" id="tdOneOff" style="width:auto"> Engangskøb (holdes uden for snit, prognoser og score)</label>
+    <div class="td-split">
+      <div class="row between"><b class="small">Del i flere kategorier</b><button type="button" class="small" id="tdAdd">+ Tilføj del</button></div>
+      <div id="tdParts"></div>
+      <div class="small muted" id="tdRest" style="margin-top:6px"></div>
+    </div>
+    <p class="small warn-t" id="tdWarn" style="margin:8px 0 0"></p>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Annuller</button>
+      <button value="ok" class="primary">Gem</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Dialog: foreslå budgetter -->
 <dialog id="sugDialog">
   <form method="dialog">
@@ -1015,7 +1046,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116204528";</script>
+<script>window.APP_VERSION = "20261116205003";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1197,6 +1228,13 @@ $("syncBtn").onclick = async () => {
 // ---------- Data ----------
 // Indtægter, du selv har tastet ind (fx løn, der ikke kommer ind på en forbundet konto).
 // De lægges ind blandt posteringerne som "kunstige" posteringer, så alle beregninger tager dem med.
+// Opdelinger af posteringer (kræver databaseopdatering 015)
+async function loadSplits() {
+  const { data, error } = await sb.from("tx_splits").select("id, tx_id, category_id, amount").eq("user_id", state.uid);
+  state.splitsReady = !error;
+  state.splits = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
+}
+
 async function loadManualIncome() {
   const { data, error } = await sb.from("manual_income").select("*").order("pay_date", { ascending: false });
   state.manualReady = !error;
@@ -1214,7 +1252,18 @@ async function loadManualIncome() {
 // posteringer med en kategori af typen "Ignoreret" er helt ude.
 function syncVisible() {
   const ign = new Set(state.cats.filter((c) => c.kind === "ignore").map((c) => String(c.id)));
-  state.txs = ign.size ? (state.allTxs ?? []).filter((t) => !ign.has(String(effCat(t)))) : (state.allTxs ?? []);
+  // Opdelte posteringer tælles som deres dele (hver med sin kategori); resten bliver på posteringens kategori
+  const bySplit = new Map();
+  for (const sp of state.splits ?? []) { if (!bySplit.has(sp.tx_id)) bySplit.set(sp.tx_id, []); bySplit.get(sp.tx_id).push(sp); }
+  const expanded = [];
+  for (const t of state.allTxs ?? []) {
+    const parts = bySplit.get(t.id);
+    if (!parts) { expanded.push(t); continue; }
+    const sum = parts.reduce((s, p) => s + p.amount, 0);
+    parts.forEach((p, i) => expanded.push({ ...t, id: `${t.id}#${i}`, splitOf: t.id, amount: p.amount, category_id: p.category_id, category_source: "manual" }));
+    if (Math.abs(t.amount - sum) >= 0.005) expanded.push({ ...t, id: `${t.id}#rest`, splitOf: t.id, amount: Math.round((t.amount - sum) * 100) / 100 });
+  }
+  state.txs = ign.size ? expanded.filter((t) => !ign.has(String(effCat(t)))) : expanded;
 }
 const isIgnored = (t) => catById(effCat(t))?.kind === "ignore";
 
@@ -1264,6 +1313,7 @@ async function load() {
     const keyOf = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
     const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
     state.allTxs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
+    await loadSplits();
     await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
@@ -1282,6 +1332,7 @@ async function load() {
   if (state.accounts[0] && !("hidden" in state.accounts[0])) missing.push("at omdøbe og skjule konti");
   if (state.manualReady === false) missing.push("at indtaste løn selv");
   if (state.oneOffReady === false) missing.push("engangskøb på den enkelte postering");
+  if (state.noteReady === false || state.splitsReady === false) missing.push("noter og opdeling af posteringer");
   if (state.me && state.me.available === false) missing.push("invitationer og egen bankapp til ekstra brugere");
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
@@ -2262,7 +2313,7 @@ function renderTxs() {
   if (f === "in") list = list.filter((t) => t.amount > 0);
   if (q) {
     const qn = q.replace(/\./g, "").replace(",", ".");
-    list = list.filter((t) => `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(q) ||
+    list = list.filter((t) => `${t.description} ${t.counterparty ?? ""} ${t.note ?? ""}`.toLowerCase().includes(q) ||
       String(Math.abs(t.amount)).includes(qn));
   }
 
@@ -2283,9 +2334,11 @@ function renderTxs() {
       html += `<div class="day">${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long" })}</div>`;
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
-    html += `<div class="tx">
-      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
+    const nSplit = (state.splits ?? []).filter((x) => x.tx_id === t.id).length;
+    html += `<div class="tx ${t.note ? "has-note" : ""}">
+      <span class="desc" ${t.manual ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
+      ${t.note ? `<span class="tx-note">${esc(t.note)}</span>` : ""}
       ${t.manual ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
       ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
         : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
@@ -2295,6 +2348,7 @@ function renderTxs() {
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
+  document.querySelectorAll("#txList [data-open]").forEach((d) => { d.onclick = () => openTx(d.dataset.open); d.onkeydown = (e) => { if (e.key === "Enter") openTx(d.dataset.open); }; });
   document.querySelectorAll("#txList .oo-cb").forEach((cb) => cb.onchange = () => setOneOff(cb.dataset.id, cb.checked));
   document.querySelectorAll("#txList .mi-open").forEach((b) => b.onclick = () => { showTab("settings"); setPage("income"); });
 }
@@ -2396,6 +2450,64 @@ $("recatBtn").onclick = async () => {
 };
 
 // ---------- Ret kategori + lær en regel ----------
+// Detaljer om en postering: note, engangskøb og opdeling i flere kategorier
+async function openTx(id) {
+  const t = state.allTxs.find((x) => x.id === id);
+  if (!t) return;
+  if (state.noteReady === false || state.splitsReady === false) toast("Noter og opdeling kræver databaseopdateringen – kør opdater.html.", 5000);
+  const sign = t.amount < 0 ? -1 : 1, total = Math.abs(t.amount);
+  $("tdTitle").textContent = t.counterparty || t.description;
+  $("tdSub").textContent = `${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · ${kr(t.amount)} · ${catById(effCat(t))?.name ?? "Uden kategori"}`;
+  $("tdNote").value = t.note ?? "";
+  $("tdOneOff").checked = !!t.one_off;
+  const opts = (sel) => state.cats.filter((c) => c.kind !== "ignore" || String(c.id) === String(sel)).map((c) => `<option value="${c.id}" ${String(c.id) === String(sel) ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+  const partRow = (p = {}) => `<div class="td-part"><select class="tp-cat" aria-label="Kategori">${opts(p.category_id)}</select>
+    <input type="number" class="tp-amt" inputmode="decimal" min="0" step="0.01" value="${p.amount ? Math.abs(p.amount) : ""}" placeholder="Beløb" aria-label="Beløb">
+    <button type="button" class="ghost danger tp-del" aria-label="Fjern">✕</button></div>`;
+  const rest = () => {
+    const sum = [...$("tdParts").querySelectorAll(".tp-amt")].reduce((s, i) => s + (Number(i.value) || 0), 0);
+    const r = total - sum;
+    $("tdRest").textContent = $("tdParts").children.length ? `Resten (${kr(r)}) bliver i ${catById(effCat(t))?.name ?? "Uden kategori"}.` : "Fx et Bilka-køb med både mad og tøj.";
+    $("tdWarn").textContent = r < -0.005 ? `Delene er ${kr(-r)} mere end posteringen.` : "";
+    return r;
+  };
+  const wire = () => {
+    $("tdParts").querySelectorAll(".tp-amt").forEach((i) => i.oninput = rest);
+    $("tdParts").querySelectorAll(".tp-del").forEach((b) => b.onclick = () => { b.parentElement.remove(); rest(); });
+  };
+  $("tdParts").innerHTML = (state.splits ?? []).filter((x) => x.tx_id === id).map(partRow).join("");
+  $("tdAdd").onclick = () => { $("tdParts").insertAdjacentHTML("beforeend", partRow()); wire(); rest(); $("tdParts").lastElementChild.querySelector(".tp-amt").focus(); };
+  wire(); rest();
+  if (!(await ask($("txDialog")))) return;
+  if (rest() < -0.005) return toast("Delene kan ikke være større end posteringen – prøv igen.", 5000);
+
+  const note = $("tdNote").value.trim() || null, oneOff = $("tdOneOff").checked;
+  const patch = {};
+  if ((t.note ?? null) !== note) patch.note = note;
+  if (!!t.one_off !== oneOff) patch.one_off = oneOff;
+  if (Object.keys(patch).length) {
+    const { error } = await sb.from("transactions").update(patch).eq("id", id);
+    if (error) return toast(/note|one_off/.test(error.message) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000);
+    Object.assign(t, patch);
+  }
+  const parts = [...$("tdParts").querySelectorAll(".td-part")]
+    .map((r) => ({ category_id: Number(r.querySelector(".tp-cat").value), amount: sign * (Number(r.querySelector(".tp-amt").value) || 0) }))
+    .filter((p) => p.amount && p.category_id);
+  const before = (state.splits ?? []).filter((x) => x.tx_id === id);
+  const same = before.length === parts.length && before.every((b, i) => String(b.category_id) === String(parts[i].category_id) && Math.abs(b.amount - parts[i].amount) < 0.005);
+  if (!same) {
+    if (before.length) { const { error } = await sb.from("tx_splits").delete().eq("tx_id", id); if (error) return toast("Fejl: " + error.message, 6000); }
+    let added = [];
+    if (parts.length) {
+      const { data, error } = await sb.from("tx_splits").insert(parts.map((p) => ({ ...p, tx_id: id }))).select("id, tx_id, category_id, amount");
+      if (error) return toast(/tx_splits/.test(error.message) ? "Opdeling kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000);
+      added = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
+    }
+    state.splits = (state.splits ?? []).filter((x) => x.tx_id !== id).concat(added);
+  }
+  fixedCache.clear(); toast("Gemt.", 1500); refresh();
+}
+
 // Engangskøb på den enkelte postering: beholder kategorien, men holdes uden for snit, prognoser og score
 async function setOneOff(txId, on) {
   const tx = state.allTxs.find((t) => t.id === txId);

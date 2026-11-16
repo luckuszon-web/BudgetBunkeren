@@ -3,6 +3,7 @@
 name: Test af siden
 on:
   push:
+    branches: [main]
     paths: ["docs/**", "tests/**", ".github/workflows/test.yml"]
   pull_request:
     paths: ["docs/**", "tests/**"]
