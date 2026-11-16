@@ -29,14 +29,19 @@ Dit eget overblik over forbruget. Posteringerne hentes automatisk fra Nordea hve
 3. Gå til **Settings → Pages**, vælg *Deploy from a branch*, vælg repoets hovedbranch og mappen `/docs`, og gem.
 4. Efter et minut er siden live på `https://luckuszon-web.github.io/BudgetBunkeren/`. Det er din **side-URL**.
 
-### 3. Enable Banking: bankadgang
-1. Opret en konto på **enablebanking.com**, og gå til kontrolpanelet.
-2. Opret en ny applikation:
+### 3. Enable Banking: bankadgang (computer anbefales)
+1. Gå til **enablebanking.com/sign-in/**, skriv din e-mail, og klik på linket i den mail, du får. Kontoen oprettes automatisk.
+2. Vælg **API applications** i topmenuen, og opret en ny app:
    - Environment: **Production**
-   - Redirect URL: din **side-URL** fra trin 2.4, præcis som den står, inklusive den afsluttende `/`
-   - Vælg at generere nøglen i browseren. Der downloades en `.pem`-fil (din private nøgle). **Den må aldrig lægges på GitHub.**
-3. Notér **Application ID**.
-4. Følg Enable Bankings vejledning til at aktivere appen ved at forbinde dine egne konti. Det er den gratis model til personligt brug.
+   - Lad browseren **generere nøglen** (standard). Der downloades en `.pem`-fil, der hedder det samme som dit Application ID. **Den må aldrig lægges på GitHub eller sendes i en chat.**
+   - Application name: `BudgetBunkeren`
+   - Redirect URL: `https://luckuszon-web.github.io/BudgetBunkeren/` (præcis sådan, med `/` til sidst)
+   - Hvis den spørger: Description `Privat overblik over egen økonomi`, e-mail til databeskyttelse: din egen e-mail,
+     Privacy policy: `https://luckuszon-web.github.io/BudgetBunkeren/privatliv.html`,
+     Terms of service: `https://luckuszon-web.github.io/BudgetBunkeren/vilkaar.html`
+   - Tryk **Register**.
+3. Notér **Application ID** (en lang kode som `aaaaaaaa-bbbb-…`, samme navn som `.pem`-filen).
+4. Appen står som *Inactive*. Tryk **Activate by linking accounts**, vælg Nordea, log ind med MitID, og godkend. Så er appen *Active* (begrænset til dine egne konti – det er den gratis model til personligt brug).
 
 ### 4. Supabase: hemmeligheder
 Gå til **Edge Functions → Secrets**, og tilføj:
@@ -50,7 +55,7 @@ Gå til **Edge Functions → Secrets**, og tilføj:
 | `SYNC_SECRET` | En lang, tilfældig tekst, f.eks. fra en password-generator |
 | `ANTHROPIC_API_KEY` | *Valgfri.* Slår AI-kategorisering af ukendte posteringer og **AI-rådgiveren** til (få kroner om måneden) |
 
-Hvis din `.pem`-fil starter med `-----BEGIN RSA PRIVATE KEY-----` i stedet for `-----BEGIN PRIVATE KEY-----`, skal den konverteres. Sig til, så hjælper jeg.
+Begge nøgleformater virker (`BEGIN PRIVATE KEY` og `BEGIN RSA PRIVATE KEY`) – du skal ikke konvertere noget.
 
 ### 5. Læg serverfunktionerne op
 1. Opret en adgangsnøgle på **supabase.com/dashboard/account/tokens**.

@@ -34,10 +34,25 @@ export async function userFromRequest(req: Request) {
 // ---------- Enable Banking ----------
 const EB_API = "https://api.enablebanking.com";
 
+// Nøglen kan komme som PKCS8 ("BEGIN PRIVATE KEY") eller PKCS1 ("BEGIN RSA PRIVATE KEY").
+// PKCS1 pakkes ind som PKCS8, så brugeren aldrig selv skal konvertere filen.
+export function toPkcs8(pem: string): string {
+  pem = pem.replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+  if (!pem.includes("BEGIN RSA PRIVATE KEY")) return pem;
+  const b64 = pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+  const pkcs1 = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const len = (n: number) => n < 128 ? [n] : n < 256 ? [0x81, n] : n < 65536 ? [0x82, n >> 8, n & 255] : [0x83, n >> 16, (n >> 8) & 255, n & 255];
+  const tlv = (tag: number, body: number[] | Uint8Array) => [tag, ...len(body.length), ...body];
+  const algo = [0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00]; // rsaEncryption + NULL
+  const der = tlv(0x30, [0x02, 0x01, 0x00, ...algo, ...tlv(0x04, pkcs1)]);
+  let bin = ""; for (const b of der) bin += String.fromCharCode(b);
+  const out = btoa(bin).match(/.{1,64}/g)!.join("\n");
+  return `-----BEGIN PRIVATE KEY-----\n${out}\n-----END PRIVATE KEY-----`;
+}
+
 async function ebToken(): Promise<string> {
   const appId = Deno.env.get("EB_APP_ID")!;
-  const pem = Deno.env.get("EB_PRIVATE_KEY")!.replace(/\\n/g, "\n");
-  const key = await importPKCS8(pem, "RS256");
+  const key = await importPKCS8(toPkcs8(Deno.env.get("EB_PRIVATE_KEY")!), "RS256");
   const now = Math.floor(Date.now() / 1000);
   return await new SignJWT({})
     .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: appId })

@@ -28,6 +28,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/nightly-sync.sql` – pg_cron-job der kalder `sync` kl. 03:00 UTC.
 - `.github/workflows/deploy-functions.yml` – deployer Edge Functions ved push.
 - `README.md` – opsætningsguide på dansk (7 trin).
+- `docs/privatliv.html`, `docs/vilkaar.html` – privatlivspolitik og vilkår til Enable Banking-appens felter. `docs/opdater.html` – kopiér databaseopdateringen fra telefonen.
 
 ## Status
 - Koden er skrevet og typetjekket (`deno check`), men **ikke testet mod rigtige tjenester** endnu.
@@ -36,7 +37,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Næste skridt: Brugeren følger README fra trin 1 (opret Supabase-projekt). Hjælp brugeren igennem trinene og test hele flowet:
   login → Forbind Nordea (MitID) → posteringer hentes → kategorisering → natlig kørsel.
 - Ting at verificere ved første rigtige kørsel: Enable Banking-navnet på Nordea DK (`EB_ASPSP_NAME`, default "Nordea"),
-  formatet på `.pem`-nøglen (skal være PKCS8), felterne i transaktions-svaret, og at RLS blokerer en ikke-indlogget bruger.
+  formatet på `.pem`-nøglen (`toPkcs8()` i common.ts accepterer nu både PKCS8 og PKCS1, også med `\n` på én linje – testet), felterne i transaktions-svaret, og at RLS blokerer en ikke-indlogget bruger.
 
 ## Sikkerhed – vigtigt
 - Læg aldrig `.pem`-nøgle, `SYNC_SECRET`, service role key eller API-nøgler i repoet. De hører hjemme i Supabase → Edge Functions → Secrets.
