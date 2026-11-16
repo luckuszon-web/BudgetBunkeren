@@ -226,6 +226,8 @@
   .page-head h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
   .ph-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ph-sub:empty { display: none; }
+  .sync-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: 1px; }
+  .sync-dot.warn { background: var(--warn); }
   .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-weight: 750; font-size: 15px; flex-shrink: 0; }
   .icon-btn { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 10px; }
   .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
@@ -1012,7 +1014,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116204029";</script>
+<script>window.APP_VERSION = "20261116204121";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1253,7 +1255,7 @@ async function load() {
     await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
-    $("footer").textContent = last ? `Senest hentet fra banken ${new Date(last).toLocaleString("da-DK")}` : "";
+    $("footer").textContent = "";
   } catch (e) {
     toast("Kunne ikke hente data: " + e.message, 8000);
   }
@@ -1363,6 +1365,30 @@ function render() {
   renderPace();
   renderBars();
   renderTxs();
+  renderSyncStatus();
+}
+
+// Status for hentning fra banken (vises under overskriften på Overblik): hvornår der sidst er hentet,
+// og en advarsel hvis den natlige hentning ser ud til at være gået i stå
+function renderSyncStatus() {
+  if (currentTab !== "app") return;
+  const active = state.sessions.filter((x) => new Date(x.valid_until) > new Date());
+  const accs = state.accounts.filter((a) => !a.hidden && a.session_id && active.some((x) => x.id === a.session_id));
+  const last = accs.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
+  const el = $("pageSub");
+  el.className = "ph-sub";
+  if (!active.length || !last) { el.textContent = ""; return; }
+  const d = new Date(last), hrs = (Date.now() - d) / 36e5;
+  const time = d.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" });
+  const today = new Date().toLocaleDateString("sv-SE"), day = d.toLocaleDateString("sv-SE");   // lokale datoer (ÅÅÅÅ-MM-DD)
+  const when = day === today ? (d.getHours() < 6 ? `i nat kl. ${time}` : `i dag kl. ${time}`) : day === addDays(today, -1) ? `i går kl. ${time}` : fmt(day, { day: "numeric", month: "short" }) + ` kl. ${time}`;
+  const days = Math.ceil((new Date(active[0].valid_until) - Date.now()) / 864e5);
+  if (hrs > 30) {
+    el.classList.add("warn-t");
+    el.innerHTML = `<i class="sync-dot warn"></i>Sidst hentet ${when} – den natlige hentning ser ud til at fejle. Tryk Opdater.`;
+  } else {
+    el.innerHTML = `<i class="sync-dot"></i>Hentet fra banken ${when}${days <= 14 ? ` · <span class="warn-t">adgangen udløber om ${days} ${days === 1 ? "dag" : "dage"}</span>` : ""}`;
+  }
 }
 
 function renderPeriod() {
