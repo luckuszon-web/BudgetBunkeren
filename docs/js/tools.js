@@ -12,6 +12,7 @@ export function init(ctx, root) {
       <button data-t="year">Årsprognose</button>
       <button data-t="quarter">Kvartal</button>
       <button data-t="tax">Løn og skat</button>
+      <button data-t="compare">Sammenlign</button>
       <button data-go="advisor" class="adv-go">Rådgiver ›</button>
     </div>
     <div id="tool"></div>`;
@@ -421,6 +422,14 @@ export function init(ctx, root) {
     .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
     .cal-h { font-size: 11px; color: var(--muted); text-align: center; padding-bottom: 2px; }
     .cal-d { min-height: 58px; border-radius: 8px; background: var(--surface); padding: 4px; display: flex; flex-direction: column; gap: 1px; cursor: pointer; overflow: hidden; }
+    .cmp-sel { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; margin-bottom: 12px; }
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+    .cmp-table th:not(:first-child), .cmp-table td.num { width: 22%; }
+    .cmp-table th { text-align: right; font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 6px; }
+    .cmp-table td { padding: 6px; border-top: 1px solid var(--line); } .cmp-table td.num { text-align: right; white-space: nowrap; }
+    .cmp-table td:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 420px) { .cmp-table { font-size: 13px; } .cmp-table td { padding: 6px 3px; } }
+    .cmp-table .cmp-h td { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-top: 14px; }
     .cal-d .n { font-size: 12px; font-weight: 600; }
     .cal-d .a { font-size: 10.5px; font-variant-numeric: tabular-nums; }
     .cal-d .ev { font-size: 10.5px; border: 1.5px dashed; border-radius: 4px; padding: 0 2px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
@@ -445,9 +454,50 @@ export function init(ctx, root) {
   `;
   document.head.appendChild(style);
 
+  // ---------- Sammenlign to måneder ----------
+  let cmpA = addMonths(thisMonth(), -1), cmpB = addMonths(thisMonth(), -2);
+  function renderCompare() {
+    const months = [...new Set(state.txs.map((t) => t.booking_date.slice(0, 7)))].sort().reverse();
+    const opt = (sel) => months.map((m) => `<option value="${m}" ${m === sel ? "selected" : ""}>${fmt(m + "-01", { month: "long", year: "numeric" })}</option>`).join("");
+    const sumBy = (m) => {
+      const r = new Map(), rows = monthTx(m);
+      for (const t of rows) if (ctx.counts(t)) { const k = String(ctx.effCat(t) ?? "none") + (ctx.isInc(t) ? "|in" : "|out"); r.set(k, (r.get(k) ?? 0) + t.amount); }
+      return { r, t: totals(rows) };
+    };
+    const A = sumBy(cmpA), B = sumBy(cmpB);
+    const keys = [...new Set([...A.r.keys(), ...B.r.keys()])];
+    const name = (k) => { const [id] = k.split("|"); return id === "none" ? "Uden kategori" : ctx.catById(id)?.name ?? "?"; };
+    const lines = (dir) => keys.filter((k) => k.endsWith("|" + dir)).map((k) => {
+      const a = Math.abs(A.r.get(k) ?? 0), b = Math.abs(B.r.get(k) ?? 0); return { k, a, b, d: a - b };
+    }).filter((x) => x.a >= 1 || x.b >= 1).sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+    const mName = (m) => fmt(m + "-01", { month: "short", year: "2-digit" }).replace(".", "");
+    const row = (label, a, b, good) => { const d = a - b; const better = good === "up" ? d >= 0 : d <= 0;
+      const n = (v) => Math.round(v).toLocaleString("da-DK");
+      return `<tr><td>${label}</td><td class="num">${n(a)}</td><td class="num">${n(b)}</td><td class="num ${Math.abs(d) < 1 ? "muted" : better ? "pos" : "neg"}">${d > 0 ? "+" : d < 0 ? "−" : ""}${n(Math.abs(d))}</td></tr>`; };
+    const out = lines("out"), inc = lines("in");
+    $("tool").innerHTML = `
+      <div class="card">
+        <div class="cmp-sel"><select id="cmpA" aria-label="Måned A">${opt(cmpA)}</select><span class="muted">mod</span><select id="cmpB" aria-label="Måned B">${opt(cmpB)}</select></div>
+        <div class="wi-scroll"><table class="cmp-table">
+          <thead><tr><th style="text-align:left">kr.</th><th>${mName(cmpA)}</th><th>${mName(cmpB)}</th><th>Forskel</th></tr></thead>
+          <tbody>
+            ${row("<b>Indtægter</b>", A.t.inc, B.t.inc, "up")}
+            ${row("<b>Udgifter</b>", A.t.out, B.t.out, "down")}
+            ${row("<b>Til overs</b>", A.t.inc - A.t.out, B.t.inc - B.t.out, "up")}
+            ${A.t.saved || B.t.saved ? row("Sat til side", A.t.saved, B.t.saved, "up") : ""}
+            <tr class="cmp-h"><td colspan="4">Udgifter pr. kategori</td></tr>
+            ${out.map((x) => row(esc(name(x.k)), x.a, x.b, "down")).join("") || `<tr><td colspan="4" class="muted">Ingen udgifter</td></tr>`}
+            ${inc.length ? `<tr class="cmp-h"><td colspan="4">Indtægter pr. kategori</td></tr>` + inc.map((x) => row(esc(name(x.k)), x.a, x.b, "up")).join("") : ""}
+          </tbody></table></div>
+        <p class="note">Grøn = bedre i ${fmt(cmpA + "-01", { month: "long" })} end i ${fmt(cmpB + "-01", { month: "long" })} (mindre brugt eller mere tjent).</p>
+      </div>`;
+    $("cmpA").onchange = (e) => { cmpA = e.target.value; renderCompare(); };
+    $("cmpB").onchange = (e) => { cmpB = e.target.value; renderCompare(); };
+  }
+
   function render() {
     root.querySelectorAll("#toolSel button[data-t]").forEach((b) => b.classList.toggle("on", b.dataset.t === tool));
-    ({ cal: renderCalendar, whatif: renderWhatIf, year: renderYear, quarter: renderQuarter, tax: renderTax })[tool]?.();
+    ({ cal: renderCalendar, whatif: renderWhatIf, year: renderYear, quarter: renderQuarter, tax: renderTax, compare: renderCompare })[tool]?.();
   }
   return { render };
 }
