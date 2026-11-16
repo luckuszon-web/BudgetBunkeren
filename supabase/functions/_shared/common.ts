@@ -220,14 +220,31 @@ export async function categorize(userId: string, opts: { reapply?: boolean; aiLi
   if (!txs.length) return { rule: 0, ai: 0, left: 0 };
 
   const sorted = [...(rules ?? [])].sort((a, b) => b.priority - a.priority || b.pattern.length - a.pattern.length);
+  const kindOf = new Map((cats ?? []).map((c) => [c.id, c.kind]));
+  // Retning: en udgiftskategori passer til udbetalinger, en indtægtskategori til indbetalinger. Overførsel/engangskøb til begge.
+  // Kun brugerens egne regler (200) må gå "imod" retningen – fx fremleje (indbetaling) under Bolig.
+  const fits = (catId: number, amount: number) => {
+    const k = kindOf.get(catId);
+    return k === "expense" ? amount < 0 : k === "income" ? amount > 0 : true;
+  };
   const byCat = new Map<number, string[]>();
+  const clear: string[] = [];
   const leftovers: Tx[] = [];
   for (const t of txs) {
     const hay = norm(`${t.description} ${t.counterparty ?? ""}`);
-    const hit = sorted.find((r) => ruleHits(hay, r.pattern));
-    if (hit) { if (!byCat.has(hit.category_id)) byCat.set(hit.category_id, []); byCat.get(hit.category_id)!.push(t.id); }
-    // Ved genkørsel: AI-forslag bevares, hvis ingen regel rammer
-    else if (!(opts.reapply && (t as { category_source?: string }).category_source === "ai")) leftovers.push(t);
+    const hit = sorted.find((r) => ruleHits(hay, r.pattern) && (r.priority >= 200 || fits(r.category_id, Number(t.amount))));
+    const cur = t as { category_id?: number; category_source?: string };
+    if (hit) { if (!byCat.has(hit.category_id)) byCat.set(hit.category_id, []); byCat.get(hit.category_id)!.push(t.id); continue; }
+    if (opts.reapply && cur.category_id) {
+      // Genkørsel: automatiske kategorier, der ikke længere passer, ryddes (fx løn, der stod som en udgift)
+      const wrong = cur.category_source === "rule" || (cur.category_source === "ai" && !fits(cur.category_id, Number(t.amount)));
+      if (wrong) { clear.push(t.id); cur.category_id = undefined; leftovers.push(t); }
+      continue;   // passende AI-forslag bevares
+    }
+    leftovers.push(t);
+  }
+  for (let i = 0; i < clear.length; i += 200) {
+    await db.from("transactions").update({ category_id: null, category_source: null }).in("id", clear.slice(i, i + 200)).eq("user_id", userId);
   }
   // Opdatér mange ad gangen i stedet for én ad gangen
   let ruleCount = 0;
@@ -250,7 +267,8 @@ export async function categorize(userId: string, opts: { reapply?: boolean; aiLi
       const groups = new Map<number, string[]>();
       for (const answer of answers) for (const [id, name] of Object.entries(answer)) {
         const cat = cats.find((c) => c.name.toLowerCase() === String(name).toLowerCase());
-        if (!cat) continue;
+        const tx = todo.find((t) => t.id === id);
+        if (!cat || !tx || !fits(cat.id, Number(tx.amount))) continue;   // AI må ikke give løn en udgiftskategori o.l.
         if (!groups.has(cat.id)) groups.set(cat.id, []);
         groups.get(cat.id)!.push(id);
       }
@@ -260,7 +278,7 @@ export async function categorize(userId: string, opts: { reapply?: boolean; aiLi
       }
     }
   }
-  return { rule: ruleCount, ai: aiCount, left: leftovers.length - aiCount, ai_enabled: !!key };
+  return { rule: ruleCount, ai: aiCount, cleared: clear.length, left: leftovers.length - aiCount, ai_enabled: !!key };
 }
 
 async function askClaude(key: string, cats: { name: string; kind: string }[], txs: Tx[]): Promise<Record<string, string>> {
@@ -270,7 +288,9 @@ async function askClaude(key: string, cats: { name: string; kind: string }[], tx
     `Kategorier (navn – type):\n${cats.map((c) => `- ${c.name} – ${kinds[c.kind] ?? c.kind}`).join("\n")}\n\n` +
     `Tips: "Dankort-nota", "Visa", "Køb" efterfulgt af et butiksnavn er et køb i den butik. MobilePay til en privatperson er typisk "Andet" (udgift) ` +
     `eller "Anden indkomst" (indbetaling). Overførsler mellem egne konti og til opsparing/depot er overførsler. Løn fra en arbejdsgiver er "Løn". ` +
-    `Brug kun kategorinavne fra listen, stavet præcis som der. Er du i tvivl om en udgift, så brug "Andet".\n` +
+    `VIGTIGT: Positive beløb (indbetalinger) skal have en indtægts- eller overførselskategori – aldrig en udgiftskategori, ` +
+    `heller ikke hvis afsenderen er en butik eller virksomhed (så er det typisk løn eller en refusion). Negative beløb skal have en udgifts- eller overførselskategori.\n` +
+    `Brug kun kategorinavne fra listen, stavet præcis som der. Er du i tvivl om en udgift, så brug "Andet"; er du i tvivl om en indtægt, så brug "Anden indkomst".\n` +
     `Svar KUN med et JSON-objekt {"<id>": "<kategori>"} uden anden tekst.\n\n` +
     JSON.stringify(txs.map((t) => ({ id: t.id, tekst: t.description, modpart: t.counterparty, beløb: t.amount })));
   try {

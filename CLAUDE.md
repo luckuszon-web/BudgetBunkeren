@@ -12,6 +12,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Kun bogførte posteringer (`status == BOOK`) gemmes, så reservationer ikke dobbelttælles.
 - Kategorier af typen `transfer` (egne konti, opsparing) tælles ikke som forbrug.
 - **Engangskøb:** kategoritype `oneoff` (migration 006; færdig kategori "Store køb & investeringer"). `counts()` udelukker den som `transfer`; `totals().oneoff` vises kun som "holdt udenfor" (hero, indsigt, kvartal, AI-kontekst).
+- **Retning:** standardregler (100) og AI giver kun kategorier i pengenes retning (udgift ← udbetaling, indtægt ← indbetaling; transfer/oneoff begge). Kun manuelle valg og egne regler (200) må gå imod (fx fremleje → Bolig). Frontend: `autoMismatch()`/`effCat()` ignorerer forkerte automatiske kategorier; server: `fits()` i `categorize`, og reapply rydder dem (`cleared`).
 - **Modregning:** udgift/indtægt bestemmes af kategoriens type, ikke fortegnet (`isExp`/`isInc`/`isOffset` i index.html). En indbetaling med udgiftskategori (fx fremleje → Bolig) trækkes fra kategorien og tæller ikke som indtægt; `totals`, `sumOut`, `detectFixed` (faste poster kan være negative), donut og prognose regner netto. Uden kategori: fortegnet afgør.
 
 ## Struktur
@@ -23,7 +24,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/005_more_rules.sql` – ~320 ekstra standardregler (prioritet 100) for danske butikker/betalinger; tilføjer kun manglende.
 - `supabase/migrations/006_oneoff.sql` – kategoritypen `oneoff` + kategorien "Store køb & investeringer".
 - `supabase/migrations/007_accounts.sql` – `accounts.display_name`, `accounts.hidden` + update-policy (kun de to kolonner). Skjulte konti filtreres fra i frontend og hentes ikke i `syncAll`.
-- `supabase/opdater-database.sql` – 002–007 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- `supabase/migrations/008_income_rules.sql` – regler for løn, dagpenge, SU, pension, skat m.m.
+- `supabase/opdater-database.sql` – 002–008 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
 - Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.

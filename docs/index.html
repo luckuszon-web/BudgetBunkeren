@@ -717,7 +717,7 @@ function assignColors() {
   const since = addMonths(todayIso().slice(0, 7), -11);
   const sums = new Map();
   for (const t of state.txs) if (isExp(t) && t.booking_date.slice(0, 7) >= since) {
-    const k = String(t.category_id ?? "none"); sums.set(k, (sums.get(k) ?? 0) - t.amount);
+    const k = String(effCat(t) ?? "none"); sums.set(k, (sums.get(k) ?? 0) - t.amount);
   }
   colorMap = new Map([...sums.entries()].sort((a, b) => b[1] - a[1]).slice(0, PALETTE.length).map(([k], i) => [k, PALETTE[i]]));
 }
@@ -890,7 +890,17 @@ function renderConsent(s) {
 
 // ---------- Hjælpere ----------
 const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
-const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
+// En automatisk kategori (regel/AI), der vender forkert – fx løn med en udgiftskategori – ignoreres.
+// Kun dine egne valg og dine egne regler (prioritet 200) må gå imod retningen (fx fremleje under Bolig).
+function autoMismatch(t) {
+  const c = catById(t.category_id);
+  if (!c || t.category_source === "manual") return false;
+  const fits = c.kind === "expense" ? t.amount < 0 : c.kind === "income" ? t.amount > 0 : true;
+  if (fits) return false;
+  return !(t.category_source === "rule" && state.rules.some((r) => r.priority >= 200 && String(r.category_id) === String(c.id) && matchesRule(t, r.pattern)));
+}
+const effCat = (t) => (t.category_id && !autoMismatch(t) ? t.category_id : null);
+const kindOf = (t) => catById(effCat(t))?.kind ?? (t.amount < 0 ? "expense" : "income");
 const inPeriod = (t, p) => keyOf(t.booking_date) === p;
 // Overførsler/opsparing og engangskøb (fx bilkøb) tælles ikke med i forbrug, indtægter, snit og prognoser
 const counts = (t) => kindOf(t) !== "transfer" && kindOf(t) !== "oneoff";
@@ -1324,7 +1334,7 @@ function renderWeek() {
   const prev = [1, 2, 3, 4].map((i) => sumOut(span(addDays(mon, -7 * i)))).filter((v, i) => state.txs.some((t) => t.booking_date >= addDays(mon, -7 * (i + 1)) && t.booking_date < addDays(mon, -7 * i)));
   const avg = avgOf(prev);
   const byCat = new Map();
-  for (const t of cur) if (isExp(t)) byCat.set(String(t.category_id ?? "none"), (byCat.get(String(t.category_id ?? "none")) ?? 0) - t.amount);
+  for (const t of cur) if (isExp(t)) byCat.set(String(effCat(t) ?? "none"), (byCat.get(String(effCat(t) ?? "none")) ?? 0) - t.amount);
   const top = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
   const big = cur.filter((t) => t.amount < 0 && isExp(t)).sort((a, b) => a.amount - b.amount)[0];
   $("weekLbl").textContent = `Uge ${isoWeekNo(today)} · ${n} ${n === 1 ? "dag" : "dage"}`;
@@ -1345,7 +1355,7 @@ function renderInsights(fixedItems) {
   const p = state.period, list = txsIn(p);
   const items = [];   // { cls, e, html, w } – w = vigtighed
   const nameOf = (k) => k === "none" ? "Uden kategori" : catById(k)?.name ?? "?";
-  const byCat = (rows) => { const mm = new Map(); for (const t of rows) if (isExp(t)) { const k = String(t.category_id ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
+  const byCat = (rows) => { const mm = new Map(); for (const t of rows) if (isExp(t)) { const k = String(effCat(t) ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
 
   // 1) Budgetadvarser (kun måned)
   if (gran() === "month") {
@@ -1408,7 +1418,7 @@ function renderInsights(fixedItems) {
   if (oneoffSum > 0) items.push({ cls: "", e: "tag", w: 45, html: `${kr(oneoffSum)} i store køb og investeringer er holdt uden for overskud, snit og prognoser.` });
 
   // 6) Uden kategori
-  const none = list.filter((t) => !t.category_id).length;
+  const none = list.filter((t) => !effCat(t)).length;
   if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. <a href="#" class="go-quick" style="color:var(--accent)">Sortér dem hurtigt</a>` });
 
   items.sort((a, b) => b.w - a.w);
@@ -1558,7 +1568,7 @@ function renderBars() {
   const sumBy = (rows) => {
     const m = new Map();
     for (const t of rows) if (wantOut ? isExp(t) : isInc(t)) {
-      const k = String(t.category_id ?? "none");
+      const k = String(effCat(t) ?? "none");
       m.set(k, (m.get(k) ?? 0) + (wantOut ? -t.amount : t.amount));   // netto: modregninger trækkes fra
     }
     for (const [k, v] of m) if (v <= 0.5) m.delete(k);   // fuldt modregnet → vises ikke
@@ -1677,9 +1687,9 @@ function renderTxs() {
   let list = txsIn(state.period);
   if (state.catFilter) {
     const wantOut = state.catMode === "out";
-    list = list.filter((t) => String(t.category_id ?? "none") === state.catFilter && (wantOut ? t.amount < 0 : t.amount > 0));
+    list = list.filter((t) => String(effCat(t) ?? "none") === state.catFilter && (wantOut ? isExp(t) : isInc(t)));
   }
-  if (f === "none") list = list.filter((t) => !t.category_id);
+  if (f === "none") list = list.filter((t) => !effCat(t));
   if (f === "ai") list = list.filter((t) => t.category_source === "ai");
   if (f === "out") list = list.filter((t) => t.amount < 0);
   if (f === "in") list = list.filter((t) => t.amount > 0);
@@ -1706,11 +1716,10 @@ function renderTxs() {
       html += `<div class="day">${fmt(t.booking_date, { weekday: "long", day: "numeric", month: "long" })}</div>`;
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
-    const cat = catById(t.category_id);
     html += `<div class="tx">
       <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
-      <select data-id="${esc(t.id)}" class="${t.category_id ? "" : "unset"}" aria-label="Kategori">${options(t.category_id)}</select>
+      <select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>
     </div>`;
   }
   $("txList").innerHTML = html || `<p class="muted">Ingen posteringer.</p>`;
@@ -1773,7 +1782,7 @@ function groupKey(t) {
 function renderQuick() {
   const groups = new Map();
   for (const t of state.txs) {
-    if (t.category_id) continue;
+    if (effCat(t)) continue;
     const k = groupKey(t);
     if (!k || k.length < 3) continue;
     const g = groups.get(k) ?? { k, n: 0, sum: 0, sample: t.counterparty || t.description, pos: 0 };
@@ -1781,7 +1790,7 @@ function renderQuick() {
     groups.set(k, g);
   }
   const list = [...groups.values()].filter((g) => g.n >= 2).sort((a, b) => b.n - a.n || Math.abs(b.sum) - Math.abs(a.sum)).slice(0, 25);
-  const none = state.txs.filter((t) => !t.category_id).length;
+  const none = state.txs.filter((t) => !effCat(t)).length;
   const options = `<option value="">Vælg kategori …</option>` + state.cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
   $("quickList").innerHTML = list.length ? `<div class="small muted" style="margin-bottom:4px">${none} posteringer mangler kategori – her er de ${list.length} hyppigste grupper</div>` +
     list.map((g) => `<div class="list-row qrow" data-k="${esc(g.k)}" style="grid-template-columns:1fr auto">
@@ -1980,7 +1989,7 @@ function renderSetHome() {
   const active = state.sessions.filter((s) => new Date(s.valid_until) > new Date());
   const days = active.length ? Math.ceil((new Date(active[0].valid_until) - Date.now()) / 864e5) : null;
   $("ssBank").textContent = active.length ? `${vis.length} ${vis.length === 1 ? "konto" : "konti"} · adgang i ${days} dage mere` : "Ingen aktiv bankforbindelse";
-  const none = state.txs.filter((t) => !t.category_id).length;
+  const none = state.txs.filter((t) => !effCat(t)).length;
   $("ssQuick").textContent = none ? `${none} posteringer mangler kategori` : "Alle posteringer har en kategori";
   $("ssCats").textContent = `${state.cats.length} kategorier · ${state.cats.filter((c) => Number(c.monthly_budget) > 0).length} med budget`;
   $("ssRules").textContent = `${state.rules.filter((r) => r.priority >= 200).length} egne regler · ${state.rules.filter((r) => r.priority < 200).length} standard`;
@@ -2139,7 +2148,7 @@ function makeCtx() {
   return {
     sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
     toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
-    catById, iconOf, counts, kindOf, isExp, isInc, isOffset, isOneoff, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
+    catById, iconOf, counts, kindOf, effCat, isExp, isInc, isOffset, isOneoff, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
     detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
     showTab: (t) => showTab(t),
   };

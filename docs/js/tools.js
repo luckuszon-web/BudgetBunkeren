@@ -295,7 +295,7 @@ export function init(ctx, root) {
     const chip = (v, goodUp) => v == null ? "" : `<span class="${(v >= 0) === goodUp ? "down" : "up"}">${v >= 0 ? "▲" : "▼"} ${Math.abs(v)}%</span>`;
     const perMonth = monthsOf(quarter).map((m) => ({ m, ...totals(monthTx(m)) })).filter((x) => x.inc || x.out);
     const best = [...perMonth].sort((a, b) => (b.inc - b.out) - (a.inc - a.out))[0], worst = [...perMonth].sort((a, b) => (a.inc - a.out) - (b.inc - b.out))[0];
-    const byCat = (r) => { const mm = new Map(); for (const t of r) if (ctx.isExp(t)) { const k = String(t.category_id ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
+    const byCat = (r) => { const mm = new Map(); for (const t of r) if (ctx.isExp(t)) { const k = String(ctx.effCat(t) ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
     const cc = byCat(cur), pc = byCat(prv);
     const top = [...cc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
     const name = (k) => k === "none" ? "Uden kategori" : ctx.catById(k)?.name ?? "?";
