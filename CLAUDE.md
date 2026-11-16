@@ -19,7 +19,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
 - `supabase/opdater-database.sql` – 002+003+004 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
-- Status hos brugeren (16. nov.): 001 og 003 kørt; 002 og 004 manglede – derfor virkede spareudfordringer ikke.
+- Status hos brugeren (16. nov.): alle migrationer (001–004) er kørt og verificeret. Bankforbindelse (README trin 3–7) mangler stadig.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
 - `supabase/functions/_shared/common.ts` – Enable Banking JWT (RS256, `kid` = app-id), sync, kategorisering, AI-kald.
