@@ -25,7 +25,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/006_oneoff.sql` – kategoritypen `oneoff` + kategorien "Store køb & investeringer".
 - `supabase/migrations/007_accounts.sql` – `accounts.display_name`, `accounts.hidden` + update-policy (kun de to kolonner). Skjulte konti filtreres fra i frontend og hentes ikke i `syncAll`.
 - `supabase/migrations/008_income_rules.sql` – regler for løn, dagpenge, SU, pension, skat m.m.
-- `supabase/opdater-database.sql` – 002–008 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- `supabase/migrations/009_own_eb_app.sql` – `eb_credentials` (user_id, app_id, private_key); RLS uden policies = kun serveren kan læse.
+- `supabase/opdater-database.sql` – 002–009 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
 - Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
@@ -82,6 +83,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 ## Opdateringer når ud til telefonen (VIGTIGT ved hver ændring i docs/)
 - **Kør `sh scripts/bump-version.sh` før hver commit, der ændrer noget i `docs/`.** Den skriver nyt nummer i `docs/version.json` og `window.APP_VERSION` i index.html.
 - Appen tjekker `version.json` (no-store) ved start, når den kommer frem igen (`visibilitychange`) og hvert 15. min.; ved ny version vises bjælken `#updBar` → "Opdater" loader `?v=<version>`. Moduler hentes med `?v=`, og plan/tools importerer ui.js med samme `?v=` (top-level `await import`).
+
+## Flere brugere med egen bank (gratis vilkår)
+- Enable Bankings gratis vilkår: kun "personal use of private individuals", og man må ikke hente data fra konti, der ikke tilhører den Control Panel-bruger, der tilknyttede dem. Derfor: hver ekstra bruger laver sin EGEN gratis Enable Banking-app (samme redirect URL) og gemmer App ID + .pem under Indstillinger → Bank og konti → "Egen Enable Banking-app".
+- Server: `credsFor(userId)` → `eb(path, init, creds)`/`ebToken(creds)`; uden række bruges ejerens app fra secrets. `bank-connect` actions `credentials-status`, `save-credentials` (validerer mod `/aspsps` før gem), `remove-credentials`. `syncAll` bruger hver brugers egen app.
 
 ## Invitation og glemt adgangskode
 - `urlAuth` (læst fra `location.hash` før `createClient`): `type=invite|recovery|signup|magiclink` + session → siden `#setpw` (vælg adgangskode via `updateUser`). `error_*` i hash → forklarende besked på login. "Glemt adgangskode?" → `resetPasswordForEmail(redirectTo = side-URL)`.

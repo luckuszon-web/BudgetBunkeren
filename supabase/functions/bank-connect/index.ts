@@ -1,7 +1,7 @@
 // Forbinder din bank via Enable Banking.
 // action "start"  -> returnerer et link til Nordeas MitID-login
 // action "finish" -> modtager koden efter login, gemmer konti og henter posteringer
-import { admin, cors, eb, json, sha, syncAll, userFromRequest } from "../_shared/common.ts";
+import { admin, cors, credsFor, eb, ebToken, json, sha, syncAll, userFromRequest, toPkcs8 } from "../_shared/common.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -11,9 +11,34 @@ Deno.serve(async (req) => {
     const db = admin();
     const body = await req.json().catch(() => ({}));
 
+    // --- Egen Enable Banking-app (fx til en partner med egne konti) ---
+    if (body.action === "credentials-status") {
+      const { data, error } = await db.from("eb_credentials").select("app_id, created_at").eq("user_id", user.id).maybeSingle();
+      if (error) return json({ available: false });
+      return json({ available: true, own: !!data, app_id: data?.app_id ?? null, since: data?.created_at ?? null });
+    }
+    if (body.action === "save-credentials") {
+      const appId = String(body.app_id ?? "").trim();
+      const key = toPkcs8(String(body.private_key ?? ""));
+      if (!/^[0-9a-f-]{20,64}$/i.test(appId)) return json({ error: "Application ID ser forkert ud – det er en lang kode med bindestreger." }, 400);
+      if (!/BEGIN (RSA )?PRIVATE KEY/.test(String(body.private_key ?? ""))) return json({ error: "Filen ligner ikke en .pem-nøgle (den skal starte med -----BEGIN PRIVATE KEY-----)." }, 400);
+      // Tjek at nøglen og ID'et passer sammen hos Enable Banking, før vi gemmer
+      try { await ebToken({ appId, key }); await eb("/aspsps?country=DK", {}, { appId, key }); }
+      catch (e) { return json({ error: "Enable Banking godkendte ikke nøglen og ID'et sammen: " + (e instanceof Error ? e.message : e) }, 400); }
+      const { error } = await db.from("eb_credentials").upsert({ user_id: user.id, app_id: appId, private_key: key });
+      if (error) return json({ error: error.message.includes("eb_credentials") ? "Databaseopdatering 009 mangler – kør opdater-database.sql." : error.message }, 500);
+      return json({ ok: true });
+    }
+    if (body.action === "remove-credentials") {
+      await db.from("eb_credentials").delete().eq("user_id", user.id);
+      return json({ ok: true });
+    }
+
+    const creds = await credsFor(user.id);   // brugerens egen app – ellers ejerens fra hemmelighederne
+
     // Liste over banker, man kan forbinde (Danmark)
     if (body.action === "banks") {
-      const list = await eb(`/aspsps?country=${Deno.env.get("EB_COUNTRY") ?? "DK"}`);
+      const list = await eb(`/aspsps?country=${Deno.env.get("EB_COUNTRY") ?? "DK"}`, {}, creds);
       // deno-lint-ignore no-explicit-any
       return json({ banks: (list.aspsps ?? []).map((a: any) => a.name).filter(Boolean).sort((a: string, b: string) => a.localeCompare(b, "da")) });
     }
@@ -22,7 +47,7 @@ Deno.serve(async (req) => {
     if (body.action === "disconnect") {
       const { data: s } = await db.from("bank_sessions").select("id, user_id").eq("id", body.session_id).maybeSingle();
       if (!s || s.user_id !== user.id) return json({ error: "Forbindelsen blev ikke fundet" }, 404);
-      try { await eb(`/sessions/${encodeURIComponent(s.id)}`, { method: "DELETE" }); }
+      try { await eb(`/sessions/${encodeURIComponent(s.id)}`, { method: "DELETE" }, creds); }
       catch (e) { console.warn("Kunne ikke slette sessionen hos Enable Banking (måske allerede udløbet)", e); }
       await db.from("accounts").update({ session_id: null }).eq("session_id", s.id).eq("user_id", user.id);
       await db.from("bank_sessions").delete().eq("id", s.id);
@@ -34,7 +59,7 @@ Deno.serve(async (req) => {
       const country = Deno.env.get("EB_COUNTRY") ?? "DK";
 
       // Brug bankens maksimale samtykke-periode (typisk 180 dage)
-      const list = await eb(`/aspsps?country=${country}`);
+      const list = await eb(`/aspsps?country=${country}`, {}, creds);
       // deno-lint-ignore no-explicit-any
       const aspsp = (list.aspsps ?? []).find((a: any) => a.name === aspspName);
       if (!aspsp) return json({ error: `Banken "${aspspName}" blev ikke fundet i ${country}` }, 400);
@@ -52,7 +77,7 @@ Deno.serve(async (req) => {
           redirect_url: Deno.env.get("EB_REDIRECT_URL"),
           psu_type: "personal",
         }),
-      });
+      }, creds);
       return json({ url: auth.url });
     }
 
@@ -62,7 +87,7 @@ Deno.serve(async (req) => {
       if (!st || st.user_id !== user.id) return json({ error: "Ugyldigt eller udløbet login-forsøg" }, 400);
       await db.from("auth_states").delete().eq("state", state);
 
-      const session = await eb("/sessions", { method: "POST", body: JSON.stringify({ code }) });
+      const session = await eb("/sessions", { method: "POST", body: JSON.stringify({ code }) }, creds);
       const { error: sErr } = await db.from("bank_sessions").upsert({
         id: session.session_id,
         user_id: user.id,

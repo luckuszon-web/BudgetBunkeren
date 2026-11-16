@@ -50,9 +50,12 @@ export function toPkcs8(pem: string): string {
   return `-----BEGIN PRIVATE KEY-----\n${out}\n-----END PRIVATE KEY-----`;
 }
 
-async function ebToken(): Promise<string> {
-  const appId = Deno.env.get("EB_APP_ID")!;
-  const key = await importPKCS8(toPkcs8(Deno.env.get("EB_PRIVATE_KEY")!), "RS256");
+/** En brugers egen Enable Banking-app. Uden: appen fra Supabase-hemmelighederne (ejerens). */
+export type EbCreds = { appId: string; key: string };
+
+export async function ebToken(creds?: EbCreds): Promise<string> {
+  const appId = creds?.appId ?? Deno.env.get("EB_APP_ID")!;
+  const key = await importPKCS8(toPkcs8(creds?.key ?? Deno.env.get("EB_PRIVATE_KEY")!), "RS256");
   const now = Math.floor(Date.now() / 1000);
   return await new SignJWT({})
     .setProtectedHeader({ alg: "RS256", typ: "JWT", kid: appId })
@@ -63,11 +66,11 @@ async function ebToken(): Promise<string> {
     .sign(key);
 }
 
-export async function eb(path: string, init: RequestInit = {}) {
+export async function eb(path: string, init: RequestInit = {}, creds?: EbCreds) {
   const res = await fetch(EB_API + path, {
     ...init,
     headers: {
-      Authorization: `Bearer ${await ebToken()}`,
+      Authorization: `Bearer ${await ebToken(creds)}`,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
@@ -107,14 +110,21 @@ async function mapTx(t: any, accountUid: string, accountKey: string, userId: str
   };
 }
 
+/** Brugerens egen Enable Banking-app, hvis der er gemt en (tabellen kan kun læses af serveren). */
+export async function credsFor(userId: string): Promise<EbCreds | undefined> {
+  const { data, error } = await admin().from("eb_credentials").select("app_id, private_key").eq("user_id", userId).maybeSingle();
+  if (error || !data) return undefined;   // fx hvis databaseopdatering 009 ikke er kørt
+  return { appId: data.app_id, key: data.private_key };
+}
+
 /** Henter alle bogførte posteringer fra en dato (følger bankens sideopdeling). */
-async function fetchBooked(uid: string, accountKey: string, userId: string, from: Date) {
+async function fetchBooked(uid: string, accountKey: string, userId: string, from: Date, creds?: EbCreds) {
   const rows = [];
   let continuation: string | undefined;
   do {
     const params = new URLSearchParams({ date_from: isoDate(from) });
     if (continuation) params.set("continuation_key", continuation);
-    const page = await eb(`/accounts/${uid}/transactions?${params}`);
+    const page = await eb(`/accounts/${uid}/transactions?${params}`, {}, creds);
     for (const t of page.transactions ?? []) {
       if (t.status && t.status !== "BOOK") continue; // kun bogførte, så reservationer ikke dobbelt-tælles
       rows.push(await mapTx(t, uid, accountKey, userId));
@@ -134,6 +144,7 @@ export async function syncAll(onlyUserId?: string) {
 
   const report: Record<string, unknown>[] = [];
   const users = new Set<string>();
+  const credCache = new Map<string, EbCreds | undefined>();   // hver bruger henter med sin egen app
 
   for (const acc of (accounts ?? []).filter((a) => !a.hidden)) {   // skjulte konti hentes ikke
     // deno-lint-ignore no-explicit-any
@@ -157,7 +168,8 @@ export async function syncAll(onlyUserId?: string) {
     let rows: Awaited<ReturnType<typeof mapTx>>[] = [];
     for (let i = 0; i < attempts.length; i++) {
       try {
-        rows = await fetchBooked(acc.uid, acc.account_key, acc.user_id, attempts[i]);
+        if (!credCache.has(acc.user_id)) credCache.set(acc.user_id, await credsFor(acc.user_id));
+        rows = await fetchBooked(acc.uid, acc.account_key, acc.user_id, attempts[i], credCache.get(acc.user_id));
         break;
       } catch (e) {
         if (i === attempts.length - 1) throw e;

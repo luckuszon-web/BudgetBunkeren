@@ -1,4 +1,4 @@
--- ALLE DATABASEOPDATERINGER I ÉN FIL (002–008).
+-- ALLE DATABASEOPDATERINGER I ÉN FIL (002–009).
 -- Kør hele filen i Supabase → SQL Editor. Den kan køres flere gange uden problemer.
 
 -- ===== 002_budget =====
@@ -542,4 +542,17 @@ from (values
 ) as r(pattern, cat)
 join public.categories c on c.name = r.cat
 where not exists (select 1 from public.rules x where x.user_id = c.user_id and lower(x.pattern) = lower(r.pattern));
+
+-- ===== 009_own_eb_app =====
+-- Hver bruger kan bruge sin EGEN Enable Banking-app (fx en partner med egne konti – krævet af Enable Bankings gratis vilkår).
+-- Nøglen gemmes her og kan KUN læses af serverfunktionerne: ingen sikkerhedsregler (policies) = ingen adgang fra browseren.
+-- Kør i Supabase → SQL Editor. Kan køres flere gange.
+create table if not exists public.eb_credentials (
+  user_id uuid primary key references auth.users on delete cascade,
+  app_id text not null,
+  private_key text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.eb_credentials enable row level security;
+revoke all on public.eb_credentials from anon, authenticated;
 
