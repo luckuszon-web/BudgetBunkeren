@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f1115">
+<title>Opdater databasen</title>
+<style>
+  :root { --bg: #0f1115; --card: #181b22; --line: #262a33; --text: #e9ebef; --muted: #8b93a1; --accent: #6ea8fe; --green: #5fd39a; --red: #ff7b7b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 40px; }
+  h1 { font-size: 21px; margin: 4px 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  ol { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+  button { font: inherit; font-weight: 650; width: 100%; padding: 14px; border-radius: 12px; border: 0; background: var(--accent); color: #0b1020; cursor: pointer; }
+  button.done { background: var(--green); }
+  #status { text-align: center; font-size: 14px; color: var(--muted); margin-top: 8px; min-height: 1.5em; }
+  pre { background: #0b0d12; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 12px; overflow: auto; max-height: 50vh;
+    white-space: pre; -webkit-user-select: all; user-select: all; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Opdater databasen</h1>
+  <div class="card">
+    <ol>
+      <li>Tryk på <b>Kopiér SQL</b> herunder.</li>
+      <li>Åbn <a href="https://supabase.com/dashboard/project/xqxgnfwwkdlgcatyajhx/sql/new" target="_blank" rel="noopener">Supabase SQL Editor</a> (logger du ind, så kom tilbage til linket bagefter).</li>
+      <li>Hold fingeren i det tomme felt, vælg <b>Sæt ind</b>, og tryk <b>Run</b>.</li>
+      <li>Når der står <i>Success</i>, så gå tilbage til <a href="./">budget-siden</a> og genindlæs den.</li>
+    </ol>
+  </div>
+  <button id="copy" disabled>Henter SQL …</button>
+  <div id="status"></div>
+  <div class="card" style="margin-top:12px">
+    <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Indhold (tryk i feltet for at markere det hele, hvis knappen ikke virker)</div>
+    <pre id="sql"></pre>
+  </div>
+</main>
+<script>
+  // Henter altid den nyeste version af filen fra GitHub
+  const URL_SQL = "https://raw.githubusercontent.com/luckuszon-web/BudgetBunkeren/main/supabase/opdater-database.sql";
+  const btn = document.getElementById("copy"), pre = document.getElementById("sql"), status = document.getElementById("status");
+  fetch(URL_SQL + "?t=" + Date.now())
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then((text) => { pre.textContent = text; btn.disabled = false; btn.textContent = "Kopiér SQL"; })
+    .catch(() => { btn.textContent = "Kunne ikke hente filen"; status.innerHTML = `Prøv at genindlæse siden, eller åbn <a href="${URL_SQL}">filen direkte</a>.`; });
+  btn.onclick = async () => {
+    try { await navigator.clipboard.writeText(pre.textContent); }
+    catch {
+      // Ældre telefoner: marker teksten og kopiér den på den gamle måde
+      const r = document.createRange(); r.selectNodeContents(pre);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      if (!document.execCommand("copy")) { status.textContent = "Teksten er markeret – vælg Kopiér i menuen."; return; }
+    }
+    btn.textContent = "Kopieret ✓"; btn.classList.add("done");
+    status.textContent = "Gå nu til Supabase SQL Editor og sæt ind.";
+  };
+</script>
+</body>
+</html>
