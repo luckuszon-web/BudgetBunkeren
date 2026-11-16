@@ -100,7 +100,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Hver bruger har sine egne data (RLS). En inviteret ser ikke ejerens posteringer.
 
 ## App-fornemmelse
-- **App-skal:** `body { position: fixed }`; i hjemmeskærmsapp (`navigator.standalone`) sætter `fitAppHeight()` højden = `screen.height` via `--app-h` (iPhone giver for kort CSS-højde/inset i standalone – menuen sad for højt på iPhone 16 Plus); kun `main` scroller; bundmenuen `.tabs` ligger i layoutet (ikke `position: fixed`) – undgår Safari-fejlen, hvor menuen hopper op på korte sider. Brug `document.querySelector("main").scrollTo(...)`, ikke `window.scrollTo`.
+- **Menu og højde (iPhone-hjemmeskærmsapp):** Siden scroller normalt, `.tabs` er `position: fixed` i bunden, og `main` har `min-height: calc(var(--app-h,100vh) + 1px)`, så ALLE sider kan scrolles. På korte sider, der ikke kan scrolles, placerer iPhone (standalone) den faste menu for højt. `fitAppHeight()` sætter `--app-h = screen.height` i standalone. Forsøgt og forkastet: app-skal med kun main scrollende (100dvh / inset:0 gav tomt felt under menuen; screen.height som body-højde skar menuteksten af).
 - Zoom er slået fra (viewport + gesturestart/touchmove i index.html + touch-action: manipulation). Felter er 16 px på mobil, så iPhone ikke auto-zoomer.
 - `docs/manifest.webmanifest` + ikoner (`icon-180/192/512.png`) – siden kan lægges på hjemmeskærmen og åbnes uden browserlinje.
 

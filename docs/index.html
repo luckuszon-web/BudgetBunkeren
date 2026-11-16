@@ -27,16 +27,11 @@
   button, .tabs, .tile, .chart .m, .seg-bar, .cal-d { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   /* iPhone zoomer ind på felter med tekst under 16 px – derfor 16 px på mobil */
   @media (max-width: 760px) { input, select, textarea { font-size: 16px !important; } }
-  /* App-skal: skærmen er fast; kun indholdet (main) scroller, og menuen sidder fast i bunden som en del af layoutet.
-     Det undgår Safari-fejlen, hvor en "position: fixed"-menu hopper op på korte sider. */
-  html, body { height: 100%; overflow: hidden; }
-  /* Strækkes til skærmens faktiske kanter (inset: 0) i stedet for 100vh/100dvh, som iPhone regner forkert
-     i apps på hjemmeskærmen (for kort med statuslinjens højde → menuen sad for højt). */
-  body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
-  /* Som app på hjemmeskærmen sætter JavaScript højden til skærmens fulde højde (se fitAppHeight) */
-  body.standalone { bottom: auto; height: var(--app-h, 100vh); }
-  main { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-    padding: calc(16px + env(safe-area-inset-top)) max(14px, calc((100% - 732px) / 2)) 40px; }
+  /* Siden scroller som normalt, og menuen ligger fast i bunden (position: fixed).
+     Hver side er mindst lidt højere end skærmen, så iPhone altid placerer menuen rigtigt
+     (på korte sider, der ikke kan scrolles, regner iPhone forkert i apps på hjemmeskærmen). */
+  main { max-width: 760px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 14px 60px;
+    min-height: calc(var(--app-h, 100vh) + 1px); box-sizing: border-box; }
   h1 { font-size: 20px; margin: 4px 0 12px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
@@ -178,8 +173,8 @@
 
 
   /* Bundmenu */
-  main { padding-bottom: 24px; }
-  .tabs { position: relative; flex: 0 0 auto; z-index: 15; display: flex; justify-content: center;
+  main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; justify-content: center;
     background: rgba(15,17,21,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
   .tabs button { flex: 1; max-width: 140px; min-width: 0; background: none; border: 0; color: var(--muted); font-size: 11.5px;
@@ -725,16 +720,15 @@
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 </script>
 <script>
-  // iPhone regner højden forkert i apps på hjemmeskærmen (for kort → tomt felt under menuen).
-  // Der fylder appen hele skærmen, så vi bruger skærmens højde direkte.
+  // iPhone regner højden forkert i apps på hjemmeskærmen. Skærmens højde bruges som sidernes mindstehøjde,
+  // så siden altid kan scrolles en smule – så sidder den faste menu rigtigt i bunden.
   (function fitAppHeight() {
     const standalone = window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
     const apply = () => {
-      if (!standalone) { document.body?.classList.remove("standalone"); return; }
+      if (!standalone) return;
       const portrait = innerHeight >= innerWidth;
       const full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
-      document.documentElement.style.setProperty("--app-h", Math.max(full, innerHeight) + "px");
-      document.body?.classList.add("standalone");
+      document.documentElement.style.setProperty("--app-h", Math.max(full, innerHeight) + "px");   // bruges til sidernes mindstehøjde
     };
     document.addEventListener("DOMContentLoaded", apply);
     addEventListener("resize", apply);
@@ -742,7 +736,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116165058";</script>
+<script>window.APP_VERSION = "20261116165553";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2011,7 +2005,7 @@ function showTab(tab) {
   else if (tab === "app") render();
   else modules[tab]?.render();
   try { localStorage.setItem("tab", tab); } catch {}
-  document.querySelector("main").scrollTo(0, 0);
+  window.scrollTo(0, 0);
 }
 document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 // Gentegn den aktive fane (bruges efter ændringer i data)
@@ -2092,7 +2086,7 @@ const SET_PAGES = { home: "setHome", bank: "setBank", quick: "setQuick", cats: "
 function setPage(page) {
   for (const [k, id] of Object.entries(SET_PAGES)) $(id).classList.toggle("hidden", k !== page);
   ({ home: renderSetHome, bank: renderBank, quick: renderQuick, cats: renderSettings, rules: renderRules, acct: renderAcct, data: renderData })[page]?.();
-  document.querySelector("main").scrollTo(0, 0);
+  window.scrollTo(0, 0);
 }
 document.querySelectorAll(".set-row").forEach((r) => r.onclick = () => setPage(r.dataset.page));
 document.querySelectorAll(".set-back").forEach((b) => b.onclick = () => setPage("home"));
