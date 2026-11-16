@@ -32,9 +32,9 @@ export function init(ctx, root) {
   style.textContent = `
     .adv-log { display: grid; gap: 10px; margin: 8px 0 12px; }
     .msg { padding: 10px 12px; border-radius: 12px; font-size: 14.5px; line-height: 1.5; max-width: 92%; white-space: normal; }
-    .msg.user { background: #24324d; justify-self: end; border-bottom-right-radius: 4px; }
-    .msg.assistant { background: #1d212a; border: 1px solid var(--line); justify-self: start; border-bottom-left-radius: 4px; }
-    .msg.error { border-color: #5a2c2c; color: var(--red); }
+    .msg.user { background: var(--accent-soft); justify-self: end; border-bottom-right-radius: 4px; }
+    .msg.assistant { background: var(--surface); border: 1px solid var(--line); justify-self: start; border-bottom-left-radius: 4px; }
+    .msg.error { border-color: var(--bad-soft); color: var(--red); }
     .msg ul { margin: 6px 0; padding-left: 18px; } .msg p { margin: 0 0 8px; } .msg p:last-child { margin: 0; }
     .adv-sugg { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
     .adv-sugg button { font-size: 13px; padding: 6px 10px; border-radius: 99px; }

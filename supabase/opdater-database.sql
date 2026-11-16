@@ -1,4 +1,4 @@
--- ALLE DATABASEOPDATERINGER I ÉN FIL (002–012).
+-- ALLE DATABASEOPDATERINGER I ÉN FIL (002–013).
 -- Kør hele filen i Supabase → SQL Editor. Den kan køres flere gange uden problemer.
 
 -- ===== 002_budget =====
@@ -599,3 +599,9 @@ insert into public.categories (user_id, name, kind, icon)
 select u.user_id, 'Ignoreret', 'ignore', '🚫'
 from (select distinct user_id from public.categories) u
 where not exists (select 1 from public.categories c where c.user_id = u.user_id and c.kind = 'ignore');
+
+-- ===== 013_tx_one_off =====
+-- Engangskøb på den enkelte postering (fx et stort IKEA-køb, der beholder kategorien Shopping,
+-- men holdes uden for snit, prognoser og score). Kan køres flere gange.
+alter table public.transactions add column if not exists one_off boolean not null default false;
+grant update (category_id, category_source, one_off) on public.transactions to authenticated;

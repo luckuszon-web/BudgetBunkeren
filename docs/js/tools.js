@@ -12,12 +12,14 @@ export function init(ctx, root) {
       <button data-t="year">Årsprognose</button>
       <button data-t="quarter">Kvartal</button>
       <button data-t="tax">Løn og skat</button>
+      <button data-go="advisor" class="adv-go">Rådgiver ›</button>
     </div>
     <div id="tool"></div>`;
   const $ = (id) => root.querySelector("#" + id);
   let tool = "cal";
   try { tool = localStorage.getItem("tool") || "cal"; } catch {}
-  root.querySelectorAll("#toolSel button").forEach((b) => b.onclick = () => { tool = b.dataset.t; try { localStorage.setItem("tool", tool); } catch {} render(); });
+  root.querySelector("#toolSel .adv-go").onclick = () => ctx.showTab("advisor");
+  root.querySelectorAll("#toolSel button[data-t]").forEach((b) => b.onclick = () => { tool = b.dataset.t; try { localStorage.setItem("tool", tool); } catch {} render(); });
 
   const thisMonth = () => todayIso().slice(0, 7);
   // Hele måneder før denne, som har data (til snit)
@@ -269,9 +271,9 @@ export function init(ctx, root) {
         </div>
         <div class="chart" style="height:150px">${data.map((d) => `<div class="m ${d.m === now ? "cur" : ""}" title="${fmt(d.m + "-01", { month: "long" })}${d.proj ? " (prognose)" : ""}: udgifter ${kr(d.out)}, indtægter ${kr(d.inc)}">
           <span class="lbl num">${d.out ? Math.round(d.out / 1000) + "k" : ""}</span>
-          <div class="cols" style="${d.proj ? "opacity:.45" : ""}"><div class="col out" style="height:${d.out / max * 100}%;background:#3987e5"></div><div class="col in" style="height:${d.inc / max * 100}%;background:#5fd39a"></div></div>
+          <div class="cols" style="${d.proj ? "opacity:.45" : ""}"><div class="col out" style="height:${d.out / max * 100}%;background:#3987e5"></div><div class="col in" style="height:${d.inc / max * 100}%;background:var(--green)"></div></div>
           <span class="lbl">${fmt(d.m + "-01", { month: "short" }).replace(".", "")}</span></div>`).join("")}</div>
-        <div class="legend" style="margin-top:6px"><span><i style="background:#3987e5"></i>Udgifter</span><span><i style="background:#5fd39a"></i>Indtægter</span><span><i style="background:#3987e5;opacity:.45"></i>Lysere = prognose</span></div>
+        <div class="legend" style="margin-top:6px"><span><i style="background:#3987e5"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span><span><i style="background:#3987e5;opacity:.45"></i>Lysere = prognose</span></div>
         <p class="note">Prognosen bruger snittet af de ${base.n} seneste hele måneder (indtægter ${kr(base.inc)}, udgifter ${kr(base.out)} pr. måned). Måneder uden data tæller som 0.</p>
       </div>
       ${state.assets.length ? `<div class="card"><div class="head"><h2>Formue ved årets udgang</h2></div>
@@ -362,7 +364,7 @@ export function init(ctx, root) {
         <label><span>Din egen pensionsandel (%)</span><input type="number" inputmode="decimal" id="txPens" value="${tax.pension}" step="0.5"></label>
       </div>
       <label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" id="txChurch" style="width:auto" ${tax.church ? "checked" : ""}> Medlem af folkekirken</label>
-      <div class="hero" style="border:1px solid #2c3854;border-radius:12px;padding:12px;margin-top:12px">
+      <div class="hero" style="border:1px solid var(--accent-line);border-radius:12px;padding:12px;margin-top:12px">
         <div class="hero-lbl">Udbetalt pr. måned (ca.)</div>
         <div class="hero-amt num" style="font-size:32px">${kr(r.net / 12)}</div>
         <div class="hero-sub">Skat i alt ${kr(r.totalTax / 12)}/md. · ${Math.round(r.totalTax / r.yGross * 100)}% af bruttolønnen · marginalskat ca. ${Math.round(r.marg * 100)}%</div>
@@ -399,13 +401,13 @@ export function init(ctx, root) {
   style.textContent = `
     .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
     .cal-h { font-size: 11px; color: var(--muted); text-align: center; padding-bottom: 2px; }
-    .cal-d { min-height: 58px; border-radius: 8px; background: #1d212a; padding: 4px; display: flex; flex-direction: column; gap: 1px; cursor: pointer; overflow: hidden; }
+    .cal-d { min-height: 58px; border-radius: 8px; background: var(--surface); padding: 4px; display: flex; flex-direction: column; gap: 1px; cursor: pointer; overflow: hidden; }
     .cal-d .n { font-size: 12px; font-weight: 600; }
     .cal-d .a { font-size: 10.5px; font-variant-numeric: tabular-nums; }
     .cal-d .ev { font-size: 10.5px; border: 1.5px dashed; border-radius: 4px; padding: 0 2px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
     .cal-d .ev.in { border-color: var(--green); color: var(--green); } .cal-d .ev.out { border-color: var(--warn); color: var(--warn); }
     .cal-d.today { outline: 2px solid var(--accent); }
-    .cal-d.fut { background: #171a21; }
+    .cal-d.fut { background: var(--surface2); }
     .wi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .wi-grid label span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
     .wi-scroll { overflow-x: auto; margin-top: 12px; }
@@ -422,7 +424,7 @@ export function init(ctx, root) {
   document.head.appendChild(style);
 
   function render() {
-    root.querySelectorAll("#toolSel button").forEach((b) => b.classList.toggle("on", b.dataset.t === tool));
+    root.querySelectorAll("#toolSel button[data-t]").forEach((b) => b.classList.toggle("on", b.dataset.t === tool));
     ({ cal: renderCalendar, whatif: renderWhatIf, year: renderYear, quarter: renderQuarter, tax: renderTax })[tool]?.();
   }
   return { render };

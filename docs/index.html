@@ -13,10 +13,36 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <meta name="theme-color" content="#0f1115">
 <title>BudgetBunkeren</title>
+<script>
+  // Tema: gemt valg ("light"/"dark") eller telefonens/computerens indstilling
+  (function () {
+    var t = null; try { t = localStorage.getItem("theme"); } catch (e) {}
+    if (!t) t = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "light" ? "#f4f6f9" : "#0f1115";
+  })();
+</script>
 <style>
+  /* Farver som variabler: mørkt tema er standard, lyst tema via [data-theme="light"] (eller telefonens indstilling) */
   :root {
+    color-scheme: dark;
     --bg: #0f1115; --card: #181b22; --line: #262a33; --text: #e9ebef; --muted: #8b93a1;
     --accent: #6ea8fe; --red: #ff7b7b; --green: #5fd39a; --warn: #f5c451; --field: #222632;
+    --surface: #1d212a; --surface2: #171a21; --hover: #1f2330; --track: #2a2f3b; --track2: #2f3646; --line2: #3a4152;
+    --seg-on: #2e3442; --bar-dim: #3a4560; --accent-soft: #1f2a40; --accent-line: #2c3854; --deep: #0b0d12;
+    --good-soft: #2c5a46; --bad-soft: #5a2c2c; --warn-soft: #5a4a1c; --hero-lbl: #a9b8d6; --on-accent: #0b1020;
+    --bar-fix: #8e7cf0; --bar-fix-dim: #4a4470;
+    --primary: #2b5fb8; --primary-2: #1f4a94; --on-primary: #ffffff; --tabs-bg: rgba(15,17,21,.92); --shadow: none;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f4f6f9; --card: #ffffff; --line: #e2e6ec; --text: #161a22; --muted: #5d6573;
+    --accent: #2563d0; --red: #c43535; --green: #17834f; --warn: #a56a00; --field: #f1f3f6;
+    --surface: #f5f7fa; --surface2: #fafbfc; --hover: #eef2f7; --track: #e5e9ef; --track2: #dde2e9; --line2: #cfd5de;
+    --seg-on: #ffffff; --bar-dim: #b9c7e0; --accent-soft: #e6eefc; --accent-line: #c9d8f3; --deep: #f1f3f6;
+    --good-soft: #cfeadc; --bad-soft: #f3d3d3; --warn-soft: #f2e2bf; --hero-lbl: #dbe6fb; --on-accent: #ffffff;
+    --bar-fix: #7b68e0; --bar-fix-dim: #cdc6f3;
+    --primary: #2563d0; --primary-2: #1d4fa8; --on-primary: #ffffff; --tabs-bg: rgba(255,255,255,.94); --shadow: 0 1px 2px rgba(16,24,40,.05);
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -34,7 +60,7 @@
     min-height: calc(var(--app-h, 100vh) + 1px); box-sizing: border-box; }
   h1 { font-size: 20px; margin: 4px 0 12px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
   .card > .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .row { display: flex; align-items: center; gap: 8px; }
   .between { justify-content: space-between; }
@@ -44,7 +70,7 @@
     border-radius: 10px; padding: 8px 12px; }
   button { cursor: pointer; }
   button:disabled { opacity: .35; cursor: default; }
-  button.primary { background: var(--accent); color: #0b1020; border: 0; font-weight: 600; }
+  button.primary { background: var(--accent); color: var(--on-accent); border: 0; font-weight: 600; }
   button.ghost { background: transparent; }
   button.danger { color: var(--red); }
   input { width: 100%; }
@@ -62,12 +88,14 @@
   .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
   .chart .m { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%;
     justify-content: flex-end; cursor: pointer; border-radius: 8px; padding: 4px 0 2px; }
-  .chart .m:hover { background: #1f2330; }
-  .chart .m.cur { background: #1f2a40; }
+  .chart .m:hover { background: var(--hover); }
+  .chart .m.cur { background: var(--accent-soft); }
   .chart .cols { display: flex; align-items: flex-end; gap: 2px; width: 100%; justify-content: center; flex: 1; }
   .chart .col { width: 42%; max-width: 16px; border-radius: 4px 4px 1px 1px; min-height: 2px; }
-  .chart .col.out { background: #3a4560; } .chart .m.cur .col.out { background: var(--accent); }
-  .chart .col.in { background: #2c5a46; } .chart .m.cur .col.in { background: var(--green); }
+  .chart .col.out { display: flex; flex-direction: column; overflow: hidden; background: transparent; }
+  .chart .col.out .var { background: var(--bar-dim); min-height: 0; } .chart .col.out .fix { background: var(--bar-fix-dim); min-height: 0; }
+  .chart .m.cur .col.out .var { background: var(--accent); } .chart .m.cur .col.out .fix { background: var(--bar-fix); }
+  .chart .col.in { background: var(--good-soft); } .chart .m.cur .col.in { background: var(--green); }
   .chart .lbl { font-size: 11px; color: var(--muted); }
   .legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); }
   .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
@@ -75,10 +103,10 @@
   /* Kategorier */
   .seg { display: inline-flex; background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
   .seg button { border: 0; background: transparent; padding: 5px 10px; font-size: 13px; border-radius: 8px; color: var(--muted); }
-  .seg button.on { background: #2e3442; color: var(--text); }
+  .seg button.on { background: var(--seg-on); color: var(--text); }
   .bar { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
-  .bar:hover, .bar.active { background: #1f2330; }
-  .bar .track { grid-column: 1 / -1; height: 6px; background: #232836; border-radius: 4px; overflow: hidden; }
+  .bar:hover, .bar.active { background: var(--hover); }
+  .bar .track { grid-column: 1 / -1; height: 6px; background: var(--track); border-radius: 4px; overflow: hidden; }
   .bar .fill { height: 100%; background: var(--accent); border-radius: 4px; }
   .bar .fill.over { background: var(--red); }
   .bar .fill.inc { background: var(--green); }
@@ -86,7 +114,7 @@
   .up { color: var(--red); } .down { color: var(--green); }
 
   /* Ikoner */
-  .ico { width: 36px; height: 36px; border-radius: 50%; background: #232836; display: grid; place-items: center;
+  .ico { width: 36px; height: 36px; border-radius: 50%; background: var(--track); display: grid; place-items: center;
     font-size: 18px; flex-shrink: 0; position: relative; }
   .ico .dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--card); }
 
@@ -102,14 +130,14 @@
 
   /* Kategori-fliser */
   .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; margin-top: 12px; }
-  .tile { background: #1d212a; border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer;
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer;
     display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .tile:hover { border-color: #3a4152; }
-  .tile.active { border-color: var(--accent); background: #1f2a40; }
+  .tile:hover { border-color: var(--line2); }
+  .tile.active { border-color: var(--accent); background: var(--accent-soft); }
   .tile .top { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .tile .name { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tile .amt { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; }
-  .tile .meter { height: 5px; background: #2a2f3b; border-radius: 3px; overflow: hidden; }
+  .tile .meter { height: 5px; background: var(--track); border-radius: 3px; overflow: hidden; }
   .tile .meter > div { height: 100%; border-radius: 3px; background: var(--accent); }
   .tile .meter > div.over { background: var(--red); } .tile .meter > div.inc { background: var(--green); }
   .tile .meta { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
@@ -119,24 +147,43 @@
   /* Forbrug gennem måneden */
   .pace svg { width: 100%; height: 190px; display: block; overflow: visible; }
   .pace text { fill: var(--muted); font-size: 11px; font-family: inherit; }
-  .tip { position: fixed; pointer-events: none; background: #0b0d12; border: 1px solid #3a4152; border-radius: 8px;
+  .tip { position: fixed; pointer-events: none; background: var(--deep); border: 1px solid var(--line2); border-radius: 8px;
     padding: 6px 9px; font-size: 12.5px; z-index: 20; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
   .tip b { font-variant-numeric: tabular-nums; }
   .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
 
 
   /* Dashboard */
-  .hero { background: linear-gradient(160deg, #1d2740 0%, #181b22 60%); border-color: #2c3854; }
-  .hero-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #a9b8d6; font-weight: 600; }
-  .hero-amt { font-size: 40px; font-weight: 750; letter-spacing: -.02em; margin: 4px 0 2px; line-height: 1.1; }
-  .hero-sub { color: var(--muted); font-size: 14px; }
-  .hero-meter { margin-top: 12px; }
-  .hero-meter .track { height: 10px; background: #2a2f3b; border-radius: 5px; overflow: hidden; display: flex; gap: 2px; }
+  /* Hovedkortet: farvet flade med det disponible beløb og nøgletal */
+  .hero-p { background: linear-gradient(150deg, var(--primary) 0%, var(--primary-2) 100%); color: var(--on-primary); border-radius: 18px; padding: 20px; margin-bottom: 12px; }
+  .hero-lbl { font-size: 13.5px; opacity: .85; font-weight: 500; }
+  .hero-amt { font-size: 42px; font-weight: 750; letter-spacing: -.02em; margin: 6px 0 2px; line-height: 1.1; }
+  .hero-amt.is-neg { color: #ffd2d2; }
+  .hero-sub { opacity: .85; font-size: 14px; }
+  .hero-meter { margin-top: 14px; }
+  .hero-meter .track { height: 8px; background: rgba(255,255,255,.22); border-radius: 4px; overflow: hidden; display: flex; gap: 2px; }
   .hero-meter .track > div { height: 100%; }
-  .hero-meter .lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .hero-meter .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; }
-  .hero-rows { margin-top: 12px; border-top: 1px solid #2c3854; padding-top: 8px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
-  .hero-rows .muted { font-size: 13px; }
+  .hero-meter .m-used { background: #ffffff; } .hero-meter .m-bills { background: #ffcf66; } .hero-meter .m-saved { background: #7ee2b0; }
+  .hero-meter .m-free { background: transparent; } .hero-meter .m-over { background: #ff9f9f; }
+  .hero-meter .lg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; opacity: .9; margin-top: 6px; }
+  .hero-meter .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .hero-stats { margin-top: 16px; border-top: 1px solid rgba(255,255,255,.22); padding-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px 14px; }
+  .hero-stats .hs-l { font-size: 12.5px; opacity: .75; }
+  .hero-stats .hs-v { font-weight: 650; font-size: 16px; overflow: hidden; text-overflow: ellipsis; }
+  .hero-stats .hs-s { font-size: 11.5px; opacity: .7; }
+  /* Overblikkets gitter: én kolonne på mobil, flere på computer */
+  .ov-top, .ov-mid, .ov-two { display: grid; gap: 12px; }
+  .ov-top > *, .ov-mid > *, .ov-two > * { margin-bottom: 0; min-width: 0; }
+  .ov-top, .ov-mid, .ov-two { margin-bottom: 12px; }
+  @media (min-width: 900px) {
+    .ov-top, .ov-mid { grid-template-columns: 2fr 1fr; }
+    .ov-two { grid-template-columns: 1fr 1fr; align-items: start; }
+    .kpis { grid-template-columns: repeat(4, 1fr) !important; }
+    .ov-two .donut-wrap { grid-template-columns: 1fr; }
+    .hero-amt { font-size: 52px; }
+  }
+  .kpi.click { cursor: pointer; } .kpi.click:hover { border-color: var(--line2); }
+  .kpi .k-v.good { color: var(--green); } .kpi .k-v.warn { color: var(--warn); } .kpi .k-v.bad { color: var(--red); }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; min-width: 0; }
   .kpi .k-top { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
@@ -157,31 +204,75 @@
   .score svg { width: 104px; height: 104px; flex-shrink: 0; }
   .score-parts { display: grid; gap: 6px; font-size: 12.5px; flex: 1; min-width: 0; }
   .score-parts .p { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
-  .score-parts .bar2 { grid-column: 1 / -1; height: 4px; background: #2a2f3b; border-radius: 2px; overflow: hidden; }
+  .score-parts .bar2 { grid-column: 1 / -1; height: 4px; background: var(--track); border-radius: 2px; overflow: hidden; }
   .score-parts .bar2 > div { height: 100%; background: var(--accent); }
   .insights { display: grid; gap: 8px; }
   .ins { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border-radius: 10px;
-    background: #1d212a; font-size: 14px; border-left: 3px solid #3a4152; }
+    background: var(--surface); font-size: 14px; border-left: 3px solid var(--line2); }
   .ins .e { color: var(--muted); padding-top: 1px; }
   .ins.warn { border-left-color: var(--warn); } .ins.warn .e { color: var(--warn); }
   .ins.bad { border-left-color: var(--red); } .ins.bad .e { color: var(--red); }
   .ins.good { border-left-color: var(--green); } .ins.good .e { color: var(--green); }
-  @media (max-width: 400px) { .kpi .k-v { font-size: 16px; } .hero-amt { font-size: 30px !important; } }
+  @media (max-width: 400px) { .kpi .k-v { font-size: 16px; } .hero-amt { font-size: 32px !important; } }
   @media (max-width: 640px) {
     .kpis { grid-template-columns: 1fr 1fr; }
-    .hero-amt { font-size: 34px; }
+    .hero-amt { font-size: 38px; }
   }
 
+
+  /* Sidehoved, logo og tema-knap */
+  .page-head { display: flex; align-items: center; gap: 10px; margin: 2px 0 14px; }
+  .page-head .ph-text { flex: 1; min-width: 0; }
+  .page-head h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  .ph-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ph-sub:empty { display: none; }
+  .logo-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; font-weight: 750; font-size: 15px; flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 10px; }
+  .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+  .desk-only { display: none !important; }
+  .side-logo, .side-foot { display: none; }
+
+  /* Posteringer-fanen */
+  .tx-bar { display: grid; gap: 10px; margin-bottom: 12px; }
+  .tx-bar > * { min-width: 0; }
+  .tx-period { grid-template-columns: 44px 1fr 44px; }
+  .tx-plbl { text-align: center; font-weight: 650; font-size: 16px; }
+  .search-wrap { position: relative; }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; fill: var(--muted); pointer-events: none; }
+  .search-wrap input { padding-left: 38px; height: 44px; }
+  .chips { display: flex; gap: 4px; overflow-x: auto; background: var(--field); border-radius: 12px; padding: 4px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chips button { flex-shrink: 0; border: 0; background: transparent; color: var(--muted); padding: 7px 12px; border-radius: 9px; font-size: 14px; }
+  .chips button.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .oo { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); white-space: nowrap; cursor: pointer; }
+  .oo input { width: auto; margin: 0; accent-color: var(--accent); }
 
   /* Bundmenu */
   main { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex; justify-content: center;
-    background: rgba(15,17,21,.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    background: var(--tabs-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
   .tabs button { flex: 1; max-width: 140px; min-width: 0; background: none; border: 0; color: var(--muted); font-size: 11.5px;
     display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; }
   .tabs svg { width: 22px; height: 22px; fill: currentColor; }
   .tabs button.on { color: var(--accent); }
+  /* Computer og iPad på langs: menuen som sidebar til venstre, bredere indhold */
+  @media (min-width: 900px) {
+    .desk-only { display: flex !important; }
+    .mob-only { display: none !important; }
+    .tabs { top: 0; right: auto; width: 232px; flex-direction: column; justify-content: flex-start; gap: 2px; padding: 18px 12px;
+      border-top: 0; border-right: 1px solid var(--line); background: var(--card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .tabs button { flex: 0 0 auto; max-width: none; flex-direction: row; gap: 12px; font-size: 14.5px; padding: 10px 12px; border-radius: 10px; justify-content: flex-start; }
+    .tabs svg { width: 19px; height: 19px; }
+    .tabs button:hover { background: var(--hover); color: var(--text); }
+    .tabs button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .side-logo { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 15.5px; padding: 0 6px 22px; }
+    .side-foot { display: flex; margin-top: auto; align-items: center; justify-content: space-between; background: var(--surface); border-radius: 12px; padding: 8px 8px 8px 12px; }
+    main { max-width: none; margin-left: 232px; padding: 28px 32px 48px; }
+    main > section, #topbar { max-width: 1120px; margin-left: auto; margin-right: auto; }
+    .page-head h1 { font-size: 28px; }
+    .toast { bottom: 24px; }
+  }
   .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
 
   /* Cirkeldiagram */
@@ -194,7 +285,7 @@
   .donut-legend { display: grid; gap: 2px; min-width: 0; }
   .dl { display: grid; grid-template-columns: 10px 1fr auto 38px; gap: 8px; align-items: center; background: none; border: 0; border-radius: 8px;
     padding: 6px 6px; text-align: left; font-size: 14px; width: 100%; }
-  .dl:hover:not(:disabled), .dl.on { background: #1f2330; }
+  .dl:hover:not(:disabled), .dl.on { background: var(--hover); }
   .dl.sub { padding-left: 22px; font-size: 13.5px; }
   .dl .caret { color: var(--muted); font-size: 12px; margin-left: 2px; }
   .dl i { width: 10px; height: 10px; border-radius: 3px; }
@@ -210,8 +301,8 @@
   .set-row { display: grid; grid-template-columns: 34px 1fr 18px; gap: 12px; align-items: center; width: 100%; text-align: left;
     background: none; border: 0; border-radius: 0; padding: 12px 14px; border-top: 1px solid var(--line); }
   .set-row:first-child { border-top: 0; }
-  .set-row:hover { background: #1d212a; }
-  .set-row .si { width: 34px; height: 34px; border-radius: 9px; background: #24324d; display: grid; place-items: center; color: var(--accent); }
+  .set-row:hover { background: var(--surface); }
+  .set-row .si { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); }
   .set-row .si svg { width: 19px; height: 19px; fill: currentColor; }
   .set-row .st { display: flex; flex-direction: column; min-width: 0; }
   .set-row .ss { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -227,7 +318,7 @@
   .acc-row .sub { font-size: 12.5px; color: var(--muted); }
   .switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .switch span { position: absolute; inset: 0; background: #3a4152; border-radius: 99px; transition: .2s; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; background: var(--line2); border-radius: 99px; transition: .2s; cursor: pointer; }
   .switch span::before { content: ""; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
   .switch input:checked + span { background: var(--green); }
   .switch input:checked + span::before { transform: translateX(18px); }
@@ -235,7 +326,7 @@
 
   /* Opdateringsbjælke */
   .upd { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 30;
-    display: flex; align-items: center; gap: 10px; background: #1f2a40; border: 1px solid #2c3854; border-radius: 14px;
+    display: flex; align-items: center; gap: 10px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 14px;
     padding: 8px 8px 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.45); width: max-content; max-width: calc(100vw - 24px); font-size: 14px; }
   .upd .ghost { padding: 6px 10px; }
 
@@ -250,15 +341,15 @@
   .cp-field { margin-top: 8px; }
   .cp-field > span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .cp-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; margin-top: 4px; }
-  .cp-row code { display: block; background: #0b0d12; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13.5px;
+  .cp-row code { display: block; background: var(--deep); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13.5px;
     font-family: inherit; overflow-wrap: anywhere; -webkit-user-select: all; user-select: all; color: var(--text); }
   .cp-row .cp { padding: 8px 12px; }
-  .cp.done { background: var(--green); color: #0b1020; border-color: transparent; }
+  .cp.done { background: var(--green); color: var(--on-accent); border-color: transparent; }
 
   /* Næste måned */
   .pill-s { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
   .nm-big { font-size: 30px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-  .range { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, #5a2c2c var(--zero), #2a2f3b var(--zero)); margin: 14px 0 4px; }
+  .range { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--bad-soft) var(--zero), var(--track) var(--zero)); margin: 14px 0 4px; }
   .range .rng { position: absolute; top: 0; bottom: 0; background: rgba(57,135,229,.55); border-radius: 5px; }
   .range .mk { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; background: var(--text); border-radius: 2px; }
   .range-lbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -267,7 +358,7 @@
   .nm-row .muted { font-size: 12.5px; }
   .sal { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin: 10px 0 2px; position: relative; }
   .sal .b { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; }
-  .sal .b > div { width: 100%; max-width: 30px; background: #2c5a46; border-radius: 4px 4px 1px 1px; min-height: 2px; }
+  .sal .b > div { width: 100%; max-width: 30px; background: var(--good-soft); border-radius: 4px 4px 1px 1px; min-height: 2px; }
   .sal .b span { font-size: 10.5px; color: var(--muted); }
   .sal .avg { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
   .pay { display: grid; grid-template-columns: 42px 1fr auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; align-items: center; }
@@ -283,14 +374,27 @@
   /* Posteringer */
   .tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
   .day { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 2px; }
-  .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; }
+  .tx { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 9px 0; border-top: 1px solid var(--line); align-items: center; }
   .tx .desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tx select { justify-self: start; grid-column: 1 / -1; padding: 2px 22px 2px 8px; font-size: 12.5px; max-width: 100%; color: var(--muted);
     background: transparent; border-color: transparent; border-radius: 6px; margin-left: -8px; }
   .tx select:hover, .tx select:focus { border-color: var(--line); background: var(--field); color: var(--text); }
   .tx select.unset { color: var(--warn); }
+  .tx select { grid-column: 1; grid-row: 2; }
+  .tx .oo { grid-column: 2; grid-row: 2; justify-self: end; }
+  .tx .mi-open { grid-column: 1 / -1; justify-self: start; }
+  @media (min-width: 900px) {
+    .tx { grid-template-columns: minmax(0, 1fr) 210px 120px 120px; gap: 12px; padding: 8px 4px; }
+    .tx .desc { grid-column: 1; grid-row: 1; }
+    .tx select { grid-column: 2; grid-row: 1; width: 100%; }
+    .tx .mi-open { grid-column: 2; grid-row: 1; }
+    .tx .oo { grid-column: 3; grid-row: 1; justify-self: start; }
+    .tx > .num { grid-column: 4; grid-row: 1; text-align: right; }
+    .tx-bar { grid-template-columns: 260px minmax(0, 1fr); align-items: center; }
+    .tx-bar .chips { grid-column: 1 / -1; justify-self: start; }
+  }
   .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; margin-left: 6px; }
-  .tag.ai { color: var(--warn); border-color: #5a4a1c; }
+  .tag.ai { color: var(--warn); border-color: var(--warn-soft); }
 
   /* Indstillinger */
   .cat-group { margin-top: 14px; }
@@ -310,7 +414,7 @@
 
   .banner { border-color: var(--warn); }
   #consentCard:not([data-tab="app"]) { display: none; }
-  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #222632; z-index: 10;
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--field); z-index: 10;
     border: 1px solid var(--line); padding: 10px 14px; border-radius: 10px; max-width: 90vw; }
   dialog { background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
     width: min(420px, calc(100vw - 32px)); }
@@ -369,11 +473,11 @@
 
   <!-- Fælles top -->
   <div id="topbar" class="hidden">
-    <div class="row between">
-      <h1 id="pageTitle">Overblik</h1>
-      <div class="row">
-        <button class="ghost small" id="syncBtn" title="Hent nye posteringer">↻ Opdater</button>
-      </div>
+    <div class="page-head">
+      <div class="logo-mark mob-only" aria-hidden="true">B</div>
+      <div class="ph-text"><h1 id="pageTitle">Overblik</h1><div class="ph-sub" id="pageSub"></div></div>
+      <button class="ghost icon-btn mob-only theme-btn" title="Skift mellem lyst og mørkt tema" aria-label="Skift tema"></button>
+      <button class="ghost small" id="syncBtn" title="Hent nye posteringer">↻ Opdater</button>
     </div>
     <div id="dbCard" class="card banner hidden">
       <b>Databasen mangler en opdatering</b>
@@ -409,29 +513,63 @@
       </div>
     </div>
 
-    <!-- Det store tal -->
-    <div class="card hero" id="heroCard">
+    <!-- Hovedtal + score -->
+    <div class="ov-top">
+    <div class="hero-p" id="heroCard">
       <div class="hero-lbl" id="heroLbl">Dit disponible beløb</div>
       <div class="hero-amt num" id="heroAmt"></div>
       <div class="hero-sub" id="heroSub"></div>
       <div class="hero-meter" id="heroMeter"></div>
-      <div class="hero-rows" id="heroRows"></div>
+      <div class="hero-stats" id="heroRows"></div>
+    </div>
+    <div class="card" id="scoreCard">
+      <div class="head"><h2>Økonomisk score</h2><span class="small muted" id="scoreMonth"></span></div>
+      <div class="score">
+        <svg id="scoreRing" viewBox="0 0 120 120" aria-hidden="true"></svg>
+        <div id="scoreParts" class="score-parts"></div>
+      </div>
+      <div class="small muted" id="scoreTip" style="margin-top:10px"></div>
+    </div>
     </div>
 
     <!-- Nøgletal -->
     <div class="kpis" id="kpis"></div>
 
-    <!-- Prognose for næste måned (detaljer foldet sammen) -->
-    <div class="card" id="nextCard">
-      <div class="head"><h2 id="nextTitle">Næste måned</h2><span class="pill-s">Prognose</span></div>
-      <div id="nextBody"></div>
+    <!-- Forløb + indsigter -->
+    <div class="ov-mid">
+    <div class="card" id="trendCard">
+      <div class="head">
+        <h2>Udvikling</h2>
+        <div class="seg" id="trendMode">
+          <button data-v="pace" class="on">Forløb</button>
+          <button data-v="bars">Historik</button>
+        </div>
+      </div>
+      <div class="pace" id="paceCard">
+        <div class="trend-sub"><span class="small muted" id="paceTitle">Forbrug gennem måneden</span>
+          <div class="legend"><span><i style="background:#3987e5"></i><span id="paceLbl">Denne måned</span></span><span><i style="background:var(--muted)"></i><span id="paceAvgLbl">Snit 3 forrige</span></span></div></div>
+        <svg id="paceSvg" role="img" aria-label="Akkumulerede udgifter dag for dag"></svg>
+        <div class="small muted" id="paceNote" style="margin-top:4px"></div>
+      </div>
+      <div id="barsWrap" class="hidden">
+        <div class="trend-sub"><span class="small muted" id="chartTitle">Seneste 12 måneder</span>
+          <div class="legend"><span><i style="background:var(--green)"></i>Indtægter</span><span><i style="background:var(--bar-fix)"></i>Faste</span><span><i style="background:var(--accent)"></i>Variable</span></div></div>
+        <div class="chart" id="chart"></div>
+        <div class="small muted" style="margin-top:6px" id="chartHint">Tryk på en søjle for at se perioden.</div>
+      </div>
     </div>
-
     <div class="card" id="insightsCard">
       <div class="head"><h2>Indsigter</h2></div>
       <div id="insights" class="insights"></div>
     </div>
+    </div>
 
+    <!-- Næste måned + kategorier -->
+    <div class="ov-two">
+    <div class="card" id="nextCard">
+      <div class="head"><h2 id="nextTitle">Næste måned</h2><span class="pill-s">Prognose</span></div>
+      <div id="nextBody"></div>
+    </div>
     <div class="card">
       <div class="head">
         <h2>Kategorier</h2>
@@ -450,40 +588,7 @@
       </details>
       <div class="small muted" id="barsHint" style="margin-top:8px"></div>
     </div>
-
-    <!-- Udvikling: forløb i perioden eller de seneste perioder -->
-    <div class="card" id="trendCard">
-      <div class="head">
-        <h2>Udvikling</h2>
-        <div class="seg" id="trendMode">
-          <button data-v="pace" class="on">Forløb</button>
-          <button data-v="bars">Historik</button>
-        </div>
-      </div>
-      <div class="pace" id="paceCard">
-        <div class="trend-sub"><span class="small muted" id="paceTitle">Forbrug gennem måneden</span>
-          <div class="legend"><span><i style="background:#3987e5"></i><span id="paceLbl">Denne måned</span></span><span><i style="background:#8b93a1"></i><span id="paceAvgLbl">Snit 3 forrige</span></span></div></div>
-        <svg id="paceSvg" role="img" aria-label="Akkumulerede udgifter dag for dag"></svg>
-        <div class="small muted" id="paceNote" style="margin-top:4px"></div>
-      </div>
-      <div id="barsWrap" class="hidden">
-        <div class="trend-sub"><span class="small muted" id="chartTitle">Seneste 12 måneder</span>
-          <div class="legend"><span><i style="background:var(--accent)"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span></div></div>
-        <div class="chart" id="chart"></div>
-        <div class="small muted" style="margin-top:6px" id="chartHint">Tryk på en søjle for at se perioden.</div>
-      </div>
     </div>
-
-    <!-- Sammenfoldet: score og faste udgifter -->
-    <details class="card fold" id="scoreCard">
-      <summary><h2>Økonomisk score</h2><span class="small muted" id="scoreSum"></span></summary>
-      <div class="small muted" id="scoreMonth" style="margin-bottom:8px"></div>
-      <div class="score">
-        <svg id="scoreRing" viewBox="0 0 120 120" aria-hidden="true"></svg>
-        <div id="scoreParts" class="score-parts"></div>
-      </div>
-      <div class="small muted" id="scoreTip" style="margin-top:8px"></div>
-    </details>
 
     <details class="card fold" id="fixedCard">
       <summary><h2>Faste udgifter</h2><span class="num small muted" id="fixedTotal"></span></summary>
@@ -491,23 +596,33 @@
       <div class="small muted" style="margin-top:8px">Findes automatisk: samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder.</div>
     </details>
 
-    <div class="card">
-      <div class="head"><h2 id="txTitle">Posteringer</h2><button class="ghost small hidden" id="clearCat">Vis alle ✕</button></div>
-      <div class="tools">
-        <input id="search" type="search" placeholder="Søg i tekst eller beløb…">
-        <select id="txFilter">
-          <option value="all">Alle</option>
-          <option value="none">Uden kategori</option>
-          <option value="ai">Sat af AI</option>
-          <option value="out">Kun udgifter</option>
-          <option value="in">Kun indtægter</option>
-        </select>
+    <p class="small muted" id="footer"></p>
+  </section>
+
+  <!-- Posteringer -->
+  <section id="txs" class="hidden">
+    <div class="tx-bar">
+      <div class="period tx-period">
+        <button id="txPrev" aria-label="Forrige">‹</button>
+        <div id="txPeriodLbl" class="tx-plbl"></div>
+        <button id="txNext" aria-label="Næste">›</button>
       </div>
+      <div class="search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a7 7 0 1 0 4.2 12.6l5.1 5.1 1.4-1.4-5.1-5.1A7 7 0 0 0 10 3zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z"/></svg>
+        <input id="search" type="search" placeholder="Søg i alle posteringer…"></div>
+      <div class="chips" id="txFilter" role="tablist">
+        <button data-f="all" class="on">Alle</button>
+        <button data-f="none">Ukategoriseret</button>
+        <button data-f="oneoff">Engangskøb</button>
+        <button data-f="out">Udgifter</button>
+        <button data-f="in">Indtægter</button>
+        <button data-f="ai">Sat af AI</button>
+      </div>
+    </div>
+    <div class="card tx-card">
+      <div class="head"><h2 id="txTitle">Posteringer</h2><button class="ghost small hidden" id="clearCat">Vis alle ✕</button></div>
       <div id="txList"></div>
       <button class="ghost small hidden" id="moreBtn" style="width:100%;margin-top:8px">Vis flere</button>
     </div>
-
-    <p class="small muted" id="footer"></p>
   </section>
 
   <!-- Planlæg, Værktøjer, Rådgiver (bygges af modulerne i js/) -->
@@ -700,11 +815,14 @@
 </main>
 
 <nav id="tabs" class="tabs hidden" aria-label="Hovedmenu">
+  <div class="side-logo"><div class="logo-mark">B</div><span>BudgetBunkeren</span></div>
   <button data-tab="app" class="on"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg>Overblik</button>
+  <button data-tab="txs"><svg viewBox="0 0 24 24"><path d="M3 5h2v2H3zm4 0h14v2H7zM3 11h2v2H3zm4 0h14v2H7zM3 17h2v2H3zm4 0h14v2H7z"/></svg>Posteringer</button>
   <button data-tab="plan"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 4a6 6 0 1 1-6 6 6 6 0 0 1 6-6zm0 4a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg>Planlæg</button>
   <button data-tab="tools"><svg viewBox="0 0 24 24"><path d="M4 3h16v4H4zM4 10h7v11H4zM14 10h6v4h-6zM14 17h6v4h-6z"/></svg>Værktøjer</button>
-  <button data-tab="advisor"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver</button>
+  <button data-tab="advisor" class="desk-only"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H8l-4 4z"/></svg>Rådgiver</button>
   <button data-tab="settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>Indstillinger</button>
+  <div class="side-foot"><span class="small muted">Tema</span><button class="ghost icon-btn theme-btn" title="Skift mellem lyst og mørkt tema" aria-label="Skift tema"></button></div>
 </nav>
 
 <!-- Dialog: ny kategori -->
@@ -807,10 +925,12 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116195728";</script>
+<script>window.APP_VERSION = "20261116201032";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Beregningsmotoren (rene funktioner) – samme version som siden, så telefonen ikke bruger en gammel kopi
+const E = await import("./js/engine.js?v=" + encodeURIComponent(window.APP_VERSION));
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
 // Kommer man fra et link i en mail (invitation, glemt adgangskode), står typen i adressens "#…"-del.
@@ -1026,8 +1146,12 @@ async function load() {
     const [cats, rules, txs, sessions, accounts] = await Promise.all([
       sb.from("categories").select("*").order("name"),
       fetchAll(() => sb.from("rules").select("id, pattern, category_id, priority").order("id")),
-      fetchAll(() => sb.from("transactions").select("id, account_uid, booking_date, amount, description, counterparty, category_id, category_source")
-        .gte("booking_date", since).order("booking_date", { ascending: false }).order("id")),
+      fetchAll(() => sb.from("transactions").select("id, account_uid, booking_date, amount, description, counterparty, category_id, category_source, one_off")
+        .gte("booking_date", since).order("booking_date", { ascending: false }).order("id"))
+        .then((r) => { state.oneOffReady = true; return r; })
+        .catch(() => { state.oneOffReady = false;   // databaseopdatering 013 mangler
+          return fetchAll(() => sb.from("transactions").select("id, account_uid, booking_date, amount, description, counterparty, category_id, category_source")
+            .gte("booking_date", since).order("booking_date", { ascending: false }).order("id")); }),
       sb.from("bank_sessions").select("*").order("valid_until", { ascending: false }),
       sb.from("accounts").select("*").order("name"),
     ]);
@@ -1056,6 +1180,7 @@ async function load() {
   if (c0 && !state.cats.some((c) => c.kind === "oneoff")) missing.push("kategorien for store engangskøb");
   if (state.accounts[0] && !("hidden" in state.accounts[0])) missing.push("at omdøbe og skjule konti");
   if (state.manualReady === false) missing.push("at indtaste løn selv");
+  if (state.oneOffReady === false) missing.push("engangskøb på den enkelte postering");
   if (state.me && state.me.available === false) missing.push("invitationer og egen bankapp til ekstra brugere");
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
@@ -1108,7 +1233,12 @@ function autoMismatch(t) {
   return !(t.category_source === "rule" && state.rules.some((r) => r.priority >= 200 && String(r.category_id) === String(c.id) && matchesRule(t, r.pattern)));
 }
 const effCat = (t) => (t.category_id && !autoMismatch(t) ? t.category_id : null);
-const kindOf = (t) => catById(effCat(t))?.kind ?? (t.amount < 0 ? "expense" : "income");
+const kindOf = (t) => {
+  const k = catById(effCat(t))?.kind;
+  if (k === "ignore") return k;
+  if (t.one_off) return "oneoff";   // engangskøb markeret på selve posteringen
+  return k ?? (t.amount < 0 ? "expense" : "income");
+};
 const inPeriod = (t, p) => keyOf(t.booking_date) === p;
 // Overførsler/opsparing og engangskøb (fx bilkøb) tælles ikke med i forbrug, indtægter, snit og prognoser
 const counts = (t) => kindOf(t) !== "transfer" && kindOf(t) !== "oneoff";
@@ -1223,35 +1353,12 @@ const monthBudget = (cat, m) => { const b = Number(cat?.monthly_budget) || 0; re
 const periodBudget = (cat) => gran() === "month" ? monthBudget(cat, state.period) : (Number(cat?.monthly_budget) || 0) * budgetFactor();
 
 // Faste udgifter: samme modtager i mindst 3 af de 4 forrige måneder, højst 2 gange pr. måned, stabilt beløb
-const fixedKey = (t) => (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
+const fixedKey = E.recurringKey;
 const fixedCache = new Map();
 function detectFixed(baseMonth) {
-  const ck = baseMonth + "|" + state.txs.length + "|" + state.cats.map((c) => c.kind).join("");
-  if (fixedCache.has(ck)) return fixedCache.get(ck);
-  const months = [1, 2, 3, 4].map((i) => addMonths(baseMonth, -i));
-  const groups = new Map();
-  for (const t of state.txs) {
-    const m = t.booking_date.slice(0, 7);
-    if (!isExp(t) || !months.includes(m)) continue;   // også modregninger (fx fast fremleje), som får negativt beløb
-    const k = fixedKey(t);
-    if (!groups.has(k)) groups.set(k, { key: k, name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map(), days: [] });
-    const g = groups.get(k);
-    const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
-    e.n++; e.sum += -t.amount; g.byMonth.set(m, e); g.days.push(+t.booking_date.slice(8));
-  }
-  const fixed = [];
-  for (const g of groups.values()) {
-    const vals = [...g.byMonth.values()];
-    if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
-    const sums = vals.map((v) => v.sum).sort((a, b) => a - b);
-    const median = sums[Math.floor(sums.length / 2)];
-    if (!median || sums.some((s) => Math.abs(s - median) > Math.abs(median) * 0.2)) continue;
-    const days = g.days.sort((a, b) => a - b);
-    fixed.push({ key: g.key, name: g.name, cat: g.cat, amount: median, day: days[Math.floor(days.length / 2)] });
-  }
-  fixed.sort((a, b) => b.amount - a.amount);
-  fixedCache.set(ck, fixed);
-  return fixed;
+  const ck = baseMonth + "|" + state.txs.length + "|" + state.cats.map((c) => c.kind).join("") + "|" + state.txs.filter((t) => t.one_off).length;
+  if (!fixedCache.has(ck)) fixedCache.set(ck, E.detectRecurring(state.txs, baseMonth, { isExpense: isExp }));
+  return fixedCache.get(ck);
 }
 
 // Samlet opsparing = alt, der er flyttet til opsparing/egne konti (minus det, der er hentet tilbage)
@@ -1285,61 +1392,72 @@ function renderDashboard() {
     const daysLeft = daysInMonth(m) - +todayIso().slice(8) + 1;
     $("heroLbl").textContent = "Dit disponible beløb";
     $("heroAmt").textContent = kr(disp);
-    $("heroAmt").style.color = disp < 0 ? "var(--red)" : "";
-    $("heroSub").innerHTML = `Tilbage resten af ${fmt(m + "-01", { month: "long" })}` +
-      (disp > 0 ? ` · ca. <b>${kr(disp / daysLeft)}</b> pr. dag i ${daysLeft} dage` : "");
-    rows.push(["Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} er endnu ikke kommet ind (snit af ${prevMonthsWithData(m).length} mdr.)` : ""]);
-    rows.push(["Brugt indtil nu", minus(out), ""]);
-    if (upSum) rows.push(["Faste regninger på vej", minus(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
-    if (saved > 0) rows.push(["Sat til side", minus(saved), ""]);
-    if (oneoff > 0) rows.push(["Store køb (holdt udenfor)", kr(oneoff), "Indgår ikke i beløbet ovenfor"]);
+    $("heroAmt").classList.toggle("is-neg", disp < 0);
+    $("heroSub").innerHTML = disp > 0 ? `≈ <b>${kr(disp / daysLeft)}</b> pr. dag i ${daysLeft} dage` : `Tilbage resten af ${fmt(m + "-01", { month: "long" })}`;
+    rows.push(["Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} mangler endnu` : "", `Snit af ${prevMonthsWithData(m).length} mdr.`]);
+    rows.push(["Faste udgifter", kr(fixedOut + upSum), upSum ? `${kr(upSum)} på vej` : "alle betalt", upcoming.map((f) => `${f.name} ~${f.day}.`).join(", ")]);
+    rows.push(["Brugt variabelt", kr(varOut), ""]);
+    if (saved > 0) rows.push(["Sat til side", kr(saved), ""]);
+    if (oneoff > 0) rows.push(["Holdt udenfor", kr(oneoff), "store køb"]);
     if (expInc > 0) {
       const w = (v) => Math.max(0, v / expInc * 100);
       meter = `<div class="track">
-          <div style="width:${w(out)}%;background:#3987e5" title="Brugt"></div>
-          <div style="width:${w(upSum)}%;background:#c98500" title="Faste regninger på vej"></div>
-          <div style="width:${w(Math.max(0, saved))}%;background:#199e70" title="Sat til side"></div>
-          <div style="flex:1;background:#2f3646"></div></div>
-        <div class="lg"><span><i style="background:#3987e5"></i>Brugt</span><span><i style="background:#c98500"></i>Regninger på vej</span><span><i style="background:#199e70"></i>Sat til side</span><span><i style="background:#2f3646"></i>Disponibelt</span></div>`;
+          <div class="m-used" style="width:${w(out)}%" title="Brugt"></div>
+          <div class="m-bills" style="width:${w(upSum)}%" title="Faste regninger på vej"></div>
+          <div class="m-saved" style="width:${w(Math.max(0, saved))}%" title="Sat til side"></div>
+          <div class="m-free" style="flex:1"></div></div>
+        <div class="lg"><span><i class="m-used"></i>Brugt</span><span><i class="m-bills"></i>Regninger på vej</span><span><i class="m-saved"></i>Sat til side</span></div>`;
     }
   } else {
     const res = inc - out;
     const prevRes = prevTot.length ? avgOf(prevTot.map((t) => t.inc - t.out)) : null;
     $("heroLbl").textContent = { year: "Årets resultat", month: "Månedens resultat", week: "Ugens resultat", day: "Dagens resultat" }[gran()];
     $("heroAmt").textContent = (res > 0 ? "+" : "") + kr(res);
-    $("heroAmt").style.color = res < 0 ? "var(--red)" : "var(--green)";
+    $("heroAmt").classList.toggle("is-neg", res < 0);
     $("heroSub").innerHTML = res >= 0 ? "Indtægter minus udgifter – det har du til overs" : "Du har brugt mere, end der er kommet ind";
     if (prevRes !== null && gran() !== "day") {
       const d = res - prevRes;
-      rows.push([d >= 0 ? "Bedre end snittet" : "Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod de ${prevTot.length} forrige ${unitTxt(prevTot.length)}`]);
+      rows.push([d >= 0 ? "Bedre end snittet" : "Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod ${prevTot.length} forrige`]);
     }
-    if (saved > 0) rows.push(["Heraf sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
-    if (oneoff > 0) rows.push(["Store køb (holdt udenfor)", kr(oneoff), "Indgår ikke i resultatet"]);
+    rows.push(["Indtægter", kr(inc), ""]);
+    rows.push(["Faste udgifter", kr(fixedOut), ""]);
+    rows.push(["Variable udgifter", kr(varOut), ""]);
+    if (saved > 0) rows.push(["Sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
+    if (oneoff > 0) rows.push(["Holdt udenfor", kr(oneoff), "store køb"]);
     if (inc > 0) {
       const pct = Math.min(100, out / inc * 100);
-      meter = `<div class="track"><div style="width:${pct}%;background:${out > inc ? "var(--red)" : "#3987e5"}"></div><div style="flex:1;background:#2c5a46"></div></div>
-        <div class="lg"><span><i style="background:#3987e5"></i>Brugt ${Math.round(out / inc * 100)}% af indtægterne</span><span><i style="background:#2c5a46"></i>Til overs</span></div>`;
+      meter = `<div class="track"><div class="${out > inc ? "m-over" : "m-used"}" style="width:${pct}%"></div><div class="m-free" style="flex:1"></div></div>
+        <div class="lg"><span><i class="m-used"></i>Brugt ${Math.round(out / inc * 100)}% af indtægterne</span></div>`;
     }
   }
   $("heroMeter").innerHTML = meter;
-  $("heroRows").innerHTML = rows.map(([a, b, c]) => `<div>${a}${c ? `<div class="muted">${c}</div>` : ""}</div><div class="num">${b}</div>`).join("");
+  $("heroRows").innerHTML = rows.map(([a, b, c, title]) => `<div class="hs" ${title ? `title="${esc(title)}"` : ""}><div class="hs-l">${a}</div><div class="hs-v num">${b}</div>${c ? `<div class="hs-s">${c}</div>` : ""}</div>`).join("");
   $("heroRows").classList.toggle("hidden", !rows.length);
 
   // --- Nøgletal ---
   const salary = salaryCat();
   const salIn = salary ? list.filter((t) => String(t.category_id) === String(salary.id) && t.amount > 0).reduce((s, t) => s + t.amount, 0) : 0;
-  const prevVar = prevs.map((q) => { const l = txsIn(q); return sumOut(l) - sumOut(l.filter(isFixed)); });
-  const avgVar = avgOf(prevVar);
-  const varCmp = avgVar && varOut ? Math.round((varOut - avgVar) / avgVar * 100) : null;
-  const ts = totalSaved();
-  const next = MILESTONES.find((x) => x > ts);
-  const kpi = (_, label, v, sub, cls = "") => `<div class="kpi"><div class="k-top">${label}</div><div class="k-v ${cls}">${v}</div><div class="k-s">${sub}</div></div>`;
+  // Forbrug mod normalt: samme tidspunkt i perioden som snittet af de forrige (samme tal som kurven under Udvikling)
+  let ahead = null;
+  if (gran() !== "day") { const pd = paceData(); if (pd.avg && pd.curShown.length) ahead = pd.curShown.at(-1) - pd.avg[pd.curShown.length - 1]; }
+  else if (prevTot.length) ahead = out - avgOf(prevTot.map((t) => t.out));
+  // Kategorier over budget i perioden
+  const overBudget = state.cats.filter((c) => c.kind === "expense" && periodBudget(c) > 0 && sumOut(list.filter((t) => String(effCat(t)) === String(c.id))) > periodBudget(c));
+  const uncategorized = state.allTxs.filter((t) => inPeriod(t, p) && !effCat(t)).length;
+  const salDay = forecastNextMonth()?.salDay;
+  const kpi = (label, v, sub, tone = "", attrs = "") => `<div class="kpi ${attrs ? "click" : ""}" ${attrs}><div class="k-top">${label}</div><div class="k-v ${tone}">${v}</div><div class="k-s">${sub}</div></div>`;
   $("kpis").innerHTML =
-    kpi("💰", "Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)} · andet ${kr(inc - salIn)}` : `${list.filter((t) => t.amount > 0 && isInc(t)).length} indbetalinger`, "pos") +
-    kpi("🏠", "Faste udgifter", kr(fixedOut), `${new Set(list.filter(isFixed).map(fixedKey)).size} faste poster`) +
-    kpi("🛒", "Variable udgifter", kr(varOut), varCmp === null ? "mad, shopping, transport …" :
-      `<span class="${varCmp > 0 ? "up" : "down"}">${varCmp > 0 ? "▲" : "▼"} ${Math.abs(varCmp)}%</span> mod snit`) +
-    kpi("🐷", "Opsparing", kr(Math.max(0, saved)), ts > 0 ? `${kr(ts)} i alt${next ? ` · næste mål ${kr(next)}` : ""}` : "overførsler til opsparing", "");
+    kpi("Forbrug vs. snit", ahead == null ? "–" : (ahead > 0 ? "+" : ahead < 0 ? "−" : "") + kr(Math.abs(ahead)),
+      ahead == null ? "Ikke nok historik endnu" : ahead > 0 ? "Over normalt tempo" : "Under normalt tempo", ahead == null ? "" : ahead > 0 ? "warn" : "good") +
+    kpi("Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)}` : live && salDay ? `Løn ventes ca. d. ${salDay}.` : `${list.filter((t) => t.amount > 0 && isInc(t)).length} indbetalinger`, "pos") +
+    kpi("Over budget", `${overBudget.length} ${overBudget.length === 1 ? "kategori" : "kategorier"}`,
+      overBudget.length ? overBudget.slice(0, 2).map((c) => esc(c.name)).join(", ") + (overBudget.length > 2 ? " …" : "") : state.cats.some((c) => Number(c.monthly_budget) > 0) ? "Alt inden for budget" : "Ingen budgetter sat",
+      overBudget.length ? "bad" : "good", `data-go="cats"`) +
+    kpi("Ukategoriseret", `${uncategorized} ${uncategorized === 1 ? "post" : "poster"}`, uncategorized ? "Tryk for at sortere" : "Alt er sorteret", uncategorized ? "warn" : "good", `data-go="none"`);
+  document.querySelectorAll("#kpis .kpi[data-go]").forEach((k) => k.onclick = () => {
+    if (k.dataset.go === "none") { state.txF = "none"; $("txFilter").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x.dataset.f === "none")); showTab("txs"); }
+    else { showTab("settings"); setPage("cats"); }
+  });
 
   renderScore();
   renderInsights(fixedItems, isFixed);
@@ -1485,11 +1603,10 @@ function renderNextMonth() {
 function renderScore() {
   const m = gran() === "month" ? state.period : todayIso().slice(0, 7);
   const tx = monthTx(m);
-  const { out, inc } = totals(tx);
+  const { inc } = totals(tx);
   const prevM = prevMonthsWithData(m);
   const expInc = isCurrentMonth(m) ? Math.max(inc, avgOf(prevM.map((q) => totals(monthTx(q)).inc))) : inc;
   const f = elapsed(m);
-  const parts = [];
   // Fremskriv måneden: faste udgifter (også dem, der mangler) + variable udgifter skaleret til hele måneden
   const project = (mm) => {
     const fx = detectFixed(mm), keys = new Set(fx.map((x) => x.key)), rows = monthTx(mm);
@@ -1499,41 +1616,33 @@ function renderScore() {
     const varOut = sumOut(rows) - fixedOut;
     return fixedOut + missing + varOut / (isCurrentMonth(mm) ? Math.max(elapsed(mm), 0.2) : 1);
   };
-  // 1) Opsparingsrate: hvor stor en del af indkomsten bliver tilbage (mål: 20 %). For igangværende måned fremskrives forbruget.
   const outProj = project(m);
-  const rate = expInc ? (expInc - outProj) / expInc : 0;
-  parts.push({ name: "Opsparingsrate", max: 40, pts: Math.max(0, Math.min(1, rate / 0.2)) * 40, txt: `${Math.round(rate * 100)}% · mål 20%`,
-    tip: "Prøv at lade mindst 20 % af indkomsten blive tilbage hver måned." });
-  // 2) Budgetoverholdelse
   const budgeted = state.cats.filter((c) => c.kind === "expense" && Number(c.monthly_budget) > 0);
-  if (budgeted.length) {
-    const ok = budgeted.filter((c) => sumOut(tx.filter((t) => String(t.category_id) === String(c.id))) <= monthBudget(c, m) * Math.min(1, f * 1.1)).length;
-    parts.push({ name: "Budgetter overholdt", max: 30, pts: ok / budgeted.length * 30, txt: `${ok} af ${budgeted.length}`,
-      tip: "Hold øje med de kategorier, der er tæt på budgettet." });
-  }
-  // 3) Udvikling: forbrug mod snittet af de 3 forrige måneder (samme del af måneden)
+  const budgetsOk = budgeted.filter((c) => sumOut(tx.filter((t) => String(t.category_id) === String(c.id))) <= monthBudget(c, m) * Math.min(1, f * 1.1)).length;
   const avgOut = avgOf(prevM.map((q) => totals(monthTx(q)).out));
-  if (avgOut) {
-    const ratio = outProj / avgOut;
-    parts.push({ name: "Forbrug mod snit", max: 30, pts: Math.max(0, Math.min(1, (1.3 - ratio) / 0.3)) * 30, txt: `${Math.round((ratio - 1) * 100) > 0 ? "+" : ""}${Math.round((ratio - 1) * 100)}%`,
-      tip: "Dit forbrug ligger over det normale – se Indsigter for, hvor det stiger." });
-  }
-  const max = parts.reduce((s, x) => s + x.max, 0);
-  const score = max ? Math.round(parts.reduce((s, x) => s + x.pts, 0) / max * 100) : 0;
-  const [col, word] = score >= 70 ? ["#5fd39a", "Rigtig godt"] : score >= 40 ? ["#f5c451", "OK"] : ["#ff7b7b", "Kan forbedres"];
+  // Buffer: kontanter/opsparing fra Planlæg målt i måneders udgifter (kun hvis du har lagt konti ind dér)
+  const cash = state.assets.filter((a) => a.kind === "cash").reduce((s, a) => s + a.value, 0);
+  const sc = E.healthScore({
+    savingsRate: expInc ? (expInc - outProj) / expInc : 0,
+    budgetsOk, budgetsTotal: budgeted.length,
+    spendRatio: avgOut ? outProj / avgOut : null,
+    bufferMonths: cash > 0 && avgOut > 0 ? cash / avgOut : null,
+  });
+  const col = { good: "var(--green)", warn: "var(--warn)", bad: "var(--red)" }[sc.tone];
   const C = 2 * Math.PI * 50;
-  $("scoreRing").innerHTML = `<circle cx="60" cy="60" r="50" fill="none" stroke="#2a2f3b" stroke-width="11"/>
-    <circle cx="60" cy="60" r="50" fill="none" stroke="${col}" stroke-width="11" stroke-linecap="round"
-      stroke-dasharray="${C * score / 100} ${C}" transform="rotate(-90 60 60)"/>
-    <text x="60" y="62" text-anchor="middle" font-size="32" font-weight="750" fill="#e9ebef">${score}</text>
-    <text x="60" y="82" text-anchor="middle" font-size="11" fill="${col}">${word}</text>`;
+  $("scoreRing").innerHTML = `<circle cx="60" cy="60" r="50" fill="none" style="stroke:var(--track)" stroke-width="11"/>
+    <circle cx="60" cy="60" r="50" fill="none" style="stroke:${col}" stroke-width="11" stroke-linecap="round"
+      stroke-dasharray="${C * sc.score / 100} ${C}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="64" text-anchor="middle" font-size="34" font-weight="750" style="fill:var(--text)">${sc.score}</text>
+    <text x="60" y="84" text-anchor="middle" font-size="11" style="fill:${col}">${sc.word}</text>`;
   $("scoreMonth").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
-  $("scoreSum").innerHTML = `<b style="color:${col}">${score}</b> · ${word}`;
-  $("scoreParts").innerHTML = parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
-    <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${x.pts / x.max >= .7 ? "#5fd39a" : x.pts / x.max >= .4 ? "#f5c451" : "#ff7b7b"}"></div></div></div>`).join("");
-  const weakest = [...parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
-  $("scoreTip").textContent = !budgeted.length ? "Tip: Sæt budgetter under ⚙ Indstillinger, så tæller de også med i scoren."
-    : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!";
+  const tone = (x) => x.pts / x.max >= .7 ? "var(--green)" : x.pts / x.max >= .4 ? "var(--warn)" : "var(--red)";
+  $("scoreParts").innerHTML = sc.parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
+    <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${tone(x)}"></div></div></div>`).join("");
+  const nw = state.assets.reduce((s, a) => s + (["loan", "mortgage", "credit"].includes(a.kind) ? -a.value : a.value), 0);
+  const weakest = [...sc.parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
+  $("scoreTip").innerHTML = (state.assets.length ? `Nettoformue <b class="num">${kr(nw)}</b> · ` : "") +
+    (!budgeted.length ? "Tip: Sæt budgetter under Indstillinger, så tæller de med." : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!");
 }
 
 // Indsigter: budgetadvarsler, store ændringer pr. kategori, milepæle og abonnementer
@@ -1588,6 +1697,10 @@ function renderInsights(fixedItems) {
   if (reached) items.push({ cls: "good", e: "star", w: 70, html: `Milepæl nået: du har sat over <b>${kr(reached)}</b> til side (i alt ${kr(ts)}).${next ? ` Næste milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` : ""}` });
   else if (ts > 0 && next) items.push({ cls: "", e: "star", w: 40, html: `Du har sat ${kr(ts)} til side. Første milepæl er ${kr(next)}, og der mangler ${kr(next - ts)}` });
 
+  // Prisstigninger på faste udgifter og abonnementer (seneste måned mod måneden før)
+  for (const r of E.priceIncreases(fixedItems ?? []).slice(0, 3)) items.push({ cls: "warn", e: "up", w: 70,
+    html: `<b>${esc(r.name)}</b> er steget med ${kr(r.priceChange)} om måneden (fra ${kr(r.prev)} til ${kr(r.last)}) – det er ${kr(r.priceChange * 12)} mere om året.` });
+
   // 4) Abonnementer pr. år
   const subs = fixedItems.filter((f) => /abonnement/i.test(catById(f.cat)?.name ?? ""));
   if (subs.length) {
@@ -1639,7 +1752,13 @@ function renderChart() {
   let end = state.period;
   for (let i = 0; i < n - 1 && end < now; i++) end = stepP(end, 1);   // vis gerne perioder efter den valgte
   const periods = Array.from({ length: n }, (_, i) => stepP(end, i - n + 1));
-  const data = periods.map((p) => totals(txsIn(p)));
+  // Udgifter deles i faste (genkendt som faste i perioden) og variable – ligesom i hovedkortet
+  const data = periods.map((p) => {
+    const l = txsIn(p), t = totals(l);
+    const keys = new Set(detectFixed(monthOf(p)).map((f) => f.key));
+    const fixed = Math.max(0, sumOut(l.filter((x) => isExp(x) && keys.has(fixedKey(x)))));
+    return { ...t, fixed: Math.min(fixed, t.out), variable: Math.max(0, t.out - fixed) };
+  });
   const max = Math.max(1, ...data.map((d) => Math.max(d.out, d.inc)));
   $("chartTitle").textContent = `Seneste ${n} ${G[gran()].units}`;
   const short = (v) => v >= 1000 ? Math.round(v / 1000) + "k" : v ? Math.round(v) : "";
@@ -1648,7 +1767,7 @@ function renderChart() {
     return `<div class="m ${p === state.period ? "cur" : ""}" data-p="${p}" data-i="${i}">
       <span class="lbl num">${short(d.out)}</span>
       <div class="cols">
-        <div class="col out" style="height:${(d.out / max) * 100}%"></div>
+        <div class="col out" style="height:${(d.out / max) * 100}%"><div class="var" style="flex:${d.variable}"></div><div class="fix" style="flex:${d.fixed}"></div></div>
         <div class="col in" style="height:${(d.inc / max) * 100}%"></div>
       </div>
       <span class="lbl">${esc(periodLabel(p, true))}</span>
@@ -1660,24 +1779,16 @@ function renderChart() {
     el.onmouseenter = (e) => {
       const r = el.getBoundingClientRect();
       showTip(`<div style="margin-bottom:3px">${esc(periodLabel(el.dataset.p))}</div>
-        <div><i style="background:var(--accent)"></i>Udgifter <b>${kr(d.out)}</b></div>
+        <div><i style="background:var(--accent)"></i>Variable <b>${kr(d.variable)}</b></div>
+        <div><i style="background:var(--bar-fix)"></i>Faste <b>${kr(d.fixed)}</b></div>
         <div><i style="background:var(--green)"></i>Indtægter <b>${kr(d.inc)}</b></div>`, r.left + r.width / 2, r.top);
     };
     el.onmouseleave = hideTip;
   });
 }
 
-// Linjediagram: akkumulerede udgifter gennem perioden mod snittet af de 3 forrige
-function renderPace() {
-  // Udvikling-kortet: "Forløb" (kurve) eller "Historik" (søjler). Dag-visning har kun historik.
-  const dayView = gran() === "day";
-  let mode = "pace"; try { mode = localStorage.getItem("trendMode") || "pace"; } catch {}
-  if (dayView) mode = "bars";
-  $("trendMode").classList.toggle("hidden", dayView);
-  $("trendMode").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === mode));
-  $("paceCard").classList.toggle("hidden", mode !== "pace");
-  $("barsWrap").classList.toggle("hidden", mode !== "bars");
-  if (mode !== "pace") return;
+// Akkumulerede udgifter gennem perioden (dag for dag / måned for måned) og snittet af de forrige perioder på samme tidspunkt
+function paceData() {
   // Delperioder: år -> måneder, måned -> dage, uge -> dage
   const subKeys = (p) => {
     if (gran() === "year") return Array.from({ length: 12 }, (_, i) => `${p}-${pad(i + 1)}`);
@@ -1702,6 +1813,21 @@ function renderPace() {
   const curShown = cur.slice(0, lastIdx + 1);
   const prevs = prevPeriods(state.period).map(cumulative);
   const avg = prevs.length ? keys.map((_, i) => prevs.reduce((s, c) => s + (c[Math.min(i, c.length - 1)] ?? 0), 0) / prevs.length) : null;
+  return { keys, L, cur, today, lastIdx, curShown, prevs, avg };
+}
+
+// Linjediagram: akkumulerede udgifter gennem perioden mod snittet af de 3 forrige
+function renderPace() {
+  // Udvikling-kortet: "Forløb" (kurve) eller "Historik" (søjler). Dag-visning har kun historik.
+  const dayView = gran() === "day";
+  let mode = "pace"; try { mode = localStorage.getItem("trendMode") || "pace"; } catch {}
+  if (dayView) mode = "bars";
+  $("trendMode").classList.toggle("hidden", dayView);
+  $("trendMode").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === mode));
+  $("paceCard").classList.toggle("hidden", mode !== "pace");
+  $("barsWrap").classList.toggle("hidden", mode !== "bars");
+  if (mode !== "pace") return;
+  const { keys, L, cur, today, lastIdx, curShown, prevs, avg } = paceData();
   let budget = state.cats.reduce((s, c) => s + (c.kind === "expense" ? periodBudget(c) : 0), 0);
   // Budgetlinjen giver kun mening, hvis budgetterne dækker det meste af forbruget
   const normalOut = avgOf(prevPeriods(state.period).map((q) => totals(txsIn(q)).out));
@@ -1719,7 +1845,7 @@ function renderPace() {
   const y = (v) => padT + (1 - v / max) * (H - padT - padB);
   const path = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
   const grid = [0.25, 0.5, 0.75, 1].map((f) => max * f / 1.08).map((v) =>
-    `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="#262a33" stroke-width="1"/>
+    `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--line)" stroke-width="1"/>
      <text x="${W - padR + 6}" y="${y(v) + 4}">${v >= 1000 ? Math.round(v / 1000) + "k" : Math.round(v)}</text>`).join("");
   const tickEvery = L > 20 ? 5 : L > 8 ? 2 : 1;
   const ticks = keys.map((k, i) => (i % tickEvery === 0 || i === L - 1)
@@ -1727,12 +1853,14 @@ function renderPace() {
   const lastV = curShown[curShown.length - 1] ?? 0;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.innerHTML = `${grid}${ticks}
-    ${budget ? `<line x1="${padL}" x2="${W - padR}" y1="${y(budget)}" y2="${y(budget)}" stroke="#ff7b7b" stroke-width="1.5" stroke-dasharray="4 4"/>
-      <text x="${padL + 2}" y="${y(budget) - 5}" style="fill:#ff7b7b">Budget ${kr(budget)}</text>` : ""}
-    ${avg ? `<path d="${path(avg)}" fill="none" stroke="#8b93a1" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>` : ""}
+    ${budget ? `<line x1="${padL}" x2="${W - padR}" y1="${y(budget)}" y2="${y(budget)}" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text x="${padL + 2}" y="${y(budget) - 5}" style="fill:var(--red)">Budget ${kr(budget)}</text>` : ""}
+    ${avg ? `<path d="${path(avg)}" fill="none" style="stroke:var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>` : ""}
+    ${curShown.length > 1 ? `<defs><linearGradient id="paceFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3987e5" stop-opacity=".32"/><stop offset="100%" stop-color="#3987e5" stop-opacity="0"/></linearGradient></defs>
+      <path d="${path(curShown)}L${x(curShown.length - 1).toFixed(1)},${y(0).toFixed(1)}L${x(0).toFixed(1)},${y(0).toFixed(1)}Z" fill="url(#paceFill)" stroke="none"/>` : ""}
     ${curShown.length ? `<path d="${path(curShown)}" fill="none" stroke="#3987e5" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <circle cx="${x(curShown.length - 1)}" cy="${y(lastV)}" r="4.5" fill="#3987e5" stroke="#181b22" stroke-width="2"/>` : ""}
-    <line id="paceCross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="#8b93a1" stroke-width="1" visibility="hidden"/>
+      <circle cx="${x(curShown.length - 1)}" cy="${y(lastV)}" r="4.5" fill="#3987e5" style="stroke:var(--card)" stroke-width="2"/>` : ""}
+    <line id="paceCross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" style="stroke:var(--muted)" stroke-width="1" visibility="hidden"/>
     <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" id="paceHit"/>`;
 
   // Kort forklaring under grafen
@@ -1755,7 +1883,7 @@ function renderPace() {
     const label = gran() === "year" ? fmt(keys[i] + "-01", { month: "long" }) : fmt(keys[i], { weekday: "short", day: "numeric", month: "short" });
     showTip(`<div style="margin-bottom:3px">${esc(label)}</div>
       ${i < curShown.length ? `<div><i style="background:#3987e5"></i>${esc($("paceLbl").textContent)} <b>${kr(cur[i])}</b></div>` : ""}
-      ${avg ? `<div><i style="background:#8b93a1"></i>Snit <b>${kr(avg[i])}</b></div>` : ""}`,
+      ${avg ? `<div><i style="background:var(--muted)"></i>Snit <b>${kr(avg[i])}</b></div>` : ""}`,
       r.left + x(i) * (r.width / W), r.top + 10);
   };
   const leave = () => { cross.setAttribute("visibility", "hidden"); hideTip(); };
@@ -1819,8 +1947,8 @@ function renderBars() {
     return `<circle class="arc" data-k="${s.k}" cx="100" cy="100" r="${R}" fill="none" stroke="${s.c}" stroke-width="${SW}" opacity="${dim}"
       stroke-dasharray="${Math.max(0.5, len - GAP)} ${C}" stroke-dashoffset="${-start}" transform="rotate(-90 100 100)"/>`;
   }).join("");
-  $("donut").innerHTML = total ? `<circle cx="100" cy="100" r="${R}" fill="none" stroke="#232836" stroke-width="${SW}"/>${arcs}<g id="donutCenter">${baseCenter}</g>`
-    : `<circle cx="100" cy="100" r="${R}" fill="none" stroke="#232836" stroke-width="${SW}"/>${center(wantOut ? "Udgifter" : "Indtægter", kr(0), "")}`;
+  $("donut").innerHTML = total ? `<circle cx="100" cy="100" r="${R}" fill="none" style="stroke:var(--track)" stroke-width="${SW}"/>${arcs}<g id="donutCenter">${baseCenter}</g>`
+    : `<circle cx="100" cy="100" r="${R}" fill="none" style="stroke:var(--track)" stroke-width="${SW}"/>${center(wantOut ? "Udgifter" : "Indtægter", kr(0), "")}`;
   const legendRow = (s, sub = false) => `<button class="dl ${sub ? "sub" : ""} ${String(state.catFilter) === s.k ? "on" : ""}" data-k="${s.k}" ${s.k === "__other" ? `aria-expanded="${!!state.otherOpen}"` : ""}>
       <i style="background:${sub ? "transparent;border:2px solid " + OTHER : s.c}"></i><span class="dn">${s.k !== "__other" && s.k !== "none" ? iconOf(catById(s.k)) + " " : ""}${esc(label(s))}${s.k === "__other" ? ` <span class="caret">${state.otherOpen ? "▾" : "▸"}</span>` : ""}</span>
       <span class="num">${kr(s.v)}</span><span class="pc">${Math.round(s.v / total * 100)}%</span></button>`;
@@ -1836,7 +1964,7 @@ function renderBars() {
     if (k === "__other") { state.otherOpen = !state.otherOpen; renderBars(); return; }
     state.catFilter = String(state.catFilter) === k ? null : k; state.shown = PAGE;
     renderBars(); renderTxs();
-    if (state.catFilter) $("txTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (state.catFilter) showTab("txs");
   };
   document.querySelectorAll("#donut .arc, #donutLegend .dl").forEach((el) => {
     el.onmouseenter = () => focus(el.dataset.k);
@@ -1873,7 +2001,7 @@ function renderBars() {
     state.catFilter = String(state.catFilter) === el.dataset.cat ? null : el.dataset.cat;
     state.shown = PAGE;
     renderBars(); renderTxs();
-    if (state.catFilter) $("txTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+    if (state.catFilter) showTab("txs");
   });
 }
 
@@ -1885,24 +2013,37 @@ function renderFixed() {
   $("fixedTotal").innerHTML = fixed.length ? `${kr(total)}/md.` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
     <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
-    <div class="num ${f.amount < 0 ? "pos" : ""}" style="text-align:right">${f.amount < 0 ? "+" + kr(-f.amount) : kr(f.amount)}<div class="muted small">${f.amount < 0 ? "modregnes" : kr(f.amount * 12) + "/år"}</div></div>`).join("");
+    <div class="num ${f.amount < 0 ? "pos" : ""}" style="text-align:right">${f.amount < 0 ? "+" + kr(-f.amount) : kr(f.amount)}<div class="muted small">${f.amount < 0 ? "modregnes" : f.priceChange >= 5 ? `<span class="up">▲ ${kr(f.priceChange)}</span>` : f.priceChange <= -5 ? `<span class="down">▼ ${kr(-f.priceChange)}</span>` : kr(f.amount * 12) + "/år"}</div></div>`).join("");
 }
 
-$("txFilter").onchange = () => { state.shown = PAGE; renderTxs(); };
+state.txF = "all";
+$("txFilter").onclick = (e) => {
+  const b = e.target.closest("button[data-f]"); if (!b) return;
+  state.txF = b.dataset.f; state.shown = PAGE;
+  $("txFilter").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+  renderTxs();
+};
+$("txPrev").onclick = () => { state.period = stepP(state.period, -1); state.catFilter = null; state.shown = PAGE; renderTxs(); };
+$("txNext").onclick = () => { state.period = stepP(state.period, 1); state.catFilter = null; state.shown = PAGE; renderTxs(); };
 $("search").oninput = () => { state.shown = PAGE; renderTxs(); };
 $("clearCat").onclick = () => { state.catFilter = null; renderBars(); renderTxs(); };
 $("moreBtn").onclick = () => { state.shown += 100; renderTxs(); };
 
 function renderTxs() {
-  const f = $("txFilter").value;
+  const f = state.txF || "all";
   const q = $("search").value.trim().toLowerCase();
-  let list = state.allTxs.filter((t) => inPeriod(t, state.period));   // også ignorerede (de vises med mærke)
+  // Søgning gælder alle perioder; ellers den valgte periode (også ignorerede – de vises med mærke)
+  let list = q ? state.allTxs : state.allTxs.filter((t) => inPeriod(t, state.period));
+  $("txPeriodLbl").textContent = q ? "Alle perioder" : periodLabel(state.period);
+  $("txNext").disabled = !!q || stepP(state.period, 1) > keyOf(todayIso());
+  $("txPrev").disabled = !!q;
   if (state.catFilter) {
     const wantOut = state.catMode === "out";
     list = list.filter((t) => String(effCat(t) ?? "none") === state.catFilter && (wantOut ? isExp(t) : isInc(t)));
   }
   if (f === "none") list = list.filter((t) => !effCat(t));
   if (f === "ai") list = list.filter((t) => t.category_source === "ai");
+  if (f === "oneoff") list = list.filter(isOneoff);
   if (f === "out") list = list.filter((t) => t.amount < 0);
   if (f === "in") list = list.filter((t) => t.amount > 0);
   if (q) {
@@ -1931,6 +2072,7 @@ function renderTxs() {
     html += `<div class="tx">
       <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
+      ${t.manual ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
       ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
         : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
     </div>`;
@@ -1939,6 +2081,7 @@ function renderTxs() {
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
+  document.querySelectorAll("#txList .oo-cb").forEach((cb) => cb.onchange = () => setOneOff(cb.dataset.id, cb.checked));
   document.querySelectorAll("#txList .mi-open").forEach((b) => b.onclick = () => { showTab("settings"); setPage("income"); });
 }
 
@@ -2039,6 +2182,16 @@ $("recatBtn").onclick = async () => {
 };
 
 // ---------- Ret kategori + lær en regel ----------
+// Engangskøb på den enkelte postering: beholder kategorien, men holdes uden for snit, prognoser og score
+async function setOneOff(txId, on) {
+  const tx = state.allTxs.find((t) => t.id === txId);
+  const { error } = await sb.from("transactions").update({ one_off: on }).eq("id", txId);
+  if (error) { toast(/one_off/.test(error.message) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + error.message, 6000); return renderTxs(); }
+  tx.one_off = on;
+  toast(on ? "Markeret som engangskøb – holdes uden for snit og prognoser." : "Tæller med igen.", 2500);
+  fixedCache.clear(); refresh();
+}
+
 async function setCategory(txId, value) {
   let catId = value ? Number(value) : null;
   if (value === "__new") {
@@ -2094,7 +2247,7 @@ async function setCategory(txId, value) {
 
 // ---------- Indstillinger ----------
 // ---------- Faner ----------
-const TABS = { app: "Overblik", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
+const TABS = { app: "Overblik", txs: "Posteringer", plan: "Planlæg", tools: "Værktøjer", advisor: "Rådgiver", settings: "Indstillinger" };
 const modules = {};   // plan / tools / advisor – indlæses fra js/
 let currentTab = "app", lastTab = "app";
 function showTab(tab) {
@@ -2102,18 +2255,21 @@ function showTab(tab) {
   if (tab !== "settings") lastTab = tab;
   currentTab = tab;
   for (const t of Object.keys(TABS)) $(t).classList.toggle("hidden", t !== tab);
-  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
+  // Rådgiveren ligger under Værktøjer på mobil
+  document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab || (tab === "advisor" && b.dataset.tab === "tools" && innerWidth < 900)));
   $("pageTitle").textContent = TABS[tab];
+  $("pageSub").textContent = "";
   $("consentCard").dataset.tab = tab;
   if (tab === "settings") { setPage("home"); }
   else if (tab === "app") render();
+  else if (tab === "txs") renderTxs();
   else modules[tab]?.render();
   try { localStorage.setItem("tab", tab); } catch {}
   window.scrollTo(0, 0);
 }
-document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("#tabs button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 // Gentegn den aktive fane (bruges efter ændringer i data)
-function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
+function refresh() { syncVisible(); if (currentTab === "app") render(); else if (currentTab === "txs") renderTxs(); else if (currentTab !== "settings") modules[currentTab]?.render(); }
 $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
@@ -2636,6 +2792,22 @@ function makeCtx() {
     showTab: (t) => showTab(t),
   };
 }
+
+// ---------- Tema ----------
+const SUN = '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 2.8l2.1 2.1-1.4 1.4-2.1-2.1zm14.9 14.9 2.1 2.1-1.4 1.4-2.1-2.1zM2.8 19.8l2.1-2.1 1.4 1.4-2.1 2.1zM17.7 4.9l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24"><path d="M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5z"/></svg>';
+function paintThemeBtns() {
+  const light = document.documentElement.dataset.theme === "light";
+  document.querySelectorAll(".theme-btn").forEach((b) => { b.innerHTML = light ? MOON : SUN; b.title = light ? "Skift til mørkt tema" : "Skift til lyst tema"; });
+}
+document.querySelectorAll(".theme-btn").forEach((b) => b.onclick = () => {
+  const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("theme", t); } catch {}
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = t === "light" ? "#f4f6f9" : "#0f1115";
+  paintThemeBtns(); refresh();
+});
+paintThemeBtns();
 
 // ---------- Start ----------
 async function start() {

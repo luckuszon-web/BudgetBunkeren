@@ -16,15 +16,15 @@ style.textContent = `
   .list-row .act { display: flex; gap: 6px; }
   .list-row .act button { padding: 5px 10px; font-size: 13px; }
   .pill { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
-  .pill.good { color: var(--green); border-color: #2c5a46; } .pill.warn { color: var(--warn); border-color: #5a4a1c; } .pill.bad { color: var(--red); border-color: #5a2c2c; }
+  .pill.good { color: var(--green); border-color: var(--good-soft); } .pill.warn { color: var(--warn); border-color: var(--warn-soft); } .pill.bad { color: var(--red); border-color: var(--bad-soft); }
   .big { font-size: 30px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-  .pbar { height: 8px; background: #2a2f3b; border-radius: 4px; overflow: hidden; position: relative; }
+  .pbar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; position: relative; }
   .pbar > div { height: 100%; border-radius: 4px; background: var(--accent); }
   .pbar .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text); opacity: .7; border-radius: 1px; }
   .empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
   .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 10px; }
   .sub-card { min-width: 0; grid-template-columns: minmax(0, 1fr); }
-  .sub-card { background: #1d212a; border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+  .sub-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
   .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; }
   .kv > :nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
   .note { font-size: 12.5px; color: var(--muted); }
@@ -98,7 +98,7 @@ export function lineChart(el, { labels, series, fmt, height = 180, showTip, hide
   const y = (v) => padT + (1 - (v - min) / (max - min)) * (H - padT - padB);
   const short = (v) => Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1).replace(".", ",") + " mio." : Math.abs(v) >= 1000 ? Math.round(v / 1000) + "k" : Math.round(v);
   const ticks = [0, 0.33, 0.66, 1].map((f) => min + (max - min) * f);
-  const grid = ticks.map((v) => `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" stroke="#262a33"/>
+  const grid = ticks.map((v) => `<line x1="${padL}" x2="${W - padR}" y1="${y(v)}" y2="${y(v)}" style="stroke:var(--line)"/>
     <text x="${W - padR + 6}" y="${y(v) + 4}">${short(v)}</text>`).join("");
   const every = Math.ceil(L / 7);
   const xl = labels.map((l, i) => ((i % every === 0 && L - 1 - i >= every) || i === L - 1) ? `<text x="${x(i)}" y="${H - 5}" text-anchor="middle">${esc(l)}</text>` : "").join("");
@@ -107,14 +107,14 @@ export function lineChart(el, { labels, series, fmt, height = 180, showTip, hide
     const pts = s.values.map((v, i) => [i, v]).filter(([, v]) => v != null);
     const last = pts[pts.length - 1];
     return `<path d="${path(s.values)}" fill="none" stroke="${s.color}" stroke-width="${s.dashed ? 2 : 2.5}" ${s.dashed ? 'stroke-dasharray="5 4"' : ""} stroke-linejoin="round" stroke-linecap="round"/>
-      ${last && !s.dashed ? `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="4.5" fill="${s.color}" stroke="#181b22" stroke-width="2"/>` : ""}`;
+      ${last && !s.dashed ? `<circle cx="${x(last[0])}" cy="${y(last[1])}" r="4.5" fill="${s.color}" style="stroke:var(--card)" stroke-width="2"/>` : ""}`;
   }).join("");
   const refs = refLines.map((r) => `<line x1="${padL}" x2="${W - padR}" y1="${y(r.value)}" y2="${y(r.value)}" stroke="${r.color}" stroke-width="1.5" stroke-dasharray="4 4"/>
     <text x="${padL + 2}" y="${y(r.value) - 5}" style="fill:${r.color}">${esc(r.label)}</text>`).join("");
   const legend = series.length > 1 ? `<div class="legend">${series.map((s) => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}</div>` : "";
   el.classList.add("lc");
   el.innerHTML = `${legend}<svg viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img">${grid}${xl}${refs}${lines}
-    <line class="cross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="#8b93a1" visibility="hidden"/>
+    <line class="cross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" style="stroke:var(--muted)" visibility="hidden"/>
     <rect class="hit" x="0" y="0" width="${W}" height="${H}" fill="transparent"/></svg>`;
   const svg = el.querySelector("svg"), cross = el.querySelector(".cross"), hit = el.querySelector(".hit");
   const move = (cx) => {
@@ -134,9 +134,9 @@ export function lineChart(el, { labels, series, fmt, height = 180, showTip, hide
 export function ring(frac, color, label, size = 64) {
   const r = 26, C = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac));
   return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">
-    <circle cx="32" cy="32" r="${r}" fill="none" stroke="#2a2f3b" stroke-width="7"/>
+    <circle cx="32" cy="32" r="${r}" fill="none" style="stroke:var(--track)" stroke-width="7"/>
     <circle cx="32" cy="32" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C * f} ${C}" transform="rotate(-90 32 32)"/>
-    <text x="32" y="36" text-anchor="middle" font-size="13" font-weight="700" fill="#e9ebef">${esc(label)}</text></svg>`;
+    <text x="32" y="36" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--text)">${esc(label)}</text></svg>`;
 }
 
 /** Månedlig ydelse på et annuitetslån. */
