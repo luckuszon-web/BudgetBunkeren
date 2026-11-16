@@ -308,14 +308,30 @@
 <main>
   <!-- Login -->
   <section id="login" class="hidden">
-    <h1>Forbrug</h1>
+    <h1>BudgetBunkeren</h1>
     <div class="card">
       <form id="loginForm">
         <p><input id="email" type="email" placeholder="E-mail" autocomplete="username" required></p>
         <p><input id="password" type="password" placeholder="Adgangskode" autocomplete="current-password" required></p>
-        <p id="mfaRow" class="hidden"><input id="mfaCode" inputmode="numeric" placeholder="6-cifret kode fra din authenticator-app"></p>
+        <p id="mfaRow" class="hidden"><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-cifret kode fra din authenticator-app"></p>
         <button class="primary" type="submit">Log ind</button>
         <p id="loginError" class="neg small"></p>
+        <p class="small" style="margin-bottom:0"><a href="#" id="forgotLink" style="color:var(--accent)">Glemt adgangskode?</a></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Vælg adgangskode (efter invitation eller "glemt adgangskode") -->
+  <section id="setpw" class="hidden">
+    <h1 id="setpwTitle">Vælg din adgangskode</h1>
+    <div class="card">
+      <p class="small muted" style="margin-top:0" id="setpwText">Du er inviteret til BudgetBunkeren. Vælg en adgangskode, som du fremover logger ind med.</p>
+      <form id="setpwForm" style="display:grid;gap:10px">
+        <input id="spEmail" type="email" autocomplete="username" readonly style="opacity:.7">
+        <input id="sp1" type="password" autocomplete="new-password" placeholder="Ny adgangskode (mindst 10 tegn)" minlength="10" required>
+        <input id="sp2" type="password" autocomplete="new-password" placeholder="Gentag adgangskoden" minlength="10" required>
+        <button class="primary">Gem og fortsæt</button>
+        <p id="setpwError" class="neg small" style="margin:0"></p>
       </form>
     </div>
   </section>
@@ -650,12 +666,15 @@
   for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 </script>
-<script>window.APP_VERSION = "20261116161243";</script>
+<script>window.APP_VERSION = "20261116161730";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+// Kommer man fra et link i en mail (invitation, glemt adgangskode), står typen i adressens "#…"-del.
+// Den læses, før Supabase-klienten bruger og fjerner den.
+const urlAuth = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
 const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(n);
@@ -2212,9 +2231,47 @@ async function loadModules() {
   }
 }
 
+// ---------- Invitation og glemt adgangskode ----------
+const SITE = location.origin + location.pathname;
+$("forgotLink").onclick = async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  if (!email) { $("loginError").textContent = "Skriv din e-mail i feltet ovenfor først."; return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: SITE });
+  $("loginError").textContent = "";
+  if (error) $("loginError").textContent = "Kunne ikke sende mail: " + error.message;
+  else toast("Hvis adressen har en bruger, er der sendt en mail med et link til at vælge en ny adgangskode.", 8000);
+};
+function showSetPassword(kind, email) {
+  $("login").classList.add("hidden");
+  $("setpw").classList.remove("hidden");
+  $("spEmail").value = email ?? "";
+  if (kind === "recovery") { $("setpwTitle").textContent = "Vælg en ny adgangskode"; $("setpwText").textContent = "Skriv din nye adgangskode to gange."; }
+}
+$("setpwForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const a = $("sp1").value, b = $("sp2").value;
+  if (a !== b) { $("setpwError").textContent = "De to adgangskoder er ikke ens."; return; }
+  const { error } = await sb.auth.updateUser({ password: a });
+  if (error) { $("setpwError").textContent = "Kunne ikke gemme: " + error.message; return; }
+  $("setpw").classList.add("hidden");
+  toast("Adgangskoden er gemt.");
+  start();
+};
+
 const { data: { session } } = await sb.auth.getSession();
 const { data: aal } = session ? await sb.auth.mfa.getAuthenticatorAssuranceLevel() : { data: null };
-if (session && !(aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2")) start();
+if (urlAuth.error || urlAuth.error_description) {
+  // Fx et udløbet eller allerede brugt link
+  history.replaceState(null, "", location.pathname);
+  $("login").classList.remove("hidden");
+  $("loginError").textContent = /expired|invalid/i.test(urlAuth.error_code + urlAuth.error_description)
+    ? "Linket er udløbet eller allerede brugt. Bed om en ny invitation – eller brug \"Glemt adgangskode?\" herunder."
+    : "Linket virkede ikke: " + (urlAuth.error_description || urlAuth.error).replace(/\+/g, " ");
+} else if (session && ["invite", "recovery", "signup", "magiclink"].includes(urlAuth.type)) {
+  history.replaceState(null, "", location.pathname);
+  showSetPassword(urlAuth.type, session.user?.email);
+} else if (session && !(aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2")) start();
 else $("login").classList.remove("hidden");
 </script>
 </body>

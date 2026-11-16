@@ -83,6 +83,11 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - **Kør `sh scripts/bump-version.sh` før hver commit, der ændrer noget i `docs/`.** Den skriver nyt nummer i `docs/version.json` og `window.APP_VERSION` i index.html.
 - Appen tjekker `version.json` (no-store) ved start, når den kommer frem igen (`visibilitychange`) og hvert 15. min.; ved ny version vises bjælken `#updBar` → "Opdater" loader `?v=<version>`. Moduler hentes med `?v=`, og plan/tools importerer ui.js med samme `?v=` (top-level `await import`).
 
+## Invitation og glemt adgangskode
+- `urlAuth` (læst fra `location.hash` før `createClient`): `type=invite|recovery|signup|magiclink` + session → siden `#setpw` (vælg adgangskode via `updateUser`). `error_*` i hash → forklarende besked på login. "Glemt adgangskode?" → `resetPasswordForEmail(redirectTo = side-URL)`.
+- Kræver i Supabase → Authentication → URL Configuration: Site URL og Redirect URL = `https://luckuszon-web.github.io/BudgetBunkeren/`.
+- Hver bruger har sine egne data (RLS). En inviteret ser ikke ejerens posteringer.
+
 ## App-fornemmelse
 - Zoom er slået fra (viewport + gesturestart/touchmove i index.html + touch-action: manipulation). Felter er 16 px på mobil, så iPhone ikke auto-zoomer.
 - `docs/manifest.webmanifest` + ikoner (`icon-180/192/512.png`) – siden kan lægges på hjemmeskærmen og åbnes uden browserlinje.
