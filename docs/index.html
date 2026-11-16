@@ -730,7 +730,7 @@
       </div>
     </div>
     <div class="card tx-card">
-      <div class="head"><h2 id="txTitle">Posteringer</h2><div class="row" style="gap:6px"><button class="ghost small hidden" id="clearCat">Vis alle ✕</button><button class="small" id="selToggle">Vælg</button></div></div>
+      <div class="head"><h2 id="txTitle">Posteringer</h2><div class="row" style="gap:6px"><button class="ghost small hidden" id="clearCat">Vis alle ✕</button><button class="small ghost" id="addCash" title="Tilføj et kontantkøb eller en anden udgift">+ Kontant</button><button class="small" id="selToggle">Vælg</button></div></div>
       <details class="kind-note"><summary>Ikke alle kategorier tæller med i forbruget – <span>se hvilke</span></summary>
         <ul>
           <li><b>Overførsel</b> (fx opsparing, egne konti): tæller ikke som udgift eller indtægt, men vises som "sat til side".</li>
@@ -797,7 +797,7 @@
       <div class="set-group">
         <button class="set-row" data-page="quick"><span class="si"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span><span class="st"><b>Hurtig sortering</b><span id="ssQuick" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="cats"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/></svg></span><span class="st"><b>Kategorier og budget</b><span id="ssCats" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-        <button class="set-row" data-page="income"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm2 2v8h14V8zm7 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg></span><span class="st"><b>Indtastet løn</b><span id="ssIncome" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="set-row" data-page="income"><span class="si"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zm2 2v8h14V8zm7 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg></span><span class="st"><b>Indtastede beløb</b><span id="ssIncome" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="rules"><span class="si"><svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h10v2H4zm0 6h16v2H4z"/></svg></span><span class="st"><b>Regler</b><span id="ssRules" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
       <div class="set-group">
@@ -925,15 +925,19 @@
     <div id="setIncome" class="set-page hidden">
       <button class="ghost small set-back">‹ Indstillinger</button>
       <div class="card">
-        <div class="head"><h2>Indtast løn</h2></div>
-        <p class="small muted" style="margin-top:0">Kommer din løn ikke ind på en forbundet konto, kan du skrive den her hver måned. Den tæller med som indtægt i overblik, prognose og rådgiver – præcis som løn fra banken.</p>
+        <div class="head"><h2>Indtast et beløb</h2></div>
+        <div class="seg" id="miDir" style="display:flex;margin-bottom:10px">
+          <button type="button" data-dir="in" class="on" style="flex:1">Indtægt (fx løn)</button>
+          <button type="button" data-dir="out" style="flex:1">Udgift (fx kontant)</button>
+        </div>
+        <p class="small muted" style="margin-top:0" id="miIntro">Kommer din løn ikke ind på en forbundet konto, kan du skrive den her hver måned. Den tæller med som indtægt i overblik, prognose og rådgiver – præcis som løn fra banken.</p>
         <form id="miForm" style="display:grid;gap:8px">
           <div class="mi-grid">
-            <label class="small muted">Udbetalt den<input id="miDate" type="date" required></label>
-            <label class="small muted">Beløb (efter skat)<input id="miAmount" type="number" inputmode="decimal" min="1" step="0.01" placeholder="fx 32.500" required></label>
+            <label class="small muted"><span id="miDateLbl">Udbetalt den</span><input id="miDate" type="date" required></label>
+            <label class="small muted"><span id="miAmtLbl">Beløb (efter skat)</span><input id="miAmount" type="number" inputmode="decimal" min="1" step="0.01" placeholder="fx 32.500" required></label>
           </div>
           <label class="small muted">Kategori<select id="miCat"></select></label>
-          <label class="small muted">Note (valgfri)<input id="miNote" maxlength="80" placeholder="fx Løn inkl. provision"></label>
+          <label class="small muted"><span id="miNoteLbl">Note (valgfri)</span><input id="miNote" maxlength="80" placeholder="fx Løn inkl. provision"></label>
           <div id="miWarn"></div>
           <button class="primary" id="miSave">Gem</button>
         </form>
@@ -1166,7 +1170,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116215428";</script>
+<script>window.APP_VERSION = "20261116215715";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1355,16 +1359,20 @@ async function loadSplits() {
   state.splits = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
 }
 
+// Et indtastet beløb som kunstig postering (indtægt: positiv, standard Løn · udgift: negativ, fx kontant)
+const manualTx = (m, lon) => {
+  const out = m.direction === "out";
+  return { id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: out ? -m.amount : m.amount,
+    description: m.note || (out ? "Kontant udgift" : "Løn (indtastet)"), counterparty: null, category_id: m.category_id ?? (out ? null : lon?.id ?? null), category_source: "manual" };
+};
+
 async function loadManualIncome() {
   const { data, error } = await sb.from("manual_income").select("*").order("pay_date", { ascending: false });
   state.manualReady = !error;
   state.manual = (data ?? []).map((x) => ({ ...x, amount: Number(x.amount) }));
   state.allTxs = (state.allTxs ?? []).filter((t) => !t.manual);
   const lon = salaryCat();
-  for (const m of state.manual) state.allTxs.push({
-    id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: m.amount,
-    description: m.note || "Løn (indtastet)", counterparty: null, category_id: m.category_id ?? lon?.id ?? null, category_source: "manual",
-  });
+  for (const m of state.manual) state.allTxs.push(manualTx(m, lon));
   state.allTxs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
   syncVisible();
 }
@@ -1485,8 +1493,7 @@ function loadCache() {
     state.allTxs = snap.allTxs ?? [];
     // Indtastet løn lægges ind igen som kunstige posteringer
     const lon = salaryCat();
-    for (const m of state.manual ?? []) state.allTxs.push({ id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: m.amount,
-      description: m.note || "Løn (indtastet)", counterparty: null, category_id: m.category_id ?? lon?.id ?? null, category_source: "manual" });
+    for (const m of state.manual ?? []) state.allTxs.push(manualTx(m, lon));
     state.allTxs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
     $("dbCard").classList.toggle("hidden", !(state.dbMissing ?? []).length);
     syncVisible();
@@ -2701,6 +2708,7 @@ function renderSelBar() {
   $("selOneOff").textContent = all ? "Ikke engangskøb" : "Engangskøb";
 }
 const setSelMode = (on) => { state.selMode = on; state.sel.clear(); renderTxs(); renderSelBar(); };
+$("addCash").onclick = () => { state.miDir = "out"; $("miAmount").value = ""; $("miDate").value = ""; showTab("settings"); setPage("income"); };
 $("selToggle").onclick = () => setSelMode(!state.selMode);
 $("selDone").onclick = () => setSelMode(false);
 $("selAll").onclick = () => { for (const id of state.visibleIds ?? []) state.sel.add(id); renderTxs(); };
@@ -3260,24 +3268,36 @@ async function renderHealth() {
 }
 
 // --- Indtastet løn ---
+state.miDir = "in";
+$("miDir").onclick = (e) => { const b = e.target.closest("button[data-dir]"); if (!b) return; state.miDir = b.dataset.dir; $("miAmount").value = ""; $("miDate").value = ""; renderIncome(); };
 function renderIncome() {
-  const incCats = state.cats.filter((c) => c.kind === "income");
+  const out = state.miDir === "out";
+  $("miDir").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.dir === state.miDir));
+  $("miIntro").textContent = out ? "Fx et kontantkøb eller en udgift på en konto, der ikke er forbundet. Den tæller med som udgift i overblik, budget og prognose." : "Kommer din løn ikke ind på en forbundet konto, kan du skrive den her hver måned. Den tæller med som indtægt i overblik, prognose og rådgiver – præcis som løn fra banken.";
+  $("miDateLbl").textContent = out ? "Dato" : "Udbetalt den";
+  $("miAmtLbl").textContent = out ? "Beløb" : "Beløb (efter skat)";
+  $("miNoteLbl").textContent = out ? "Hvad (fx Loppemarked, kontant)" : "Note (valgfri)";
+  $("miNote").placeholder = out ? "Kontant" : "fx Løn inkl. provision";
+  $("miAmount").placeholder = out ? "fx 250" : "fx 32.500";
   const lon = salaryCat();
-  $("miCat").innerHTML = incCats.map((c) => `<option value="${c.id}" ${lon && c.id === lon.id ? "selected" : ""}>${esc(c.name)}</option>`).join("");
+  $("miCat").innerHTML = out ? `<option value="">Vælg kategori …</option>` + catOptions(null, { skip: ["income", "ignore"] }) : catOptions(lon?.id, { skip: ["expense", "transfer", "oneoff", "ignore"] });
   // Foreslå sidste bankdag i måneden og samme beløb som sidst
+  if (!$("miDate").value && out) $("miDate").value = todayIso();
   if (!$("miDate").value) {
     const m = state.miMonth || todayIso().slice(0, 7); state.miMonth = null;
     let d = `${m}-${pad(daysInMonth(m))}`;
     while ([0, 6].includes(D(d).getUTCDay())) d = addDays(d, -1);
     $("miDate").value = d;
   }
-  if (!$("miAmount").value && state.manual?.[0]) $("miAmount").value = state.manual[0].amount;
+  const lastIn = (state.manual ?? []).find((x) => (x.direction ?? "in") === "in");
+  if (!$("miAmount").value && !out && lastIn) $("miAmount").value = lastIn.amount;
   const ready = state.manualReady !== false;
   $("miSave").disabled = !ready;
   const checkDouble = () => {
+    if (out) { $("miWarn").innerHTML = !ready ? `<p class="small warn-t">Kræver databaseopdateringen – kør den via <a href="opdater.html" style="color:var(--accent)">opdater.html</a>.</p>` : ""; return; }
     const m = ($("miDate").value || "").slice(0, 7), cat = $("miCat").value;
     const bank = state.txs.filter((t) => !t.manual && t.amount > 0 && t.booking_date.startsWith(m) && String(effCat(t)) === String(cat));
-    const typed = (state.manual ?? []).filter((x) => x.pay_date.startsWith(m) && String(x.category_id ?? lon?.id) === String(cat));
+    const typed = (state.manual ?? []).filter((x) => (x.direction ?? "in") === "in" && x.pay_date.startsWith(m) && String(x.category_id ?? lon?.id) === String(cat));
     $("miWarn").innerHTML = !ready ? `<p class="small warn-t">Kræver databaseopdateringen – kør den via <a href="opdater.html" style="color:var(--accent)">opdater.html</a>.</p>`
       : bank.length ? `<p class="small warn-t">Banken har allerede registreret ${kr(bank.reduce((s, t) => s + t.amount, 0))} som ${esc(catById(cat)?.name ?? "")} i ${fmt(m + "-01", { month: "long" })}. Gemmer du også her, tæller det dobbelt.</p>`
       : typed.length ? `<p class="small warn-t">Du har allerede indtastet ${kr(typed.reduce((s, x) => s + x.amount, 0))} i ${fmt(m + "-01", { month: "long" })}. Det nye beløb lægges oveni.</p>` : "";
@@ -3288,8 +3308,8 @@ function renderIncome() {
   $("miTotal").textContent = list.length ? `${list.length} stk.` : "";
   $("miList").innerHTML = list.length ? list.map((x) => `<div class="list-row" data-mid="${x.id}" style="grid-template-columns:1fr auto auto">
       <div style="min-width:0"><div>${fmt(x.pay_date, { day: "numeric", month: "long", year: "numeric" })}</div>
-        <div class="sub">${esc(catById(x.category_id ?? lon?.id)?.name ?? "Indtægt")}${x.note ? " · " + esc(x.note) : ""}</div></div>
-      <span class="num pos">${kr(x.amount)}</span>
+        <div class="sub">${x.direction === "out" ? "Udgift · " : ""}${esc(catById(x.category_id ?? (x.direction === "out" ? null : lon?.id))?.name ?? (x.direction === "out" ? "Uden kategori" : "Indtægt"))}${x.note ? " · " + esc(x.note) : ""}</div></div>
+      <span class="num ${x.direction === "out" ? "" : "pos"}">${x.direction === "out" ? "−" : ""}${kr(x.amount)}</span>
       <button class="small ghost danger mi-del" title="Slet">Slet</button></div>`).join("")
     : `<p class="empty">Ingen indtastede beløb endnu.</p>`;
   document.querySelectorAll("#miList .mi-del").forEach((b) => b.onclick = async () => {
@@ -3305,9 +3325,11 @@ $("miForm").onsubmit = async (e) => {
   const amount = Number($("miAmount").value);
   if (!(amount > 0)) return toast("Skriv et beløb større end 0.");
   $("miSave").disabled = true;
-  const { error } = await sb.from("manual_income").insert({ pay_date: $("miDate").value, amount, category_id: Number($("miCat").value) || null, note: $("miNote").value.trim() || null });
+  const row = { pay_date: $("miDate").value, amount, category_id: Number($("miCat").value) || null, note: $("miNote").value.trim() || null };
+  if (state.miDir === "out") row.direction = "out";   // (uden databaseopdatering 017 kan kun indtægter gemmes)
+  const { error } = await sb.from("manual_income").insert(row);
   $("miSave").disabled = false;
-  if (error) return toast(/manual_income/.test(error.message) ? "Databaseopdateringen mangler – kør opdater.html." : "Kunne ikke gemme: " + error.message, 6000);
+  if (error) return toast(/manual_income|direction/.test(error.message) ? "Databaseopdateringen mangler – kør opdater.html." : "Kunne ikke gemme: " + error.message, 6000);
   $("miNote").value = "";
   await loadManualIncome(); refresh(); renderIncome();
   toast(`Gemt: ${kr(amount)} den ${fmt($("miDate").value, { day: "numeric", month: "long" })}.`);
