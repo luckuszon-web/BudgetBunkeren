@@ -11,6 +11,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - **Kategorisering i tre lag:** brugerens regler (priority 200) → standardregler (100) → AI (Claude Haiku via `ANTHROPIC_API_KEY`, valgfri) → manuelle rettelser kan gemmes som nye regler.
 - Kun bogførte posteringer (`status == BOOK`) gemmes, så reservationer ikke dobbelttælles.
 - Kategorier af typen `transfer` (egne konti, opsparing) tælles ikke som forbrug.
+- **Engangskøb:** kategoritype `oneoff` (migration 006; færdig kategori "Store køb & investeringer"). `counts()` udelukker den som `transfer`; `totals().oneoff` vises kun som "holdt udenfor" (hero, indsigt, kvartal, AI-kontekst).
 - **Modregning:** udgift/indtægt bestemmes af kategoriens type, ikke fortegnet (`isExp`/`isInc`/`isOffset` i index.html). En indbetaling med udgiftskategori (fx fremleje → Bolig) trækkes fra kategorien og tæller ikke som indtægt; `totals`, `sumOut`, `detectFixed` (faste poster kan være negative), donut og prognose regner netto. Uden kategori: fortegnet afgør.
 
 ## Struktur
@@ -20,7 +21,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
 - `supabase/migrations/005_more_rules.sql` – ~320 ekstra standardregler (prioritet 100) for danske butikker/betalinger; tilføjer kun manglende.
-- `supabase/opdater-database.sql` – 002+003+004+005 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- `supabase/migrations/006_oneoff.sql` – kategoritypen `oneoff` + kategorien "Store køb & investeringer".
+- `supabase/opdater-database.sql` – 002–006 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
 - Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
@@ -78,7 +80,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 ## Bygget i frontend (nov. 2026)
 - Alle posteringer (25 mdr.) hentes én gang med paginering (Supabase giver max 1000 rækker pr. kald); periodeskift sker lokalt.
 - Periode: `state.gran` = year|month|week|day; nøgler "YYYY", "YYYY-MM", "WYYYY-MM-DD" (mandag), "YYYY-MM-DD". Søjlegraf over seneste N perioder (klikbar), swipe, dropdown. Datoer regnes i UTC.
-- Visuelt: akkumuleret forbrugskurve vs. snit af 3 forrige perioder (+ budgetlinje), cirkeldiagram/donut med forklaring (7 faste, farveblind-validerede farver tildelt efter 12-mdr. forbrug, resten "Øvrige"; kategori-fliser med budget/udvikling i en sammenfoldet sektion), kategori-fliser med emoji-ikon (`categories.icon`, migration 003, ellers gættet ud fra navn).
+- Visuelt: akkumuleret forbrugskurve vs. snit af 3 forrige perioder (+ budgetlinje), cirkeldiagram/donut med forklaring (7 faste, farveblind-validerede farver tildelt efter 12-mdr. forbrug, resten "Øvrige", som kan foldes ud i forklaringen; kategori-fliser med budget/udvikling i en sammenfoldet sektion), kategori-fliser med emoji-ikon (`categories.icon`, migration 003, ellers gættet ud fra navn).
 - Budget er pr. måned og skaleres til år/uge/dag.
 - Kategorier: udgifter/indtægter, sammenligning med snit af 3 forrige mdr., budget.
 - Faste udgifter: samme modtager i ≥3 af 4 seneste mdr., ≤2 gange/md., beløb inden for ±20 % af median.

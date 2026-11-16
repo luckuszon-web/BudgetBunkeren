@@ -312,6 +312,7 @@ export function init(ctx, root) {
       </div>
       <div class="kv">
         <span>Sat til side (opsparing/egne konti)</span><span>${kr(T.saved)}</span>
+        ${T.oneoff > 0 ? `<span>Store køb (holdt udenfor)</span><span>${kr(T.oneoff)}</span>` : ""}
         ${best ? `<span>Bedste måned</span><span>${fmt(best.m + "-01", { month: "long" })} (${kr(best.inc - best.out)})</span>` : ""}
         ${worst && worst !== best ? `<span>Svageste måned</span><span>${fmt(worst.m + "-01", { month: "long" })} (${kr(worst.inc - worst.out)})</span>` : ""}
         <span>Antal posteringer</span><span>${cur.length}</span>

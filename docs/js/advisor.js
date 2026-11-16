@@ -67,7 +67,7 @@ export function init(ctx, root) {
       const rows = monthTx(m), t = totals(rows);
       const byCat = {};
       for (const x of rows) if (ctx.counts(x)) { const k = catName(x.category_id) + (ctx.isInc(x) ? " (indtægt)" : ""); byCat[k] = Math.round((byCat[k] ?? 0) + x.amount); }
-      return { måned: m, indtægter: Math.round(t.inc), udgifter: Math.round(t.out), sat_til_side: Math.round(t.saved), pr_kategori: byCat,
+      return { måned: m, indtægter: Math.round(t.inc), udgifter: Math.round(t.out), sat_til_side: Math.round(t.saved), store_engangskøb_holdt_udenfor: Math.round(t.oneoff), pr_kategori: byCat,
         ...(m === now ? { bemærk: `igangværende måned, dag ${+todayIso().slice(8)} af ${ctx.daysInMonth(m)}` } : {}) };
     });
     const biggest = monthTx(now).filter((t) => t.amount < 0 && ctx.counts(t)).sort((a, b) => a.amount - b.amount).slice(0, 10)

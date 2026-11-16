@@ -190,7 +190,8 @@
   .dl { display: grid; grid-template-columns: 10px 1fr auto 38px; gap: 8px; align-items: center; background: none; border: 0; border-radius: 8px;
     padding: 6px 6px; text-align: left; font-size: 14px; width: 100%; }
   .dl:hover:not(:disabled), .dl.on { background: #1f2330; }
-  .dl:disabled { opacity: 1; cursor: default; }
+  .dl.sub { padding-left: 22px; font-size: 13.5px; }
+  .dl .caret { color: var(--muted); font-size: 12px; margin-left: 2px; }
   .dl i { width: 10px; height: 10px; border-radius: 3px; }
   .dl .dn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dl .pc { color: var(--muted); font-size: 12.5px; text-align: right; }
@@ -447,6 +448,7 @@
       <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
       <p class="small muted" style="margin-top:0">Tryk på ikonet for at skifte det til en anden emoji. Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
         <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.<br>
+        <b>Engangskøb</b> (fx bilkøb, større investeringer) vises, men holdes uden for overskud, snit, prognoser og score.<br>
         <b>Modregning:</b> Giv en indbetaling en udgiftskategori, så trækkes den fra udgiften i stedet for at tælle som indtægt – fx fremleje under <i>Bolig</i>, en returvare under <i>Shopping</i> eller en vens andel af middagen under <i>Restaurant</i>.</p>
       <div id="catList"></div>
     </div>
@@ -484,6 +486,7 @@
         <option value="expense">Udgift</option>
         <option value="income">Indtægt</option>
         <option value="transfer">Overførsel / opsparing (tælles ikke)</option>
+        <option value="oneoff">Engangskøb, fx bilkøb (holdes udenfor)</option>
       </select></label>
     <div class="actions">
       <button value="cancel" formnovalidate>Annuller</button>
@@ -561,10 +564,10 @@ const budgetFactor = () => ({ year: 12, month: 1, week: 7 / 30.44, day: 1 / 30.4
 // ---------- Kategori-ikoner og farver ----------
 const ICONS = [
   [/dagligvar|supermarked|mad\b/i, "🛒"], [/restaurant|takeaway|café|cafe/i, "🍔"], [/transport|tog|bus/i, "🚆"],
-  [/bil|benzin|opladning|brændstof/i, "🚗"], [/bolig|husleje|leje/i, "🏠"], [/forsyning|el\b|vand|varme/i, "💡"],
+  [/bil|benzin|opladning|brændstof/i, "🚗"], [/bolig|husleje|\bleje/i, "🏠"], [/forsyning|el\b|vand|varme/i, "💡"],
   [/abonnement|streaming/i, "📺"], [/forsikring/i, "🛡️"], [/shopping|tøj/i, "🛍️"], [/pleje|apotek|sundhed|læge/i, "💊"],
   [/fritid|oplevelse|sport|fitness/i, "🎟️"], [/rejse|ferie/i, "✈️"], [/gave/i, "🎁"], [/løn/i, "💼"],
-  [/indkomst|indtægt/i, "💰"], [/opsparing|investering/i, "🐷"], [/overførsel|egne konti/i, "🔁"],
+  [/store køb|engangs/i, "💎"], [/indkomst|indtægt/i, "💰"], [/opsparing|investering/i, "🐷"], [/overførsel|egne konti/i, "🔁"],
   [/fagforening|a-kasse/i, "🪪"], [/børn|barn/i, "🧸"], [/dyr|hund|kat/i, "🐾"], [/uddannelse|skole/i, "🎓"],
   [/gebyr|bank|renter|lån/i, "🏦"], [/telefon|mobil|internet/i, "📱"], [/andet/i, "📦"],
 ];
@@ -725,6 +728,7 @@ async function load() {
   if (c0 && !("monthly_budget" in c0)) missing.push("budgetter");
   if (c0 && !("icon" in c0)) missing.push("egne ikoner");
   if (!state.planReady) missing.push("spareudfordringer, opsparingsmål, formue og gæld");
+  if (c0 && !state.cats.some((c) => c.kind === "oneoff")) missing.push("kategorien for store engangskøb");
   $("dbCard").classList.toggle("hidden", !missing.length);
   $("dbText").textContent = missing.length ? `Uden den virker ${missing.join(", ")} ikke. Det tager et minut:` : "";
   refresh();
@@ -760,7 +764,9 @@ function renderConsent(s) {
 const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
 const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
 const inPeriod = (t, p) => keyOf(t.booking_date) === p;
-const counts = (t) => kindOf(t) !== "transfer";  // overførsler/opsparing tælles ikke som forbrug
+// Overførsler/opsparing og engangskøb (fx bilkøb) tælles ikke med i forbrug, indtægter, snit og prognoser
+const counts = (t) => kindOf(t) !== "transfer" && kindOf(t) !== "oneoff";
+const isOneoff = (t) => kindOf(t) === "oneoff";
 // Modregning: en indbetaling med en udgiftskategori (fx fremleje → Bolig, returvare → Shopping) trækkes fra
 // kategorien i stedet for at tælle som indtægt. Tilsvarende trækkes en udbetaling med en indtægtskategori fra indtægten.
 const isExp = (t) => kindOf(t) === "expense";
@@ -771,8 +777,9 @@ const txsIn = (p) => state.txs.filter((t) => inPeriod(t, p));
 function totals(list) {
   const out = -list.filter(isExp).reduce((s, t) => s + t.amount, 0);
   const inc = list.filter(isInc).reduce((s, t) => s + t.amount, 0);
-  const saved = -list.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
-  return { out, inc, saved };
+  const saved = -list.filter((t) => kindOf(t) === "transfer").reduce((s, t) => s + t.amount, 0);
+  const oneoff = -list.filter(isOneoff).reduce((s, t) => s + t.amount, 0);   // holdes uden for alle beregninger
+  return { out, inc, saved, oneoff };
 }
 // De (op til) 3 forrige perioder, der har data
 const prevPeriods = (p) => [1, 2, 3].map((i) => stepP(p, -i)).filter((q) => state.txs.some((t) => inPeriod(t, q)));
@@ -901,12 +908,12 @@ function detectFixed(baseMonth) {
 }
 
 // Samlet opsparing = alt, der er flyttet til opsparing/egne konti (minus det, der er hentet tilbage)
-const totalSaved = () => -state.txs.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
+const totalSaved = () => -state.txs.filter((t) => kindOf(t) === "transfer").reduce((s, t) => s + t.amount, 0);
 const MILESTONES = [10000, 25000, 50000, 100000, 250000, 500000, 1000000];
 
 function renderDashboard() {
   const p = state.period, list = txsIn(p);
-  const { out, inc, saved } = totals(list);
+  const { out, inc, saved, oneoff } = totals(list);
   const fixedItems = detectFixed(monthOf(p));
   const fixedKeys = new Set(fixedItems.map((f) => f.key));
   const isFixed = (t) => isExp(t) && fixedKeys.has(fixedKey(t));
@@ -938,6 +945,7 @@ function renderDashboard() {
     rows.push(["Brugt indtil nu", "−" + kr(out), ""]);
     if (upSum) rows.push(["Faste regninger på vej", "−" + kr(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
     if (saved > 0) rows.push(["Sat til side", "−" + kr(saved), ""]);
+    if (oneoff > 0) rows.push(["Store køb (holdt udenfor)", kr(oneoff), "Indgår ikke i beløbet ovenfor"]);
     if (expInc > 0) {
       const w = (v) => Math.max(0, v / expInc * 100);
       meter = `<div class="track">
@@ -959,6 +967,7 @@ function renderDashboard() {
       rows.push([d >= 0 ? "Bedre end snittet" : "Dårligere end snittet", `${d >= 0 ? "+" : "−"}${kr(Math.abs(d))}`, `mod de ${prevTot.length} forrige ${unitTxt(prevTot.length)}`]);
     }
     if (saved > 0) rows.push(["Heraf sat til side", kr(saved), inc ? `${Math.round(saved / inc * 100)}% af indtægterne` : ""]);
+    if (oneoff > 0) rows.push(["Store køb (holdt udenfor)", kr(oneoff), "Indgår ikke i resultatet"]);
     if (inc > 0) {
       const pct = Math.min(100, out / inc * 100);
       meter = `<div class="track"><div style="width:${pct}%;background:${out > inc ? "var(--red)" : "#3987e5"}"></div><div style="flex:1;background:#2c5a46"></div></div>
@@ -1266,6 +1275,10 @@ function renderInsights(fixedItems) {
   const big = list.filter((t) => t.amount < 0 && isExp(t)).sort((x, y) => x.amount - y.amount)[0];
   if (big && gran() !== "day") items.push({ cls: "", e: "receipt", w: 20, html: `Største udgift i perioden: ${esc(big.counterparty || big.description)} (${kr(-big.amount)}, ${fmt(big.booking_date, { day: "numeric", month: "short" })}).` });
 
+  // 5b) Engangskøb holdt udenfor
+  const oneoffSum = -list.filter(isOneoff).reduce((s, t) => s + t.amount, 0);
+  if (oneoffSum > 0) items.push({ cls: "", e: "tag", w: 45, html: `${kr(oneoffSum)} i store køb og investeringer er holdt uden for overskud, snit og prognoser.` });
+
   // 6) Uden kategori
   const none = list.filter((t) => !t.category_id).length;
   if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. <a href="#" class="go-quick" style="color:var(--accent)">Sortér dem hurtigt</a>` });
@@ -1439,6 +1452,9 @@ function renderBars() {
   for (const [k, v] of rows) { if (!v) continue; if (colorOf(k)) segs.push({ k, v, c: colorOf(k) }); else { rest.v += v; rest.n++; } }
   if (!wantOut) { segs.length = 0; rows.filter(([, v]) => v).slice(0, PALETTE.length).forEach(([k, v], i) => segs.push({ k, v, c: PALETTE[i] })); rest.v = total - segs.reduce((s, x) => s + x.v, 0); rest.n = rows.filter(([, v]) => v).length - segs.length; }
   segs.sort((a, b) => b.v - a.v);
+  // Kategorierne i "Øvrige" (kan foldes ud i forklaringen)
+  const segKeys = new Set(segs.map((x) => x.k));
+  const restItems = rows.filter(([k, v]) => v > 0.5 && !segKeys.has(k)).map(([k, v]) => ({ k, v }));
   if (rest.v > 0.5) segs.push({ k: "__other", v: rest.v, c: OTHER, n: rest.n });
   const label = (s) => s.k === "__other" ? `Øvrige (${s.n} ${s.n === 1 ? "kategori" : "kategorier"})` : nameOf(s.k);
   const R = 78, SW = 34, C = 2 * Math.PI * R, GAP = segs.length > 1 ? 2.5 : 0;
@@ -1455,17 +1471,19 @@ function renderBars() {
   }).join("");
   $("donut").innerHTML = total ? `<circle cx="100" cy="100" r="${R}" fill="none" stroke="#232836" stroke-width="${SW}"/>${arcs}<g id="donutCenter">${baseCenter}</g>`
     : `<circle cx="100" cy="100" r="${R}" fill="none" stroke="#232836" stroke-width="${SW}"/>${center(wantOut ? "Udgifter" : "Indtægter", kr(0), "")}`;
-  $("donutLegend").innerHTML = segs.map((s) => `<button class="dl ${String(state.catFilter) === s.k ? "on" : ""}" data-k="${s.k}" ${s.k === "__other" ? "disabled" : ""}>
-      <i style="background:${s.c}"></i><span class="dn">${s.k !== "__other" && s.k !== "none" ? iconOf(catById(s.k)) + " " : ""}${esc(label(s))}</span>
-      <span class="num">${kr(s.v)}</span><span class="pc">${Math.round(s.v / total * 100)}%</span></button>`).join("")
+  const legendRow = (s, sub = false) => `<button class="dl ${sub ? "sub" : ""} ${String(state.catFilter) === s.k ? "on" : ""}" data-k="${s.k}" ${s.k === "__other" ? `aria-expanded="${!!state.otherOpen}"` : ""}>
+      <i style="background:${sub ? "transparent;border:2px solid " + OTHER : s.c}"></i><span class="dn">${s.k !== "__other" && s.k !== "none" ? iconOf(catById(s.k)) + " " : ""}${esc(label(s))}${s.k === "__other" ? ` <span class="caret">${state.otherOpen ? "▾" : "▸"}</span>` : ""}</span>
+      <span class="num">${kr(s.v)}</span><span class="pc">${Math.round(s.v / total * 100)}%</span></button>`;
+  $("donutLegend").innerHTML = segs.map((s) => legendRow(s) + (s.k === "__other" && state.otherOpen ? restItems.map((r) => legendRow(r, true)).join("") : "")).join("")
     || `<p class="muted">Ingen ${wantOut ? "udgifter" : "indtægter"} i ${periodTxt}.</p>`;
   const focus = (k) => {
-    const s = segs.find((x) => x.k === k);
+    const s = segs.find((x) => x.k === k) ?? restItems.find((x) => x.k === k);
+    if (s && !segs.includes(s)) k = "__other";   // en kategori i Øvrige fremhæver den grå del
     $("donutCenter").innerHTML = s ? center(esc(label(s)).slice(0, 22), kr(s.v), `${Math.round(s.v / total * 100)}% af ${wantOut ? "udgifterne" : "indtægterne"}`) : baseCenter;
     document.querySelectorAll("#donut .arc").forEach((a) => a.setAttribute("opacity", !k ? (state.catFilter && String(state.catFilter) !== a.dataset.k ? 0.3 : 1) : a.dataset.k === k ? 1 : 0.3));
   };
   const pick = (k) => {
-    if (k === "__other") return;
+    if (k === "__other") { state.otherOpen = !state.otherOpen; renderBars(); return; }
     state.catFilter = String(state.catFilter) === k ? null : k; state.shown = PAGE;
     renderBars(); renderTxs();
     if (state.catFilter) $("txTitle").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1562,7 +1580,7 @@ function renderTxs() {
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const cat = catById(t.category_id);
     html += `<div class="tx">
-      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
+      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       <select data-id="${esc(t.id)}" class="${t.category_id ? "" : "unset"}" aria-label="Kategori">${options(t.category_id)}</select>
     </div>`;
@@ -1739,7 +1757,7 @@ $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); }
 
 function renderSettings() {
   renderQuick();
-  const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel" };
+  const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel", oneoff: "Engangskøb" };
   $("catList").innerHTML = state.cats.map((c) => `
     <div class="set-cat" data-id="${c.id}">
       <input class="icon" value="${esc(iconOf(c))}" aria-label="Ikon" maxlength="8">
@@ -1757,7 +1775,8 @@ function renderSettings() {
         const m = error.message;
         toast(m.includes("monthly_budget") ? "Budget kræver databaseopdatering 002 – se README." :
               m.includes("icon") ? "Egne ikoner kræver databaseopdatering 003 – se README." :
-              m.includes("rollover") ? "Overførsel af budget kræver databaseopdatering 004 – se README." : "Fejl: " + m, 6000);
+              m.includes("rollover") ? "Overførsel af budget kræver databaseopdatering 004 – se README." :
+              m.includes("kind_check") ? "Typen Engangskøb kræver databaseopdateringen – se den gule boks / opdater.html." : "Fejl: " + m, 6000);
         return renderSettings();
       }
       Object.assign(c, patch); toast("Gemt.", 1500);
@@ -1808,7 +1827,7 @@ function makeCtx() {
   return {
     sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
     toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
-    catById, iconOf, counts, kindOf, isExp, isInc, isOffset, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
+    catById, iconOf, counts, kindOf, isExp, isInc, isOffset, isOneoff, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
     detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
     showTab: (t) => showTab(t),
   };

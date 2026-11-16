@@ -264,7 +264,7 @@ export async function categorize(userId: string, opts: { reapply?: boolean; aiLi
 }
 
 async function askClaude(key: string, cats: { name: string; kind: string }[], txs: Tx[]): Promise<Record<string, string>> {
-  const kinds: Record<string, string> = { expense: "udgift", income: "indtægt", transfer: "overførsel/opsparing (ikke forbrug)" };
+  const kinds: Record<string, string> = { expense: "udgift", income: "indtægt", transfer: "overførsel/opsparing (ikke forbrug)", oneoff: "stort engangskøb, fx bil (brug kun ved meget store køb)" };
   const prompt =
     `Du kategoriserer danske bankposteringer fra Nordea for en privatperson. Negative beløb er udgifter, positive er indtægter.\n` +
     `Kategorier (navn – type):\n${cats.map((c) => `- ${c.name} – ${kinds[c.kind] ?? c.kind}`).join("\n")}\n\n` +
