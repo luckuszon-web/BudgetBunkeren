@@ -104,6 +104,7 @@ delete from public.goals where demo; delete from public.assets where demo; delet
 - **Indstillinger:** Omdøb og slet kategorier, skift type (udgift/indtægt/overførsel), og se eller slet dine regler.
 - **Ret en kategori:** Vælg den rigtige i menuen under posteringen. Du bliver spurgt, om fremtidige posteringer med samme tekst også skal have den kategori. Det er sådan, systemet lærer.
 - **Tjek AI'ens forslag:** Vælg filteret *Sat af AI* og ret de forkerte.
+- **Modregning:** Giv en indbetaling en udgiftskategori, så trækkes den fra udgiften i stedet for at tælle som indtægt – fx fremleje under *Bolig* eller en returvare under *Shopping*.
 - **Overførsler mellem egne konti** og **opsparing** tælles ikke som forbrug. Giv dem kategorien *Overførsel mellem egne konti*.
 - **Fornyelse:** Cirka hvert halve år udløber bankadgangen. Fra 14 dage før vises en gul boks med knappen *Forny adgang*.
 

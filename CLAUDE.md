@@ -11,6 +11,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - **Kategorisering i tre lag:** brugerens regler (priority 200) → standardregler (100) → AI (Claude Haiku via `ANTHROPIC_API_KEY`, valgfri) → manuelle rettelser kan gemmes som nye regler.
 - Kun bogførte posteringer (`status == BOOK`) gemmes, så reservationer ikke dobbelttælles.
 - Kategorier af typen `transfer` (egne konti, opsparing) tælles ikke som forbrug.
+- **Modregning:** udgift/indtægt bestemmes af kategoriens type, ikke fortegnet (`isExp`/`isInc`/`isOffset` i index.html). En indbetaling med udgiftskategori (fx fremleje → Bolig) trækkes fra kategorien og tæller ikke som indtægt; `totals`, `sumOut`, `detectFixed` (faste poster kan være negative), donut og prognose regner netto. Uden kategori: fortegnet afgør.
 
 ## Struktur
 - `docs/index.html` – skal + fanen Overblik + Indstillinger (vanilla JS + supabase-js fra esm.sh). `docs/config.js` – Supabase URL + anon key (offentlige).

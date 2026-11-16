@@ -446,7 +446,8 @@
     <div class="card">
       <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
       <p class="small muted" style="margin-top:0">Tryk på ikonet for at skifte det til en anden emoji. Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
-        <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.</p>
+        <b>Overførsel</b> tælles hverken som udgift eller indtægt – brug den til opsparing og egne konti.<br>
+        <b>Modregning:</b> Giv en indbetaling en udgiftskategori, så trækkes den fra udgiften i stedet for at tælle som indtægt – fx fremleje under <i>Bolig</i>, en returvare under <i>Shopping</i> eller en vens andel af middagen under <i>Restaurant</i>.</p>
       <div id="catList"></div>
     </div>
 
@@ -589,7 +590,7 @@ let colorMap = new Map();  // kategori -> farve; fast pr. kategori, så farven i
 function assignColors() {
   const since = addMonths(todayIso().slice(0, 7), -11);
   const sums = new Map();
-  for (const t of state.txs) if (t.amount < 0 && counts(t) && t.booking_date.slice(0, 7) >= since) {
+  for (const t of state.txs) if (isExp(t) && t.booking_date.slice(0, 7) >= since) {
     const k = String(t.category_id ?? "none"); sums.set(k, (sums.get(k) ?? 0) - t.amount);
   }
   colorMap = new Map([...sums.entries()].sort((a, b) => b[1] - a[1]).slice(0, PALETTE.length).map(([k], i) => [k, PALETTE[i]]));
@@ -760,12 +761,16 @@ const catById = (id) => state.cats.find((c) => String(c.id) === String(id));
 const kindOf = (t) => catById(t.category_id)?.kind ?? (t.amount < 0 ? "expense" : "income");
 const inPeriod = (t, p) => keyOf(t.booking_date) === p;
 const counts = (t) => kindOf(t) !== "transfer";  // overførsler/opsparing tælles ikke som forbrug
+// Modregning: en indbetaling med en udgiftskategori (fx fremleje → Bolig, returvare → Shopping) trækkes fra
+// kategorien i stedet for at tælle som indtægt. Tilsvarende trækkes en udbetaling med en indtægtskategori fra indtægten.
+const isExp = (t) => kindOf(t) === "expense";
+const isInc = (t) => kindOf(t) === "income";
+const isOffset = (t) => (t.amount > 0 && isExp(t)) || (t.amount < 0 && isInc(t));
 const txsIn = (p) => state.txs.filter((t) => inPeriod(t, p));
 
 function totals(list) {
-  const real = list.filter(counts);
-  const out = -real.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0);
-  const inc = real.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const out = -list.filter(isExp).reduce((s, t) => s + t.amount, 0);
+  const inc = list.filter(isInc).reduce((s, t) => s + t.amount, 0);
   const saved = -list.filter((t) => !counts(t)).reduce((s, t) => s + t.amount, 0);
   return { out, inc, saved };
 }
@@ -840,7 +845,7 @@ document.querySelectorAll("#granSel button").forEach((b) => b.onclick = () => {
 // ---------- Dashboard ----------
 const monthOf = (p) => p.length === 4 ? (p === todayIso().slice(0, 4) ? todayIso().slice(0, 7) : p + "-12")
   : (p.startsWith("W") ? p.slice(1) : p).slice(0, 7);
-const sumOut = (rows) => -rows.filter((t) => t.amount < 0 && counts(t)).reduce((s, t) => s + t.amount, 0);
+const sumOut = (rows) => -rows.filter(isExp).reduce((s, t) => s + t.amount, 0);
 const monthTx = (m) => state.txs.filter((t) => t.booking_date.startsWith(m));
 const daysInMonth = (m) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
 const isCurrentMonth = (m) => m === todayIso().slice(0, 7);
@@ -873,7 +878,7 @@ function detectFixed(baseMonth) {
   const groups = new Map();
   for (const t of state.txs) {
     const m = t.booking_date.slice(0, 7);
-    if (t.amount >= 0 || !counts(t) || !months.includes(m)) continue;
+    if (!isExp(t) || !months.includes(m)) continue;   // også modregninger (fx fast fremleje), som får negativt beløb
     const k = fixedKey(t);
     if (!groups.has(k)) groups.set(k, { key: k, name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map(), days: [] });
     const g = groups.get(k);
@@ -886,7 +891,7 @@ function detectFixed(baseMonth) {
     if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
     const sums = vals.map((v) => v.sum).sort((a, b) => a - b);
     const median = sums[Math.floor(sums.length / 2)];
-    if (sums.some((s) => Math.abs(s - median) > median * 0.2)) continue;
+    if (!median || sums.some((s) => Math.abs(s - median) > Math.abs(median) * 0.2)) continue;
     const days = g.days.sort((a, b) => a - b);
     fixed.push({ key: g.key, name: g.name, cat: g.cat, amount: median, day: days[Math.floor(days.length / 2)] });
   }
@@ -904,7 +909,7 @@ function renderDashboard() {
   const { out, inc, saved } = totals(list);
   const fixedItems = detectFixed(monthOf(p));
   const fixedKeys = new Set(fixedItems.map((f) => f.key));
-  const isFixed = (t) => t.amount < 0 && counts(t) && fixedKeys.has(fixedKey(t));
+  const isFixed = (t) => isExp(t) && fixedKeys.has(fixedKey(t));
   const fixedOut = sumOut(list.filter(isFixed));
   const varOut = out - fixedOut;
   const prevs = prevPeriods(p);
@@ -974,7 +979,7 @@ function renderDashboard() {
   const next = MILESTONES.find((x) => x > ts);
   const kpi = (_, label, v, sub, cls = "") => `<div class="kpi"><div class="k-top">${label}</div><div class="k-v ${cls}">${v}</div><div class="k-s">${sub}</div></div>`;
   $("kpis").innerHTML =
-    kpi("💰", "Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)} · andet ${kr(inc - salIn)}` : `${list.filter((t) => t.amount > 0 && counts(t)).length} indbetalinger`, "pos") +
+    kpi("💰", "Indtægter", kr(inc), salary && salIn ? `Løn ${kr(salIn)} · andet ${kr(inc - salIn)}` : `${list.filter((t) => t.amount > 0 && isInc(t)).length} indbetalinger`, "pos") +
     kpi("🏠", "Faste udgifter", kr(fixedOut), `${new Set(list.filter(isFixed).map(fixedKey)).size} faste poster`) +
     kpi("🛒", "Variable udgifter", kr(varOut), varCmp === null ? "mad, shopping, transport …" :
       `<span class="${varCmp > 0 ? "up" : "down"}">${varCmp > 0 ? "▲" : "▼"} ${Math.abs(varCmp)}%</span> mod snit`) +
@@ -1012,7 +1017,7 @@ function forecastNextMonth() {
   // Andre faste indtægter (fx lejeindtægt): samme afsender i mindst 3 af de 4 seneste hele måneder, stabilt beløb
   const groups = new Map();
   for (const m of full6.slice(0, 4)) for (const t of monthTx(m)) {
-    if (t.amount <= 0 || !counts(t) || isSal(t)) continue;
+    if (t.amount <= 0 || !isInc(t) || isSal(t)) continue;
     const k = fixedKey(t);
     if (!groups.has(k)) groups.set(k, { name: t.counterparty || t.description, byMonth: new Map(), days: [] });
     const g = groups.get(k); g.byMonth.set(m, (g.byMonth.get(m) ?? 0) + t.amount); g.days.push(+t.booking_date.slice(8));
@@ -1025,13 +1030,13 @@ function forecastNextMonth() {
   // Faste udgifter (ud fra de 4 seneste hele måneder) og variabelt forbrug
   const fixed = detectFixed(now).map((f) => ({ ...f, day: Math.min(dimN, f.day) }));
   const fixedKeys = new Set(fixed.map((f) => f.key));
-  const varVals = full3.map((m) => { const r = monthTx(m); return sumOut(r) - sumOut(r.filter((t) => t.amount < 0 && fixedKeys.has(fixedKey(t)))); });
+  const varVals = full3.map((m) => { const r = monthTx(m); return sumOut(r) - sumOut(r.filter((t) => fixedKeys.has(fixedKey(t)))); });
   const savedAvg = Math.max(0, avgOf(full3.map((m) => totals(monthTx(m)).saved)));
   // Opsparing, der allerede er med som fast "udgift" (fx fast overførsel), må ikke tælles to gange
   const fixedSum = fixed.reduce((s, f) => s + f.amount, 0);
   const otherSum = otherInc.reduce((s, x) => s + x.amount, 0);
   // Indtægter uden for løn og faste indtægter (fx MobilePay fra venner) – snit
-  const looseInc = avgOf(full3.map((m) => monthTx(m).filter((t) => t.amount > 0 && counts(t) && !isSal(t) && !otherInc.some((o) => fixedKey(t) === fixedKey({ counterparty: o.name, description: o.name })))
+  const looseInc = avgOf(full3.map((m) => monthTx(m).filter((t) => t.amount > 0 && isInc(t) && !isSal(t) && !otherInc.some((o) => fixedKey(t) === fixedKey({ counterparty: o.name, description: o.name })))
     .reduce((s, t) => s + t.amount, 0)));
 
   const salExp = own ?? (hasSal ? salStats.avg : 0), salLow = own ?? (hasSal ? salStats.min : 0), salHigh = own ?? (hasSal ? salStats.max : 0);
@@ -1130,7 +1135,7 @@ function renderScore() {
   // Fremskriv måneden: faste udgifter (også dem, der mangler) + variable udgifter skaleret til hele måneden
   const project = (mm) => {
     const fx = detectFixed(mm), keys = new Set(fx.map((x) => x.key)), rows = monthTx(mm);
-    const fixedOut = sumOut(rows.filter((t) => t.amount < 0 && keys.has(fixedKey(t))));
+    const fixedOut = sumOut(rows.filter((t) => keys.has(fixedKey(t))));
     const seen = new Set(rows.filter((t) => t.amount < 0).map(fixedKey));
     const missing = isCurrentMonth(mm) ? fx.filter((x) => !seen.has(x.key)).reduce((a, x) => a + x.amount, 0) : 0;
     const varOut = sumOut(rows) - fixedOut;
@@ -1182,9 +1187,9 @@ function renderWeek() {
   const prev = [1, 2, 3, 4].map((i) => sumOut(span(addDays(mon, -7 * i)))).filter((v, i) => state.txs.some((t) => t.booking_date >= addDays(mon, -7 * (i + 1)) && t.booking_date < addDays(mon, -7 * i)));
   const avg = avgOf(prev);
   const byCat = new Map();
-  for (const t of cur) if (t.amount < 0 && counts(t)) byCat.set(String(t.category_id ?? "none"), (byCat.get(String(t.category_id ?? "none")) ?? 0) - t.amount);
+  for (const t of cur) if (isExp(t)) byCat.set(String(t.category_id ?? "none"), (byCat.get(String(t.category_id ?? "none")) ?? 0) - t.amount);
   const top = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
-  const big = cur.filter((t) => t.amount < 0 && counts(t)).sort((a, b) => a.amount - b.amount)[0];
+  const big = cur.filter((t) => t.amount < 0 && isExp(t)).sort((a, b) => a.amount - b.amount)[0];
   $("weekLbl").textContent = `Uge ${isoWeekNo(today)} · ${n} ${n === 1 ? "dag" : "dage"}`;
   const diff = avg ? Math.round((out - avg) / avg * 100) : null;
   $("weekBody").innerHTML = `
@@ -1203,7 +1208,7 @@ function renderInsights(fixedItems) {
   const p = state.period, list = txsIn(p);
   const items = [];   // { cls, e, html, w } – w = vigtighed
   const nameOf = (k) => k === "none" ? "Uden kategori" : catById(k)?.name ?? "?";
-  const byCat = (rows) => { const mm = new Map(); for (const t of rows) if (t.amount < 0 && counts(t)) { const k = String(t.category_id ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
+  const byCat = (rows) => { const mm = new Map(); for (const t of rows) if (isExp(t)) { const k = String(t.category_id ?? "none"); mm.set(k, (mm.get(k) ?? 0) - t.amount); } return mm; };
 
   // 1) Budgetadvarser (kun måned)
   if (gran() === "month") {
@@ -1258,7 +1263,7 @@ function renderInsights(fixedItems) {
   }
 
   // 5) Største enkeltudgift
-  const big = list.filter((t) => t.amount < 0 && counts(t)).sort((x, y) => x.amount - y.amount)[0];
+  const big = list.filter((t) => t.amount < 0 && isExp(t)).sort((x, y) => x.amount - y.amount)[0];
   if (big && gran() !== "day") items.push({ cls: "", e: "receipt", w: 20, html: `Største udgift i perioden: ${esc(big.counterparty || big.description)} (${kr(-big.amount)}, ${fmt(big.booking_date, { day: "numeric", month: "short" })}).` });
 
   // 6) Uden kategori
@@ -1321,7 +1326,7 @@ function renderPace() {
     const keys = subKeys(p);
     const sub = gran() === "year" ? (d) => d.slice(0, 7) : (d) => d;
     const byKey = new Map();
-    for (const t of txsIn(p)) if (t.amount < 0 && counts(t)) byKey.set(sub(t.booking_date), (byKey.get(sub(t.booking_date)) ?? 0) - t.amount);
+    for (const t of txsIn(p)) if (isExp(t)) byKey.set(sub(t.booking_date), (byKey.get(sub(t.booking_date)) ?? 0) - t.amount);
     let acc = 0;
     return keys.map((k) => (acc += byKey.get(k) ?? 0));
   };
@@ -1411,10 +1416,11 @@ function renderBars() {
   const wantOut = state.catMode === "out";
   const sumBy = (rows) => {
     const m = new Map();
-    for (const t of rows) if (wantOut ? t.amount < 0 : t.amount > 0) {
+    for (const t of rows) if (wantOut ? isExp(t) : isInc(t)) {
       const k = String(t.category_id ?? "none");
-      m.set(k, (m.get(k) ?? 0) + Math.abs(t.amount));
+      m.set(k, (m.get(k) ?? 0) + (wantOut ? -t.amount : t.amount));   // netto: modregninger trækkes fra
     }
+    for (const [k, v] of m) if (v <= 0.5) m.delete(k);   // fuldt modregnet → vises ikke
     return m;
   };
   const byCat = sumBy(list);
@@ -1511,7 +1517,7 @@ function renderFixed() {
   $("fixedTotal").innerHTML = fixed.length ? `<b>${kr(total)}</b>/md. · ${kr(total * 12)}/år` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
     <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
-    <div class="num" style="text-align:right">${kr(f.amount)}<div class="muted small">${kr(f.amount * 12)}/år</div></div>`).join("");
+    <div class="num ${f.amount < 0 ? "pos" : ""}" style="text-align:right">${f.amount < 0 ? "+" + kr(-f.amount) : kr(f.amount)}<div class="muted small">${f.amount < 0 ? "modregnes" : kr(f.amount * 12) + "/år"}</div></div>`).join("");
 }
 
 $("txFilter").onchange = () => { state.shown = PAGE; renderTxs(); };
@@ -1556,7 +1562,7 @@ function renderTxs() {
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const cat = catById(t.category_id);
     html += `<div class="tx">
-      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}</span>
+      <span class="desc" title="${esc(text)}">${esc(text)}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       <select data-id="${esc(t.id)}" class="${t.category_id ? "" : "unset"}" aria-label="Kategori">${options(t.category_id)}</select>
     </div>`;
@@ -1671,7 +1677,8 @@ async function setCategory(txId, value) {
 
   if (catId) {
     const suggestion = (tx.counterparty || tx.description).toLowerCase().replace(/[0-9*#]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 2).join(" ");
-    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${esc(catById(catId).name)}</b>?`;
+    const offsetNote = isOffset(tx) ? `<br><span class="small muted">Beløbet ${tx.amount > 0 ? "trækkes fra udgifterne i" : "trækkes fra indtægten i"} ${esc(catById(catId).name)} i stedet for at tælle som ${tx.amount > 0 ? "indtægt" : "udgift"}.</span>` : "";
+    $("ruleText").innerHTML = `Skal fremtidige posteringer med samme tekst også være <b>${esc(catById(catId).name)}</b>?${offsetNote}`;
     $("rulePattern").value = suggestion;
     const updateCount = () => {
       const p = $("rulePattern").value.trim().toLowerCase();
@@ -1801,7 +1808,7 @@ function makeCtx() {
   return {
     sb, state, $, kr, esc, fmt, pad, iso, D, todayIso, addDays, addMonths, daysInMonth, mondayOf, isoWeekNo,
     toast, showTip, hideTip, callFn, ask, fetchAll, refresh, loadPlan,
-    catById, iconOf, counts, kindOf, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
+    catById, iconOf, counts, kindOf, isExp, isInc, isOffset, totals, sumOut, monthTx, avgOf, prevMonthsWithData,
     detectFixed, fixedKey, totalSaved, monthBudget, isCurrentMonth, elapsed, salaryCat, forecastNextMonth,
     showTab: (t) => showTab(t),
   };
