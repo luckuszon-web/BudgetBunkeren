@@ -223,6 +223,9 @@
   /* Sidehoved, logo og tema-knap */
   .page-head { display: flex; align-items: center; gap: 10px; margin: 2px 0 14px; }
   .page-head .ph-text { flex: 1; min-width: 0; }
+  #syncBtn.busy { opacity: .6; }
+  #syncBtn.busy::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   .page-head h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
   .ph-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ph-sub:empty { display: none; }
@@ -1076,7 +1079,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116205602";</script>
+<script>window.APP_VERSION = "20261116205835";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1228,7 +1231,7 @@ async function needsMfa() {
   return false;
 }
 
-$("logoutBtn").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("logoutBtn").onclick = async () => { clearCaches(); await sb.auth.signOut(); location.reload(); };
 
 // ---------- Bankforbindelse ----------
 $("connectBtn").onclick = async () => {
@@ -1367,8 +1370,41 @@ async function load() {
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
   $("dbText").textContent = missing.length ? `Uden den virker ${missing.join(", ")} ikke. Det tager et minut:` : "";
+  saveCache();
   refresh();
 }
+
+// ---------- Hurtig opstart ----------
+// De sidst hentede data gemmes i browseren på denne enhed, så appen kan vise dem med det samme ved næste åbning
+// (og så hente nye i baggrunden). Ryddes ved log ud.
+const CACHE_KEYS = ["cats", "rules", "sessions", "accounts", "splits", "manual", "goals", "assets", "history", "challenges", "planReady", "me",
+  "oneOffReady", "noteReady", "splitsReady", "manualReady", "dbMissing"];
+const cacheKey = () => "bb-cache-" + state.uid;
+function saveCache() {
+  if (!state.uid) return;
+  try {
+    const snap = { v: 1, at: Date.now(), allTxs: state.allTxs.filter((t) => !t.manual) };
+    for (const k of CACHE_KEYS) snap[k] = state[k];
+    localStorage.setItem(cacheKey(), JSON.stringify(snap));
+  } catch { try { localStorage.removeItem(cacheKey()); } catch {} }   // fx fuld lagerplads – så uden cache
+}
+function loadCache() {
+  try {
+    const snap = JSON.parse(localStorage.getItem(cacheKey()) || "null");
+    if (!snap || snap.v !== 1 || Date.now() - snap.at > 30 * 864e5) return false;
+    for (const k of CACHE_KEYS) if (k in snap) state[k] = snap[k];
+    state.allTxs = snap.allTxs ?? [];
+    // Indtastet løn lægges ind igen som kunstige posteringer
+    const lon = salaryCat();
+    for (const m of state.manual ?? []) state.allTxs.push({ id: "manual-" + m.id, mid: m.id, manual: true, account_uid: null, booking_date: m.pay_date, amount: m.amount,
+      description: m.note || "Løn (indtastet)", counterparty: null, category_id: m.category_id ?? lon?.id ?? null, category_source: "manual" });
+    state.allTxs.sort((a, b) => b.booking_date.localeCompare(a.booking_date));
+    $("dbCard").classList.toggle("hidden", !(state.dbMissing ?? []).length);
+    syncVisible();
+    return true;
+  } catch { return false; }
+}
+function clearCaches() { try { for (const k of Object.keys(localStorage)) if (k.startsWith("bb-cache-")) localStorage.removeItem(k); } catch {} }
 
 // Mål, formue, gæld og udfordringer (kræver databaseopdatering 004)
 async function loadPlan() {
@@ -3281,8 +3317,17 @@ async function start() {
   $("app").classList.remove("hidden");
   await handleBankCallback();
   await loadModules();
-  await load();
+  state.uid = (await sb.auth.getSession()).data.session?.user?.id;
   let saved = "app"; try { saved = localStorage.getItem("tab") || "app"; } catch {}
+  // Vis de sidst gemte data med det samme, og hent nye i baggrunden
+  if (loadCache()) {
+    showTab(TABS[saved] ? saved : "app");
+    $("syncBtn").classList.add("busy");
+    await load().catch((e) => console.error(e));
+    $("syncBtn").classList.remove("busy");
+    return;
+  }
+  await load();
   showTab(TABS[saved] ? saved : "app");
 }
 
