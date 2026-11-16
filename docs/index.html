@@ -358,6 +358,7 @@
   .sel-bar select { max-width: 150px; padding: 6px 8px; }
   @media (min-width: 900px) { .sel-bar { bottom: 20px; margin-left: 116px; }
     .tx.pickable { grid-template-columns: 26px minmax(0, 1fr) 120px; } .tx.pickable .desc { grid-column: 2; } .tx.pickable > .num { grid-column: 3; } .tx.pickable .tx-note { grid-column: 2 / -1; } }
+  .rule-sug { display: grid; gap: 8px; font-size: 13.5px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
   .kind-note { font-size: 12.5px; color: var(--muted); background: var(--surface); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
   .kind-note summary span { color: var(--accent); }
   .kind-note ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 3px; }
@@ -747,6 +748,7 @@
     </div>
     <div class="card tx-card">
       <div class="head"><h2 id="txTitle">Posteringer</h2><div class="row" style="gap:6px"><button class="ghost small hidden" id="clearCat">Vis alle ✕</button><button class="small ghost" id="addCash" title="Tilføj et kontantkøb eller en anden udgift">+ Kontant</button><button class="small" id="selToggle">Vælg</button></div></div>
+      <div id="ruleSug"></div>
       <details class="kind-note"><summary>Ikke alle kategorier tæller med i forbruget – <span>se hvilke</span></summary>
         <ul>
           <li><b>Overførsel</b> (fx opsparing, egne konti): tæller ikke som udgift eller indtægt, men vises som "sat til side".</li>
@@ -1190,7 +1192,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116220807";</script>
+<script>window.APP_VERSION = "20261116221208";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2620,7 +2622,46 @@ $("search").oninput = () => { state.shown = PAGE; renderTxs(); };
 $("clearCat").onclick = () => { state.catFilter = null; renderBars(); renderTxs(); };
 $("moreBtn").onclick = () => { state.shown += 100; renderTxs(); };
 
+// Regel-forslag: har du flere gange selv givet samme slags postering samme kategori, foreslås en regel
+function ruleSuggestions() {
+  let dismissed = []; try { dismissed = JSON.parse(localStorage.getItem("ruleSugNo") || "[]"); } catch {}
+  const groups = new Map();
+  for (const t of state.allTxs) {
+    if (t.manual || t.category_source !== "manual" || !t.category_id) continue;
+    const k = groupKey(t); if (!k || k.length < 3) continue;
+    const id = k + "|" + t.category_id;
+    if (!groups.has(id)) groups.set(id, { k, cat: t.category_id, n: 0, sample: t.counterparty || t.description, fk: new Set() });
+    groups.get(id).n++; groups.get(id).fk.add(fixedKey(t));
+  }
+  // Ingen forslag, hvis andre posteringer med samme ord har en anden kategori (så ville reglen ramme forkert)
+  // – eller andre slags posteringer med samme første ord, som du ikke har sorteret (fx "Overført til Opsparing" og "Overført til Investering")
+  const conflict = (g) => state.allTxs.some((t) => !t.manual && groupKey(t) === g.k && String(effCat(t)) !== String(g.cat) && (effCat(t) || !g.fk.has(fixedKey(t))));
+  return [...groups.values()].filter((g) => g.n >= 2 && catById(g.cat) && !dismissed.includes(g.k + "|" + g.cat) && !conflict(g)
+    && !state.rules.some((r) => String(r.category_id) === String(g.cat) && (r.pattern === g.k || matchesRule({ description: g.sample, counterparty: null }, r.pattern))))
+    .sort((a, b) => b.n - a.n).slice(0, 2);
+}
+function renderRuleSug() {
+  const sug = ruleSuggestions();
+  $("ruleSug").innerHTML = sug.map((g) => `<div class="rule-sug" data-k="${esc(g.k)}" data-cat="${g.cat}">
+    <span>Du har ${g.n} gange givet <b>"${esc(g.k)}"</b> kategorien <b>${esc(catById(g.cat).name)}</b>. Skal appen gøre det selv fremover?</span>
+    <span class="row" style="gap:6px"><button class="small primary rs-yes">Lav regel</button><button class="small ghost rs-no">Nej tak</button></span></div>`).join("");
+  $("ruleSug").querySelectorAll(".rule-sug").forEach((el) => {
+    const k = el.dataset.k, cat = Number(el.dataset.cat);
+    el.querySelector(".rs-no").onclick = () => { try { const d = JSON.parse(localStorage.getItem("ruleSugNo") || "[]"); d.push(k + "|" + cat); localStorage.setItem("ruleSugNo", JSON.stringify(d)); } catch {} renderRuleSug(); };
+    el.querySelector(".rs-yes").onclick = async () => {
+      const { data: rule, error } = await sb.from("rules").insert({ pattern: k, category_id: cat, priority: 200 }).select().single();
+      if (error) return toast("Kunne ikke gemme reglen: " + error.message);
+      state.rules.push(rule);
+      const hits = state.allTxs.filter((t) => !t.manual && t.category_source !== "manual" && (groupKey(t) === k || matchesRule(t, k)));
+      for (let i = 0; i < hits.length; i += 100) await sb.from("transactions").update({ category_id: cat, category_source: "rule" }).in("id", hits.slice(i, i + 100).map((t) => t.id));
+      hits.forEach((t) => { t.category_id = cat; t.category_source = "rule"; });
+      toast(`Regel gemt${hits.length ? ` – ${hits.length} andre posteringer opdateret` : ""}.`); refresh();
+    };
+  });
+}
+
 function renderTxs() {
+  renderRuleSug();
   const f = state.txF || "all";
   const q = $("search").value.trim().toLowerCase();
   // Søgning gælder alle perioder; ellers den valgte periode (også ignorerede – de vises med mærke)
