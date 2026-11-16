@@ -36,6 +36,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Disponibelt beløb (igangværende måned) = max(indtægt, snit 3 mdr.) − brugt − manglende faste regninger − opsparing; ellers "periodens resultat". Faste udgifter = `detectFixed()` (≥3 af 4 mdr., ≤2/md., ±20 %).
 - Score: opsparingsrate 40 + budget 30 + forbrug mod snit 30 (normaliseret). Indsigter: budget (tempo/80 %/over), kategoriændringer, milepæle, abonnementer/år, største udgift, manglende kategorier, engangskøb.
 - Prognose næste måned (`forecastNextMonth()`): løn (kategori "Løn") som laveste/snit/højeste af 6 mdr. + eget skøn (localStorage), faste ind/ud, variabelt snit, opsparing.
+- Overblik-rækkefølge (enkel): periode → hero → 4 KPI → næste måned (detaljer i `#nmMore`) → indsigter (3 + "Vis mere") → donut → Udvikling (`#trendMode`: forløb/historik, gemmes i localStorage) → sammenfoldet score og faste udgifter (`details.fold`) → posteringer (25 ad gangen, +100). "Ugens status" er fjernet (brug Uge-visningen).
 - Visuelt: forbrugskurve vs. snit (+ budgetlinje), 12-perioders søjlegraf, donut (7 farveblind-validerede farver efter 12-mdr. forbrug; "Øvrige" kan foldes ud), kategori-fliser i sammenfoldet sektion. Emojis kun på kategorier og opsparingsmål – ellers ensfarvede SVG-ikoner (`icon()`).
 - Budget pr. måned, skaleres til år/uge/dag; evt. overførsel af ubrugt budget (`rollover_from`).
 

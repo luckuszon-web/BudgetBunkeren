@@ -70,7 +70,7 @@ $$);
 
 ## Appen
 
-**Overblik** – dit disponible beløb resten af måneden, nøgletal (indtægter, faste/variable udgifter, opsparing), økonomisk score, ugens status, prognose for næste måned (med interval for svingende/provisionsløn og eget skøn), indsigter og budgetadvarsler, forbrugskurve, 12-måneders graf, cirkeldiagram pr. kategori og posteringer. Vælg **År / Måned / Uge / Dag**.
+**Overblik** – dit disponible beløb resten af måneden og fire nøgletal øverst. Derunder prognose for næste måned (udregning, løn og kommende betalinger kan foldes ud), de vigtigste indsigter, cirkeldiagram pr. kategori, udvikling (forløb eller historik) og posteringer. Økonomisk score og faste udgifter ligger sammenfoldet. Vælg **År / Måned / Uge / Dag**.
 
 **Planlæg** – nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer.
 

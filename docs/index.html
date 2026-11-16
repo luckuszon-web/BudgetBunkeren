@@ -142,8 +142,15 @@
   .kpi .k-top { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
   .kpi .k-v { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 4px 0 2px; white-space: nowrap; }
   .kpi .k-s { font-size: 12px; color: var(--muted); }
-  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .duo > .card { margin-bottom: 12px; }
+  details.fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary h2 { margin: 0; flex: 1; }
+  details.fold > summary::after { content: "›"; color: var(--muted); font-size: 22px; line-height: 1; transition: transform .15s; }
+  details.fold[open] > summary { margin-bottom: 12px; }
+  details.fold[open] > summary::after { transform: rotate(90deg); }
+  .trend-sub { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .nm-more > summary { color: var(--accent); margin-top: 12px; }
+  .ins-more { display: grid; gap: 8px; }
   .score { display: flex; align-items: center; gap: 14px; }
   .score svg { width: 104px; height: 104px; flex-shrink: 0; }
   .score-parts { display: grid; gap: 6px; font-size: 12.5px; flex: 1; min-width: 0; }
@@ -160,7 +167,6 @@
   @media (max-width: 400px) { .kpi .k-v { font-size: 16px; } .hero-amt { font-size: 30px !important; } }
   @media (max-width: 640px) {
     .kpis { grid-template-columns: 1fr 1fr; }
-    .duo { grid-template-columns: 1fr; gap: 0; }
     .hero-amt { font-size: 34px; }
   }
 
@@ -412,24 +418,7 @@
     <!-- Nøgletal -->
     <div class="kpis" id="kpis"></div>
 
-    <!-- Score + ugens status -->
-    <div class="duo">
-      <div class="card" id="scoreCard">
-        <div class="head"><h2>Økonomisk score</h2><span class="small muted" id="scoreMonth"></span></div>
-        <div class="score">
-          <svg id="scoreRing" viewBox="0 0 120 120" aria-hidden="true"></svg>
-          <div id="scoreParts" class="score-parts"></div>
-        </div>
-        <div class="small muted" id="scoreTip" style="margin-top:8px"></div>
-      </div>
-      <div class="card" id="weekCard">
-        <div class="head"><h2>Ugens status</h2><span class="small muted" id="weekLbl"></span></div>
-        <div id="weekBody"></div>
-      </div>
-    </div>
-
-    <!-- Indsigter og advarsler -->
-    <!-- Prognose for næste måned -->
+    <!-- Prognose for næste måned (detaljer foldet sammen) -->
     <div class="card" id="nextCard">
       <div class="head"><h2 id="nextTitle">Næste måned</h2><span class="pill-s">Prognose</span></div>
       <div id="nextBody"></div>
@@ -438,24 +427,6 @@
     <div class="card" id="insightsCard">
       <div class="head"><h2>Indsigter</h2></div>
       <div id="insights" class="insights"></div>
-    </div>
-
-    <div class="card pace" id="paceCard">
-      <div class="head">
-        <h2 id="paceTitle">Forbrug gennem måneden</h2>
-        <div class="legend"><span><i style="background:#3987e5"></i><span id="paceLbl">Denne måned</span></span><span><i style="background:#8b93a1"></i><span id="paceAvgLbl">Snit 3 forrige</span></span></div>
-      </div>
-      <svg id="paceSvg" role="img" aria-label="Akkumulerede udgifter dag for dag"></svg>
-      <div class="small muted" id="paceNote" style="margin-top:4px"></div>
-    </div>
-
-    <div class="card">
-      <div class="head">
-        <h2 id="chartTitle">Seneste 12 måneder</h2>
-        <div class="legend"><span><i style="background:var(--accent)"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span></div>
-      </div>
-      <div class="chart" id="chart"></div>
-      <div class="small muted" style="margin-top:6px" id="chartHint">Tryk på en søjle for at se perioden.</div>
     </div>
 
     <div class="card">
@@ -477,11 +448,45 @@
       <div class="small muted" id="barsHint" style="margin-top:8px"></div>
     </div>
 
-    <div class="card" id="fixedCard">
-      <div class="head"><h2>Faste udgifter og abonnementer</h2><span class="num small" id="fixedTotal"></span></div>
+    <!-- Udvikling: forløb i perioden eller de seneste perioder -->
+    <div class="card" id="trendCard">
+      <div class="head">
+        <h2>Udvikling</h2>
+        <div class="seg" id="trendMode">
+          <button data-v="pace" class="on">Forløb</button>
+          <button data-v="bars">Historik</button>
+        </div>
+      </div>
+      <div class="pace" id="paceCard">
+        <div class="trend-sub"><span class="small muted" id="paceTitle">Forbrug gennem måneden</span>
+          <div class="legend"><span><i style="background:#3987e5"></i><span id="paceLbl">Denne måned</span></span><span><i style="background:#8b93a1"></i><span id="paceAvgLbl">Snit 3 forrige</span></span></div></div>
+        <svg id="paceSvg" role="img" aria-label="Akkumulerede udgifter dag for dag"></svg>
+        <div class="small muted" id="paceNote" style="margin-top:4px"></div>
+      </div>
+      <div id="barsWrap" class="hidden">
+        <div class="trend-sub"><span class="small muted" id="chartTitle">Seneste 12 måneder</span>
+          <div class="legend"><span><i style="background:var(--accent)"></i>Udgifter</span><span><i style="background:var(--green)"></i>Indtægter</span></div></div>
+        <div class="chart" id="chart"></div>
+        <div class="small muted" style="margin-top:6px" id="chartHint">Tryk på en søjle for at se perioden.</div>
+      </div>
+    </div>
+
+    <!-- Sammenfoldet: score og faste udgifter -->
+    <details class="card fold" id="scoreCard">
+      <summary><h2>Økonomisk score</h2><span class="small muted" id="scoreSum"></span></summary>
+      <div class="small muted" id="scoreMonth" style="margin-bottom:8px"></div>
+      <div class="score">
+        <svg id="scoreRing" viewBox="0 0 120 120" aria-hidden="true"></svg>
+        <div id="scoreParts" class="score-parts"></div>
+      </div>
+      <div class="small muted" id="scoreTip" style="margin-top:8px"></div>
+    </details>
+
+    <details class="card fold" id="fixedCard">
+      <summary><h2>Faste udgifter</h2><span class="num small muted" id="fixedTotal"></span></summary>
       <div class="fixed" id="fixedList"></div>
       <div class="small muted" style="margin-top:8px">Findes automatisk: samme modtager og omtrent samme beløb i mindst 3 af de seneste 4 måneder.</div>
-    </div>
+    </details>
 
     <div class="card">
       <div class="head"><h2 id="txTitle">Posteringer</h2><button class="ghost small hidden" id="clearCat">Vis alle ✕</button></div>
@@ -735,7 +740,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116171151";</script>
+<script>window.APP_VERSION = "20261116172416";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -749,7 +754,7 @@ const $ = (id) => document.getElementById(id);
 const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(Math.round(n) || 0);   // || 0: aldrig "-0 kr."
 const minus = (v) => (Math.round(v) ? "−" + kr(v) : kr(0));   // "−1.234 kr." – men "0 kr." i stedet for "−0 kr."
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const PAGE = 150;
+const PAGE = 25;   // posteringer vist fra start; "Vis flere" henter 100 ad gangen
 
 // ---------- Datoer og perioder ----------
 // Periodenøgler:  år "2026" · måned "2026-11" · uge "W2026-11-09" (mandagens dato) · dag "2026-11-15"
@@ -1243,7 +1248,6 @@ function renderDashboard() {
     kpi("🐷", "Opsparing", kr(Math.max(0, saved)), ts > 0 ? `${kr(ts)} i alt${next ? ` · næste mål ${kr(next)}` : ""}` : "overførsler til opsparing", "");
 
   renderScore();
-  renderWeek();
   renderInsights(fixedItems, isFixed);
   renderNextMonth();
 }
@@ -1310,6 +1314,7 @@ function renderNextMonth() {
   $("nextCard").classList.toggle("hidden", !f);
   if (!f) return;
   const monthName = fmt(f.next + "-01", { month: "long" });
+  const wasOpen = $("nmMore")?.open;
   $("nextTitle").textContent = `Næste måned · ${monthName}`;
 
   // Interval-bar fra laveste til højeste skøn
@@ -1339,6 +1344,7 @@ function renderNextMonth() {
     </div>
     <div class="range-lbl"><span>Svag måned ${kr(f.low)}</span><span>God måned ${kr(f.high)}</span></div>
 
+    <details class="nm-more" id="nmMore" ${wasOpen ? "open" : ""}><summary class="small">Se udregningen, din løn og kommende betalinger</summary>
     <div class="nm-sec">
       <div class="nm-row"><span><b>Løn</b>${variation >= 15 ? ` <span class="pill-s">svinger ±${Math.round(variation / 2)}%</span>` : ""}</span><b class="num pos">${kr(f.salExp)}</b>
         <span class="muted">${f.hasSal ? `Seneste ${f.salStats.vals.filter((v) => v > 0).length} mdr.: laveste ${kr(f.salStats.min)} · snit ${kr(f.salStats.avg)} · højeste ${kr(f.salStats.max)}${f.salDay ? ` · udbetales ca. d. ${f.salDay}.` : ""}` : "Ingen løn fundet – giv lønnen kategorien Løn."}</span><span></span></div>
@@ -1368,6 +1374,7 @@ function renderNextMonth() {
 
     ${variation >= 25 ? `<div class="ins warn" style="margin-top:12px"><div class="e">${icon("alert")}</div><div>Din løn har svinget med op til ${kr(f.salStats.max - f.salStats.min)} mellem månederne.
       Læg budgettet ud fra en svag måned (${kr(f.salStats.min)}), og sæt resten til side i de gode måneder. En buffer på mindst én måneds faste udgifter (${kr(f.fixedSum)}) giver ro i de svage perioder.</div></div>` : ""}
+    </details>
     ${f.low < 0 && variation < 25 ? `<div class="ins warn" style="margin-top:12px"><div class="e">${icon("alert")}</div><div>I en svag måned kan du komme ${kr(-f.low)} i minus. Hav en buffer klar.</div></div>` : ""}`;
 
   const key = "forecastIncome-" + f.next;
@@ -1427,37 +1434,12 @@ function renderScore() {
     <text x="60" y="62" text-anchor="middle" font-size="32" font-weight="750" fill="#e9ebef">${score}</text>
     <text x="60" y="82" text-anchor="middle" font-size="11" fill="${col}">${word}</text>`;
   $("scoreMonth").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
+  $("scoreSum").innerHTML = `<b style="color:${col}">${score}</b> · ${word}`;
   $("scoreParts").innerHTML = parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
     <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${x.pts / x.max >= .7 ? "#5fd39a" : x.pts / x.max >= .4 ? "#f5c451" : "#ff7b7b"}"></div></div></div>`).join("");
   const weakest = [...parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
   $("scoreTip").textContent = !budgeted.length ? "Tip: Sæt budgetter under ⚙ Indstillinger, så tæller de også med i scoren."
     : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!";
-}
-
-// Ugens status: indeværende uge mod snittet af de 4 forrige uger (samme antal dage)
-function renderWeek() {
-  const today = todayIso(), mon = mondayOf(today);
-  const n = (D(today) - D(mon)) / 864e5 + 1;
-  const span = (start) => state.txs.filter((t) => t.booking_date >= start && t.booking_date <= addDays(start, n - 1));
-  const cur = span(mon);
-  const out = sumOut(cur);
-  const prev = [1, 2, 3, 4].map((i) => sumOut(span(addDays(mon, -7 * i)))).filter((v, i) => state.txs.some((t) => t.booking_date >= addDays(mon, -7 * (i + 1)) && t.booking_date < addDays(mon, -7 * i)));
-  const avg = avgOf(prev);
-  const byCat = new Map();
-  for (const t of cur) if (isExp(t)) byCat.set(String(effCat(t) ?? "none"), (byCat.get(String(effCat(t) ?? "none")) ?? 0) - t.amount);
-  const top = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
-  const big = cur.filter((t) => t.amount < 0 && isExp(t)).sort((a, b) => a.amount - b.amount)[0];
-  $("weekLbl").textContent = `Uge ${isoWeekNo(today)} · ${n} ${n === 1 ? "dag" : "dage"}`;
-  const diff = avg ? Math.round((out - avg) / avg * 100) : null;
-  $("weekBody").innerHTML = `
-    <div class="row" style="gap:12px;align-items:baseline"><span style="font-size:26px;font-weight:700" class="num">${kr(out)}</span>
-      <span class="small muted">brugt indtil nu</span></div>
-    ${diff !== null ? `<div class="small" style="margin:4px 0 8px">${diff > 0 ? `<span class="up">▲ ${diff}% mere</span>` : `<span class="down">▼ ${-diff}% mindre</span>`} end normalt efter ${n} ${n === 1 ? "dag" : "dage"} (snit ${kr(avg)})</div>` : ""}
-    <div class="hero-rows" style="border-color:var(--line)">
-      ${top ? `<div>Mest brugt på<div class="muted">${esc(top[0] === "none" ? "Uden kategori" : catById(top[0])?.name)}</div></div><div class="num">${kr(top[1])}</div>` : ""}
-      ${big ? `<div>Største køb<div class="muted">${esc(big.counterparty || big.description)}</div></div><div class="num">${kr(-big.amount)}</div>` : ""}
-      ${!cur.length ? `<div class="muted">Ingen posteringer endnu i denne uge.</div><div></div>` : ""}
-    </div>`;
 }
 
 // Indsigter: budgetadvarsler, store ændringer pr. kategori, milepæle og abonnementer
@@ -1533,9 +1515,19 @@ function renderInsights(fixedItems) {
 
   items.sort((a, b) => b.w - a.w);
   setTimeout(() => document.querySelectorAll(".go-quick").forEach((a) => a.onclick = (e) => { e.preventDefault(); showTab("settings"); setPage("quick"); }));
-  $("insights").innerHTML = items.length ? items.map((i) => `<div class="ins ${i.cls}"><div class="e">${icon(i.e)}</div><div>${i.html}</div></div>`).join("")
+  // De 3 vigtigste vises; resten bag en knap
+  const one = (i) => `<div class="ins ${i.cls}"><div class="e">${icon(i.e)}</div><div>${i.html}</div></div>`;
+  $("insights").innerHTML = items.length ? items.slice(0, 3).map(one).join("") + (items.length > 3
+    ? `<div class="ins-more hidden" id="insMore">${items.slice(3).map(one).join("")}</div><button class="ghost small" id="insMoreBtn">Vis ${items.length - 3} mere</button>` : "")
     : `<p class="muted small">Ingen særlige bemærkninger for perioden.</p>`;
+  if ($("insMoreBtn")) $("insMoreBtn").onclick = () => { $("insMore").classList.remove("hidden"); $("insMoreBtn").remove(); };
 }
+
+$("trendMode").onclick = (e) => {
+  const b = e.target.closest("button[data-v]"); if (!b) return;
+  try { localStorage.setItem("trendMode", b.dataset.v); } catch {}
+  renderPace();
+};
 
 // Søjlediagram: de seneste N perioder (12 mdr., 12 uger, 14 dage, 5 år)
 function renderChart() {
@@ -1573,9 +1565,15 @@ function renderChart() {
 
 // Linjediagram: akkumulerede udgifter gennem perioden mod snittet af de 3 forrige
 function renderPace() {
-  const card = $("paceCard");
-  if (gran() === "day") { card.classList.add("hidden"); return; }
-  card.classList.remove("hidden");
+  // Udvikling-kortet: "Forløb" (kurve) eller "Historik" (søjler). Dag-visning har kun historik.
+  const dayView = gran() === "day";
+  let mode = "pace"; try { mode = localStorage.getItem("trendMode") || "pace"; } catch {}
+  if (dayView) mode = "bars";
+  $("trendMode").classList.toggle("hidden", dayView);
+  $("trendMode").querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.v === mode));
+  $("paceCard").classList.toggle("hidden", mode !== "pace");
+  $("barsWrap").classList.toggle("hidden", mode !== "bars");
+  if (mode !== "pace") return;
   // Delperioder: år -> måneder, måned -> dage, uge -> dage
   const subKeys = (p) => {
     if (gran() === "year") return Array.from({ length: 12 }, (_, i) => `${p}-${pad(i + 1)}`);
@@ -1780,7 +1778,7 @@ function renderFixed() {
   const fixed = detectFixed(monthOf(state.period));
   const total = fixed.reduce((s, f) => s + f.amount, 0);
   $("fixedCard").classList.toggle("hidden", !fixed.length);
-  $("fixedTotal").innerHTML = fixed.length ? `<b>${kr(total)}</b>/md. · ${kr(total * 12)}/år` : "";
+  $("fixedTotal").innerHTML = fixed.length ? `${kr(total)}/md.` : "";
   $("fixedList").innerHTML = fixed.map((f) => `
     <div style="min-width:0"><div>${esc(f.name)}</div><div class="muted small">${esc(catById(f.cat)?.name ?? "Uden kategori")} · trækkes ca. d. ${f.day}.</div></div>
     <div class="num ${f.amount < 0 ? "pos" : ""}" style="text-align:right">${f.amount < 0 ? "+" + kr(-f.amount) : kr(f.amount)}<div class="muted small">${f.amount < 0 ? "modregnes" : kr(f.amount * 12) + "/år"}</div></div>`).join("");
@@ -1789,7 +1787,7 @@ function renderFixed() {
 $("txFilter").onchange = () => { state.shown = PAGE; renderTxs(); };
 $("search").oninput = () => { state.shown = PAGE; renderTxs(); };
 $("clearCat").onclick = () => { state.catFilter = null; renderBars(); renderTxs(); };
-$("moreBtn").onclick = () => { state.shown += PAGE; renderTxs(); };
+$("moreBtn").onclick = () => { state.shown += 100; renderTxs(); };
 
 function renderTxs() {
   const f = $("txFilter").value;
