@@ -44,7 +44,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Bundmenu `.tabs` er `position: fixed`; siden scroller normalt; `main` har `min-height: calc(var(--app-h,100vh) + 1px)`, så alle sider kan scrolles (på korte sider placerer iPhone-hjemmeskærmsapps ellers menuen for højt). `fitAppHeight()` sætter `--app-h = screen.height` i standalone. Forkastet: app-skal med kun main scrollende (100dvh/inset:0 gav tomt felt; screen.height som body-højde skar menuteksten af).
 - Zoom slået fra; felter 16 px på mobil. Manifest + ikoner til hjemmeskærm. Opdateringsbjælke `#updBar` (tjekker `version.json` ved start, ved `visibilitychange` og hvert 15. min.); moduler hentes med `?v=`.
 - Dialoger: ✕, tryk udenfor og "Fortryd valget" (regel-dialogen); `ask(dialog, raw)`.
-- Indstillinger: oversigt + undersider via `setPage()` (bank, quick, cats, rules, acct, data). Ejer-kun: invitationer; "Egen Enable Banking-app" vises kun for andre end ejeren (eller hvis ejeren selv har lagt en ind).
+- Indstillinger: oversigt + undersider via `setPage()` (bank, quick, cats, rules, acct, data). Ejer-kun: invitationer; "Egen Enable Banking-app" vises for alle (ejeren kan vælge en anden app end den i Supabase-hemmelighederne); formularen vises også, hvis databaseopdatering 009 mangler (med advarsel).
 
 ## Flere brugere
 - Enable Bankings gratis vilkår: kun personligt brug, og kun konti der tilhører den Control Panel-bruger, der tilknyttede dem. Derfor har hver ekstra bruger sin **egen** gratis EB-app (samme redirect URL); `start`/`finish` afvises for ikke-ejere uden `eb_credentials`.

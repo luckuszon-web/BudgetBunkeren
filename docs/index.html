@@ -551,7 +551,7 @@
       </div>
       <div class="card" id="ownAppCard">
         <div class="head"><h2>Egen Enable Banking-app</h2><span id="ownAppState" class="pill-s"></span></div>
-        <p class="small muted" style="margin-top:0">Til en ekstra bruger (fx en partner), der vil forbinde <b>sin egen</b> bank. Enable Bankings gratis model kræver, at hver person tilknytter sine egne konti i sin egen app.</p>
+        <p class="small muted" style="margin-top:0" id="ownAppIntro">Til en ekstra bruger (fx en partner), der vil forbinde <b>sin egen</b> bank. Enable Bankings gratis model kræver, at hver person tilknytter sine egne konti i sin egen app.</p>
         <details class="small guide" id="ownAppGuide" style="margin-bottom:10px"><summary style="color:var(--accent);cursor:pointer">Sådan laver du din egen app (ca. 10 min., computer anbefales)</summary>
           <ol class="steps">
             <li>Opret en gratis konto på Enable Banking med <b>din egen</b> e-mail:
@@ -740,7 +740,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116192120";</script>
+<script>window.APP_VERSION = "20261116192210";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2219,17 +2219,13 @@ async function renderOwnApp() {
   fillCopyFields();   // altid – også hvis serveren ikke svarer
   try { st = await callFn("bank-connect", { action: "credentials-status" }); } catch (e) { st = { available: false, failed: e.message }; }
   const box = $("ownAppBody");
-  // Ejeren bruger appen fra Supabase-hemmelighederne og skal ikke se kortet
-  $("ownAppCard").classList.toggle("hidden", !!st.owner && !st.own);
-  if (!st.available) {
-    $("ownAppState").textContent = "";
-    box.innerHTML = st.failed
+  // Ejeren bruger som standard appen fra Supabase-hemmelighederne, men kan lægge sin egen ind her
+  if (st.owner) $("ownAppIntro").innerHTML = "Du bruger som standard den app, der ligger i Supabase (EB_APP_ID og EB_PRIVATE_KEY). Vil du hellere bruge en anden Enable Banking-app – fx med en ny nøgle – kan du lægge den ind her. Den bruges så til dine forbindelser i stedet.";
+  const warn = !st.available ? (st.failed
       ? `<p class="small warn-t">Kunne ikke hente status fra serveren: ${esc(st.failed)}</p>`
-      : `<p class="small warn-t">Databasen mangler den nyeste opdatering. Kør den igen via <a href="opdater.html" style="color:var(--accent)">opdater.html</a> (Kopiér SQL → Supabase → SQL Editor → Run).</p>`;
-    return;
-  }
+      : `<p class="small warn-t">Databasen mangler den nyeste opdatering, så der kan ikke gemmes endnu. Kør den via <a href="opdater.html" style="color:var(--accent)">opdater.html</a> (Kopiér SQL → Supabase → SQL Editor → Run), og prøv igen.</p>`) : "";
   $("ownAppGuide").open = !st.own && st.owner === false;
-  $("ownAppState").textContent = st.own ? "I brug" : st.owner ? "Bruger fælles app" : "Ikke sat op";
+  $("ownAppState").textContent = st.own ? "I brug" : st.owner ? "Bruger appen fra Supabase" : "Ikke sat op";
   $("ownAppState").className = "pill-s " + (st.own ? "good-t" : "");
   if (st.own) {
     box.innerHTML = `<div class="kv2"><span class="muted">Application ID</span><span style="word-break:break-all">${esc(st.app_id)}</span>
@@ -2242,7 +2238,7 @@ async function renderOwnApp() {
     };
     return;
   }
-  box.innerHTML = `<form id="ownAppForm" style="display:grid;gap:8px">
+  box.innerHTML = warn + `<form id="ownAppForm" style="display:grid;gap:8px">
       <input id="ownAppId" placeholder="Application ID (fx 1a2b3c4d-…)" autocomplete="off" required>
       <label class="file-pick"><input id="ownAppKey" type="file" accept=".pem,application/x-pem-file,text/plain" required>
         <span class="fp-btn">Vælg .pem-fil</span><span class="fp-name" id="ownAppKeyName">Ingen fil valgt</span></label>
