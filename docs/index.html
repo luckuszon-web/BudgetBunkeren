@@ -437,6 +437,12 @@
       <button class="ghost small hidden" id="closeSettings">‹ Tilbage</button>
     </div>
 
+    <div class="card" id="quickCard">
+      <div class="head"><h2>Hurtig sortering</h2><button class="small" id="recatBtn" title="Kør alle regler og AI igen">Kategorisér igen</button></div>
+      <p class="small muted" style="margin-top:0">Posteringer uden kategori, der går igen. Vælg en kategori, så får alle de lignende posteringer den – nu og fremover.</p>
+      <div id="quickList"></div>
+    </div>
+
     <div class="card">
       <div class="head"><h2>Kategorier og budget</h2><button class="small" id="addCat">+ Ny kategori</button></div>
       <p class="small muted" style="margin-top:0">Tryk på ikonet for at skifte det til en anden emoji. Budget er kr. pr. måned (lad feltet stå tomt for intet budget).
@@ -1257,9 +1263,10 @@ function renderInsights(fixedItems) {
 
   // 6) Uden kategori
   const none = list.filter((t) => !t.category_id).length;
-  if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. Vælg filteret <i>Uden kategori</i> nedenfor og ret dem.` });
+  if (none) items.push({ cls: "", e: "tag", w: 10, html: `${none} posteringer mangler en kategori. <a href="#" class="go-quick" style="color:var(--accent)">Sortér dem hurtigt</a>` });
 
   items.sort((a, b) => b.w - a.w);
+  setTimeout(() => document.querySelectorAll(".go-quick").forEach((a) => a.onclick = (e) => { e.preventDefault(); showTab("settings"); }));
   $("insights").innerHTML = items.length ? items.map((i) => `<div class="ins ${i.cls}"><div class="e">${icon(i.e)}</div><div>${i.html}</div></div>`).join("")
     : `<p class="muted small">Ingen særlige bemærkninger for perioden.</p>`;
 }
@@ -1581,7 +1588,73 @@ async function newCategory() {
   return data;
 }
 
-const matchesRule = (t, p) => `${t.description} ${t.counterparty ?? ""}`.toLowerCase().includes(p);
+// Samme matchning som serveren: æ/ø/å skrives ud, mellemrum i mønsteret = ordgrænse, korte mønstre = helt ord
+const translit = (s) => String(s).toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa").replace(/ö/g, "oe")
+  .replace(/ä/g, "ae").replace(/é/g, "e").replace(/ü/g, "u").replace(/[^a-z0-9&.+@']+/g, " ").replace(/\s+/g, " ");
+const normTx = (t) => ` ${translit(`${t.description} ${t.counterparty ?? ""}`).trim()} `;
+function matchesRule(t, pattern) {
+  let p = translit(pattern);
+  if (!p.trim()) return false;
+  if (p.trim().length <= 3) p = ` ${p.trim()} `;
+  return normTx(t).includes(p);
+}
+
+// ---------- Hurtig sortering ----------
+// Grupperer posteringer uden kategori efter modtager, så mange kan sorteres med ét valg
+const NOISE = /^(dankort nota|dankort|visa dankort|visa|mastercard|k\s?b|koeb|kortkoeb|nota|betaling|bs betaling|overfoersel|ovf|fra|til|den|d)$/;
+function groupKey(t) {
+  const words = translit(t.counterparty || t.description).replace(/[0-9]+/g, " ").split(" ").filter((w) => w && w.length > 1);
+  while (words.length && NOISE.test(words[0])) words.shift();
+  while (words.length > 1 && NOISE.test(words.slice(0, 2).join(" "))) words.splice(0, 2);
+  if (!words.length) return "";
+  // Betalingstjenester (MobilePay, SumUp …) og korte navne har brug for næste ord; ellers er butiksnavnet nok
+  const viaService = /^(mobilepay|paypal|sumup|zettle|izettle|nets|stripe|klarna|vipps|swipp|pay)$/.test(words[0]);
+  return (viaService || words[0].length < 4) ? words.slice(0, 2).join(" ") : words[0];
+}
+function renderQuick() {
+  const groups = new Map();
+  for (const t of state.txs) {
+    if (t.category_id) continue;
+    const k = groupKey(t);
+    if (!k || k.length < 3) continue;
+    const g = groups.get(k) ?? { k, n: 0, sum: 0, sample: t.counterparty || t.description, pos: 0 };
+    g.n++; g.sum += t.amount; if (t.amount > 0) g.pos++;
+    groups.set(k, g);
+  }
+  const list = [...groups.values()].filter((g) => g.n >= 2).sort((a, b) => b.n - a.n || Math.abs(b.sum) - Math.abs(a.sum)).slice(0, 25);
+  const none = state.txs.filter((t) => !t.category_id).length;
+  const options = `<option value="">Vælg kategori …</option>` + state.cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("quickList").innerHTML = list.length ? `<div class="small muted" style="margin-bottom:4px">${none} posteringer mangler kategori – her er de ${list.length} hyppigste grupper</div>` +
+    list.map((g) => `<div class="list-row qrow" data-k="${esc(g.k)}" style="grid-template-columns:1fr auto">
+      <div style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.sample)}</div>
+        <div class="sub">${g.n} posteringer · i alt ${kr(g.sum)} · regel: "${esc(g.k)}"</div></div>
+      <select aria-label="Kategori" style="max-width:150px">${options}</select></div>`).join("")
+    : `<p class="empty">${none ? `${none} posteringer mangler kategori, men ingen går igen. Ret dem enkeltvis i posteringslisten.` : "Alle posteringer har en kategori."}</p>`;
+  document.querySelectorAll("#quickList .qrow select").forEach((sel) => sel.onchange = async () => {
+    const k = sel.closest(".qrow").dataset.k, catId = Number(sel.value);
+    if (!catId) return;
+    sel.disabled = true;
+    const { data: rule, error } = await sb.from("rules").insert({ pattern: k, category_id: catId, priority: 200 }).select().single();
+    if (error) { toast("Kunne ikke gemme reglen: " + error.message); sel.disabled = false; return; }
+    state.rules.push(rule);
+    const hits = state.txs.filter((t) => t.category_source !== "manual" && (groupKey(t) === k || matchesRule(t, k)));
+    for (let i = 0; i < hits.length; i += 100) {
+      await sb.from("transactions").update({ category_id: catId, category_source: "rule" }).in("id", hits.slice(i, i + 100).map((t) => t.id));
+    }
+    hits.forEach((t) => { t.category_id = catId; t.category_source = "rule"; });
+    toast(`${hits.length} posteringer fik kategorien ${catById(catId)?.name}.`);
+    renderQuick();
+  });
+}
+$("recatBtn").onclick = async () => {
+  $("recatBtn").disabled = true; toast("Kategoriserer alle posteringer igen … det kan tage et minut.", 90000);
+  try {
+    const r = (await callFn("sync", { action: "categorize" })).result ?? {};
+    toast(`Færdig: ${r.rule ?? 0} via regler${r.ai_enabled ? `, ${r.ai ?? 0} via AI` : " (AI er ikke slået til – se README)"}${r.left > 0 ? `, ${r.left} uden kategori` : ""}.`, 8000);
+    await load(); showTab("settings");
+  } catch (e) { toast("Fejl: " + e.message, 8000); }
+  $("recatBtn").disabled = false;
+};
 
 // ---------- Ret kategori + lær en regel ----------
 async function setCategory(txId, value) {
@@ -1658,6 +1731,7 @@ $("showDefaults").onchange = () => renderRules();
 $("addCat").onclick = async () => { if (await newCategory()) renderSettings(); };
 
 function renderSettings() {
+  renderQuick();
   const kinds = { expense: "Udgift", income: "Indtægt", transfer: "Overførsel" };
   $("catList").innerHTML = state.cats.map((c) => `
     <div class="set-cat" data-id="${c.id}">

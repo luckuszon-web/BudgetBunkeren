@@ -179,72 +179,117 @@ export async function syncAll(onlyUserId?: string) {
   return report;
 }
 
-/** Kategoriserer posteringer uden kategori: først dine regler, derefter AI (hvis slået til). */
-export async function categorize(userId: string) {
+/** Gør tekst sammenlignelig: små bogstaver, æ/ø/å skrevet ud, kun bogstaver/tal og enkelte mellemrum. */
+const translit = (s: string) => s.toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa").replace(/ö/g, "oe")
+  .replace(/ä/g, "ae").replace(/é/g, "e").replace(/ü/g, "u").replace(/[^a-z0-9&.+@']+/g, " ").replace(/\s+/g, " ");
+export const norm = (s: string) => ` ${translit(s).trim()} `;
+/**
+ * En regel rammer, hvis teksten indeholder mønsteret. Mellemrum før/efter i mønsteret betyder ordgrænse
+ * (fx "spar " rammer "SPAR Valby", men ikke "Opsparing"). Korte mønstre (≤3 tegn) skal altid være et helt ord.
+ */
+export function ruleHits(hay: string, pattern: string): boolean {
+  let p = translit(pattern);
+  if (!p.trim()) return false;
+  if (p.trim().length <= 3) p = ` ${p.trim()} `;
+  return hay.includes(p);
+}
+
+type Tx = { id: string; description: string; counterparty: string | null; amount: number; booking_date?: string };
+
+/**
+ * Kategoriserer posteringer: først dine regler (200), så standardreglerne (100), derefter AI (hvis slået til).
+ * reapply = true: kør reglerne igen på alt, du ikke selv har rettet (fx efter nye regler).
+ */
+export async function categorize(userId: string, opts: { reapply?: boolean; aiLimit?: number } = {}) {
   const db = admin();
-  const [{ data: rules }, { data: cats }, { data: txs }] = await Promise.all([
+  const [{ data: rules }, { data: cats }] = await Promise.all([
     db.from("rules").select("pattern, category_id, priority").eq("user_id", userId),
     db.from("categories").select("id, name, kind").eq("user_id", userId),
-    db.from("transactions").select("id, description, counterparty, amount")
-      .eq("user_id", userId).is("category_id", null).limit(1000),
   ]);
-  if (!txs?.length) return { rule: 0, ai: 0 };
+  // Hent alle relevante posteringer i bidder (Supabase giver max 1000 ad gangen)
+  const txs: Tx[] = [];
+  for (let from = 0; ; from += 1000) {
+    let q = db.from("transactions").select("id, description, counterparty, amount, booking_date, category_id, category_source")
+      .eq("user_id", userId).order("booking_date", { ascending: false }).range(from, from + 999);
+    q = opts.reapply ? q.or("category_source.is.null,category_source.neq.manual") : q.is("category_id", null);
+    const { data, error } = await q;
+    if (error) throw error;
+    txs.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  if (!txs.length) return { rule: 0, ai: 0, left: 0 };
 
   const sorted = [...(rules ?? [])].sort((a, b) => b.priority - a.priority || b.pattern.length - a.pattern.length);
-  const leftovers: typeof txs = [];
-  let ruleCount = 0;
-
+  const byCat = new Map<number, string[]>();
+  const leftovers: Tx[] = [];
   for (const t of txs) {
-    const hay = `${t.description} ${t.counterparty ?? ""}`.toLowerCase();
-    const hit = sorted.find((r) => hay.includes(r.pattern.toLowerCase()));
-    if (hit) {
-      await db.from("transactions").update({ category_id: hit.category_id, category_source: "rule" }).eq("id", t.id);
-      ruleCount++;
-    } else leftovers.push(t);
+    const hay = norm(`${t.description} ${t.counterparty ?? ""}`);
+    const hit = sorted.find((r) => ruleHits(hay, r.pattern));
+    if (hit) { if (!byCat.has(hit.category_id)) byCat.set(hit.category_id, []); byCat.get(hit.category_id)!.push(t.id); }
+    // Ved genkørsel: AI-forslag bevares, hvis ingen regel rammer
+    else if (!(opts.reapply && (t as { category_source?: string }).category_source === "ai")) leftovers.push(t);
+  }
+  // Opdatér mange ad gangen i stedet for én ad gangen
+  let ruleCount = 0;
+  for (const [catId, ids] of byCat) for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
+    const { error } = await db.from("transactions").update({ category_id: catId, category_source: "rule" }).in("id", chunk).eq("user_id", userId);
+    if (error) throw error;
+    ruleCount += chunk.length;
   }
 
+  // AI tager de nyeste først; resten tages ved næste kørsel (så funktionen ikke løber tør for tid)
   let aiCount = 0;
   const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (key && leftovers.length && cats?.length) {
-    for (let i = 0; i < leftovers.length; i += 40) {
-      const batch = leftovers.slice(i, i + 40);
-      const answer = await askClaude(key, cats, batch);
-      for (const [id, name] of Object.entries(answer)) {
-        const cat = cats.find((c) => c.name === name);
+  const todo = leftovers.filter((t) => !(t as { category_id?: number }).category_id).slice(0, opts.aiLimit ?? 400);
+  if (key && todo.length && cats?.length) {
+    const batches: Tx[][] = [];
+    for (let i = 0; i < todo.length; i += 50) batches.push(todo.slice(i, i + 50));
+    for (let i = 0; i < batches.length; i += 3) {   // 3 ad gangen
+      const answers = await Promise.all(batches.slice(i, i + 3).map((b) => askClaude(key, cats, b)));
+      const groups = new Map<number, string[]>();
+      for (const answer of answers) for (const [id, name] of Object.entries(answer)) {
+        const cat = cats.find((c) => c.name.toLowerCase() === String(name).toLowerCase());
         if (!cat) continue;
-        await db.from("transactions").update({ category_id: cat.id, category_source: "ai" }).eq("id", id).eq("user_id", userId);
-        aiCount++;
+        if (!groups.has(cat.id)) groups.set(cat.id, []);
+        groups.get(cat.id)!.push(id);
+      }
+      for (const [catId, ids] of groups) {
+        const { error } = await db.from("transactions").update({ category_id: catId, category_source: "ai" }).in("id", ids).eq("user_id", userId).is("category_id", null);
+        if (!error) aiCount += ids.length;
       }
     }
   }
-  return { rule: ruleCount, ai: aiCount };
+  return { rule: ruleCount, ai: aiCount, left: leftovers.length - aiCount, ai_enabled: !!key };
 }
 
-async function askClaude(
-  key: string,
-  cats: { name: string; kind: string }[],
-  txs: { id: string; description: string; counterparty: string | null; amount: number }[],
-): Promise<Record<string, string>> {
+async function askClaude(key: string, cats: { name: string; kind: string }[], txs: Tx[]): Promise<Record<string, string>> {
+  const kinds: Record<string, string> = { expense: "udgift", income: "indtægt", transfer: "overførsel/opsparing (ikke forbrug)" };
   const prompt =
-    `Du kategoriserer danske bankposteringer. Negative beløb er udgifter, positive er indtægter.\n` +
-    `Tilladte kategorier: ${cats.map((c) => c.name).join(", ")}.\n` +
-    `Brug "Andet" hvis du er i tvivl om en udgift. Svar KUN med et JSON-objekt {"<id>": "<kategori>"}.\n\n` +
+    `Du kategoriserer danske bankposteringer fra Nordea for en privatperson. Negative beløb er udgifter, positive er indtægter.\n` +
+    `Kategorier (navn – type):\n${cats.map((c) => `- ${c.name} – ${kinds[c.kind] ?? c.kind}`).join("\n")}\n\n` +
+    `Tips: "Dankort-nota", "Visa", "Køb" efterfulgt af et butiksnavn er et køb i den butik. MobilePay til en privatperson er typisk "Andet" (udgift) ` +
+    `eller "Anden indkomst" (indbetaling). Overførsler mellem egne konti og til opsparing/depot er overførsler. Løn fra en arbejdsgiver er "Løn". ` +
+    `Brug kun kategorinavne fra listen, stavet præcis som der. Er du i tvivl om en udgift, så brug "Andet".\n` +
+    `Svar KUN med et JSON-objekt {"<id>": "<kategori>"} uden anden tekst.\n\n` +
     JSON.stringify(txs.map((t) => ({ id: t.id, tekst: t.description, modpart: t.counterparty, beløb: t.amount })));
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-5-5",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!res.ok) {
-    console.error("AI-kategorisering fejlede", res.status, await res.text());
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({
+        model: Deno.env.get("ANTHROPIC_MODEL") ?? "claude-haiku-5-5",
+        max_tokens: 8000,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!res.ok) { console.error("AI-kategorisering fejlede", res.status, await res.text()); return {}; }
+    const data = await res.json();
+    const text: string = (data.content ?? []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("");
+    const match = text.match(/\{[\s\S]*\}/);
+    return match ? JSON.parse(match[0]) : {};
+  } catch (e) {
+    console.error("AI-kategorisering fejlede", e);
     return {};
   }
-  const data = await res.json();
-  const text: string = data.content?.[0]?.text ?? "{}";
-  const match = text.match(/\{[\s\S]*\}/);
-  try { return match ? JSON.parse(match[0]) : {}; } catch { return {}; }
 }

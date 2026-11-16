@@ -18,7 +18,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/functions/advisor` – AI-rådgiver (Anthropic SDK, `claude-opus-5-5` med server-side fallback; `ADVISOR_MODEL` kan overstyre). Klienten sender sammendrag (`buildContext`), ikke rå posteringer.
 - `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
-- `supabase/opdater-database.sql` – 002+003+004 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- `supabase/migrations/005_more_rules.sql` – ~320 ekstra standardregler (prioritet 100) for danske butikker/betalinger; tilføjer kun manglende.
+- `supabase/opdater-database.sql` – 002+003+004+005 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
 - Status hos brugeren (16. nov.): alle migrationer (001–004) kørt, Edge Functions deployet, secrets sat, natlig cron sat op, **Nordea forbundet via Enable Banking og posteringer hentet** (EB_ASPSP_NAME "Nordea" og transaktionsfelterne virkede). Demodata blev bedt slettet.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
@@ -43,6 +44,11 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Læg aldrig `.pem`-nøgle, `SYNC_SECRET`, service role key eller API-nøgler i repoet. De hører hjemme i Supabase → Edge Functions → Secrets.
 - Bankdata må aldrig committes.
 - Nye brugere kan ikke oprette sig (signups slået fra i Supabase); kun ejeren har en bruger.
+
+## Kategorisering (forbedret 16. nov.)
+- `norm()`/`ruleHits()` i common.ts og `matchesRule()` i index.html matcher ens: æ/ø/å → ae/oe/aa, symboler → mellemrum, mellemrum i mønster = ordgrænse, mønstre ≤3 tegn = helt ord (testet med Nordea-lignende tekster).
+- `categorize(user, {reapply, aiLimit})`: paginerer alle relevante posteringer, opdaterer i bundter (`.in`), AI (Haiku) maks. 400 pr. kørsel i batches à 50, 3 parallelt; resten tages næste nat. `sync` med `{action:"categorize"}` = "Kategorisér igen" i Indstillinger (reapply på alt ikke-manuelt).
+- Indstillinger → "Hurtig sortering": grupperer ukategoriserede efter `groupKey()` (butiksnavn; ved MobilePay o.l. + næste ord) og laver regel + opdaterer alle lignende med ét valg.
 
 ## Dashboard (fase 1, bygget)
 - Disponibelt beløb (kun igangværende måned): max(indtægt, snit 3 mdr.) − brugt − manglende faste regninger − opsparing. Ellers "periodens resultat".
