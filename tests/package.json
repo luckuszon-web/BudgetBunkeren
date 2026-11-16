@@ -1,0 +1,7 @@
+{
+  "name": "budgetbunkeren-tests",
+  "private": true,
+  "description": "Automatisk røgtest af BudgetBunkeren i Chromium mod en falsk Supabase med opdigtede data",
+  "scripts": { "test": "node smoke.js" },
+  "devDependencies": { "playwright": "1.55.0" }
+}

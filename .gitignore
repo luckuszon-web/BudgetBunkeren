@@ -9,3 +9,7 @@
 supabase/.temp/
 supabase/.branches/
 .DS_Store
+
+# Testmiljø
+tests/node_modules/
+tests/package-lock.json

@@ -7,7 +7,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - **Kør `sh scripts/bump-version.sh` før hver commit, der ændrer noget i `docs/`** – ellers får telefonens app ikke bjælken "Ny version".
 - Push til branchen `claude/new-session-eujtjg` **og** `main` (`git push origin claude/new-session-eujtjg claude/new-session-eujtjg:main`). Ændringer i `supabase/functions/**` deployes automatisk af workflowet (kun fra main).
 - Nye databaseændringer: ny fil i `supabase/migrations/` (idempotent) **og** regenerér `supabase/opdater-database.sql` (002 → nyeste). Brugeren kører den via `docs/opdater.html`. Frontend skal tåle, at den ikke er kørt (banner `#dbCard` / `state.dbMissing`).
-- Test lokalt med Playwright mod en falsk Supabase (testmiljøet ligger ikke i repoet – byg det igen ved behov: rute `*.supabase.co/**` + servér `docs/`).
+- **Test:** `tests/` = Playwright-testmiljø (`harness.js`: falsk Supabase via rute `*.supabase.co/**`, serverer `docs/`, dato låst til 16. nov. 2026; `fixtures/demo.json` = opdigtede data) + `smoke.js` (alle faner/undersider × 3 skærme × 2 temaer: konsolfejl + intet for bredt + lidt funktion). Kør `cd tests && npm install && node smoke.js` (lokalt bruges den forudinstallerede Playwright). Workflow `.github/workflows/test.yml` kører den ved push. Udvid `smoke.js`, når der kommer nye sider.
 
 ## Sikkerhed
 - Aldrig `.pem`, `SYNC_SECRET`, service role key eller API-nøgler i repoet eller i chatten. De hører til Supabase → Edge Functions → Secrets.

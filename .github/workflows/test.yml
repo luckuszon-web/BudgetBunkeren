@@ -1,0 +1,24 @@
+# Kører røgtesten (tests/smoke.js) ved hver ændring af siden eller testene.
+# Den åbner alle faner i Chromium mod en falsk Supabase med opdigtede data – rigtige data og nøgler bruges ikke.
+name: Test af siden
+on:
+  push:
+    paths: ["docs/**", "tests/**", ".github/workflows/test.yml"]
+  pull_request:
+    paths: ["docs/**", "tests/**"]
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node smoke.js
