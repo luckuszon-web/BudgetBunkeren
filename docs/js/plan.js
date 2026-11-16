@@ -15,7 +15,7 @@ export function init(ctx, root) {
   root.innerHTML = `
     <div id="planMissing" class="card banner hidden">
       <b>Næsten klar</b>
-      <p class="small" style="margin:6px 0 0">Kør <code>supabase/migrations/004_plan.sql</code> i Supabase → SQL Editor for at slå mål, formue, gæld og udfordringer til.</p>
+      <p class="small" style="margin:6px 0 0">Mål, formue, gæld og spareudfordringer kræver databaseopdateringen øverst på siden.</p>
     </div>
 
     <div class="card" id="nwCard">

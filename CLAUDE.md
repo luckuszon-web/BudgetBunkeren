@@ -18,6 +18,8 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - `supabase/functions/advisor` – AI-rådgiver (Anthropic SDK, `claude-opus-5-5` med server-side fallback; `ADVISOR_MODEL` kan overstyre). Klienten sender sammendrag (`buildContext`), ikke rå posteringer.
 - `supabase/migrations/004_plan.sql` – goals, assets (+ asset_history), challenges, `categories.rollover_from`.
 - `supabase/migrations/002_budget.sql` – `categories.monthly_budget`. Frontend tåler, at den ikke er kørt endnu.
+- `supabase/opdater-database.sql` – 002+003+004 samlet i én fil (idempotent). Siden viser et banner (`#dbCard`), hvis en opdatering mangler.
+- Status hos brugeren (16. nov.): 001 og 003 kørt; 002 og 004 manglede – derfor virkede spareudfordringer ikke.
 - `supabase/demo-data.sql` – opdigtede posteringer på kontoen `demo-konto` (slettes med `delete from accounts where uid='demo-konto'`).
 - `supabase/migrations/001_init.sql` – tabeller, RLS (kun egne rækker; browseren må kun ændre `category_id`/`category_source` på posteringer), `ensure_defaults()` med danske kategorier/regler.
 - `supabase/functions/_shared/common.ts` – Enable Banking JWT (RS256, `kid` = app-id), sync, kategorisering, AI-kald.
@@ -68,7 +70,7 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 ## Bygget i frontend (nov. 2026)
 - Alle posteringer (25 mdr.) hentes én gang med paginering (Supabase giver max 1000 rækker pr. kald); periodeskift sker lokalt.
 - Periode: `state.gran` = year|month|week|day; nøgler "YYYY", "YYYY-MM", "WYYYY-MM-DD" (mandag), "YYYY-MM-DD". Søjlegraf over seneste N perioder (klikbar), swipe, dropdown. Datoer regnes i UTC.
-- Visuelt: akkumuleret forbrugskurve vs. snit af 3 forrige perioder (+ budgetlinje), segmenteret fordelingsbar (5 faste farver tildelt efter 12-mdr. forbrug, resten "Øvrige"), kategori-fliser med emoji-ikon (`categories.icon`, migration 003, ellers gættet ud fra navn).
+- Visuelt: akkumuleret forbrugskurve vs. snit af 3 forrige perioder (+ budgetlinje), cirkeldiagram/donut med forklaring (7 faste, farveblind-validerede farver tildelt efter 12-mdr. forbrug, resten "Øvrige"; kategori-fliser med budget/udvikling i en sammenfoldet sektion), kategori-fliser med emoji-ikon (`categories.icon`, migration 003, ellers gættet ud fra navn).
 - Budget er pr. måned og skaleres til år/uge/dag.
 - Kategorier: udgifter/indtægter, sammenligning med snit af 3 forrige mdr., budget.
 - Faste udgifter: samme modtager i ≥3 af 4 seneste mdr., ≤2 gange/md., beløb inden for ±20 % af median.

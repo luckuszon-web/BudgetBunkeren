@@ -17,7 +17,7 @@ Dit eget overblik over forbruget. Posteringerne hentes automatisk fra Nordea hve
 
 ### 1. Supabase: database og login
 1. Opret en gratis konto på **supabase.com** og opret et nyt projekt. Vælg region **Frankfurt** eller **Stockholm**, og gem database-adgangskoden et sikkert sted.
-2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Gør det samme med `002_budget.sql` (budget), `003_icons.sql` (egne ikoner) og `004_plan.sql` (mål, formue, gæld, udfordringer og overførsel af budget) i samme mappe – i den rækkefølge.
+2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Kør derefter `supabase/opdater-database.sql` på samme måde. Den indeholder alle senere opdateringer (budget, ikoner, mål, formue, gæld og udfordringer) og kan køres flere gange. Mangler en opdatering, viser siden en gul boks med en vejledning.
 3. Gå til **Authentication → Sign In / Providers**, og **slå "Allow new users to sign up" fra**. Så kan ingen andre oprette sig.
 4. Gå til **Authentication → Users → Add user → Create new user**. Indtast din e-mail og en stærk adgangskode, og sæt flueben i *Auto Confirm User*.
 5. Gå til **Project Settings → API**, og notér **Project URL** og **anon/publishable key**. De skal bruges i trin 2.
