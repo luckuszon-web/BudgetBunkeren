@@ -223,10 +223,10 @@ export function init(ctx, root) {
           ${pay ? `<span class="muted">Renter i alt over lånets løbetid</span><span class="muted">${kr(interestTotal)}</span>` : ""}
           ${wi.value && wi.dep ? `<span class="muted">Samlet pris pr. måned inkl. værditab</span><span class="muted">${kr(monthlyAll)}</span>` : ""}
         </div>
-        <table class="wi-table"><thead><tr><th></th><th>12 mdr.</th><th>24 mdr.</th><th>36 mdr.</th></tr></thead><tbody>
+        <div class="wi-scroll"><table class="wi-table"><thead><tr><th></th><th>12 mdr.</th><th>24 mdr.</th><th>36 mdr.</th></tr></thead><tbody>
           <tr><td>Forskel i opsparing</td>${[12, 24, 36].map((m) => `<td class="${at(m).cash < 0 ? "neg" : "pos"}">${at(m).cash >= 0 ? "+" : "−"}${kr(Math.abs(at(m).cash))}</td>`).join("")}</tr>
           <tr><td>Forskel i formue</td>${[12, 24, 36].map((m) => `<td class="${at(m).net < 0 ? "neg" : "pos"}">${at(m).net >= 0 ? "+" : "−"}${kr(Math.abs(at(m).net))}</td>`).join("")}</tr>
-        </tbody></table>
+        </tbody></table></div>
         <p class="note">Sammenlignet med, hvis du lader være. "Formue" medregner værdien af det købte (efter værditab) og trækker restgælden fra.</p>
         <div id="wiChart" style="margin-top:8px"></div>
         ${newSurplus < 0 ? `<p class="small neg">Du vil bruge mere, end du tjener, hver måned. Det går ud over opsparingen.</p>` : ""}
@@ -262,7 +262,7 @@ export function init(ctx, root) {
     $("tool").innerHTML = `
       <div class="card">
         <div class="head"><h2>Prognose for ${y}</h2><span class="small muted">${hasData.length} mdr. faktisk + ${12 - ytd.length} mdr. prognose</span></div>
-        <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin:0 0 12px">
+        <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(118px,1fr));margin:0 0 12px">
           <div class="kpi"><div class="k-top">Indtægter</div><div class="k-v pos">${kr(inc)}</div><div class="k-s">${kr(sumK("inc", ytd))} indtil nu</div></div>
           <div class="kpi"><div class="k-top">Udgifter</div><div class="k-v">${kr(out)}</div><div class="k-s">${kr(sumK("out", ytd))} indtil nu</div></div>
           <div class="kpi"><div class="k-top">Til overs</div><div class="k-v ${res < 0 ? "neg" : "pos"}">${kr(res)}</div><div class="k-s">${inc ? Math.round(res / inc * 100) : 0}% af indtægterne</div></div>
@@ -306,7 +306,7 @@ export function init(ctx, root) {
       <div class="head"><h2>Kvartalsrapport</h2>
         <select id="qSel">${qs.map((q) => `<option value="${q}" ${q === quarter ? "selected" : ""}>${qLabel(q)}</option>`).join("")}</select></div>
       ${partial ? `<p class="note" style="margin-top:0">Kvartalet er ikke slut endnu – tallene er indtil nu.</p>` : ""}
-      <div class="kpis" style="grid-template-columns:repeat(3,1fr);margin:0 0 12px">
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(118px,1fr));margin:0 0 12px">
         <div class="kpi"><div class="k-top">Indtægter</div><div class="k-v pos">${kr(T.inc)}</div><div class="k-s">${chip(chg(T.inc, P.inc), true)} mod forrige</div></div>
         <div class="kpi"><div class="k-top">Udgifter</div><div class="k-v">${kr(T.out)}</div><div class="k-s">${chip(chg(T.out, P.out), false)} mod forrige</div></div>
         <div class="kpi"><div class="k-top">Til overs</div><div class="k-v ${T.inc - T.out < 0 ? "neg" : "pos"}">${kr(T.inc - T.out)}</div><div class="k-s">${T.inc ? Math.round((T.inc - T.out) / T.inc * 100) : 0}% af indtægterne</div></div>
@@ -408,7 +408,11 @@ export function init(ctx, root) {
     .cal-d.fut { background: #171a21; }
     .wi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .wi-grid label span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 3px; }
-    .wi-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    .wi-scroll { overflow-x: auto; margin-top: 12px; }
+    .wi-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .wi-table td { white-space: nowrap; }
+    .wi-table td:first-child { white-space: normal; }
+    @media (max-width: 400px) { .wi-table { font-size: 12.5px; } .wi-grid { grid-template-columns: 1fr; } }
     .wi-table th { font-size: 12px; color: var(--muted); font-weight: 500; text-align: right; padding: 4px; }
     .wi-table td { padding: 6px 4px; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
     .wi-table td:first-child, .wi-table th:first-child { text-align: left; }

@@ -57,9 +57,6 @@
   .period button { height: 44px; font-size: 22px; padding: 0; }
   .period select { text-align: center; text-align-last: center; font-weight: 650; font-size: 17px; height: 44px; width: 100%;
     appearance: none; -webkit-appearance: none; background: var(--field); }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
-  .stat .v { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
-  .substat { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 
   /* 12-måneders graf */
   .chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; }
@@ -91,7 +88,6 @@
   /* Ikoner */
   .ico { width: 36px; height: 36px; border-radius: 50%; background: #232836; display: grid; place-items: center;
     font-size: 18px; flex-shrink: 0; position: relative; }
-  .ico.sm { width: 30px; height: 30px; font-size: 15px; }
   .ico .dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--card); }
 
   /* Fordeling: segmenteret bar */
@@ -119,10 +115,6 @@
   .tile .meta { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
   .chip { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 
-  /* Måler: andel af indtægter brugt */
-  .meter-row { margin-top: 12px; }
-  .meter-row .track { height: 8px; background: #2a2f3b; border-radius: 4px; overflow: hidden; margin-top: 6px; display: flex; gap: 2px; }
-  .meter-row .track > div { height: 100%; }
 
   /* Forbrug gennem måneden */
   .pace svg { width: 100%; height: 190px; display: block; overflow: visible; }
@@ -165,6 +157,7 @@
   .ins.warn { border-left-color: var(--warn); } .ins.warn .e { color: var(--warn); }
   .ins.bad { border-left-color: var(--red); } .ins.bad .e { color: var(--red); }
   .ins.good { border-left-color: var(--green); } .ins.good .e { color: var(--green); }
+  @media (max-width: 400px) { .kpi .k-v { font-size: 16px; } .hero-amt { font-size: 30px !important; } }
   @media (max-width: 640px) {
     .kpis { grid-template-columns: 1fr 1fr; }
     .duo { grid-template-columns: 1fr; gap: 0; }
@@ -238,6 +231,12 @@
     padding: 8px 8px 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.45); width: max-content; max-width: calc(100vw - 24px); font-size: 14px; }
   .upd .ghost { padding: 6px 10px; }
 
+  /* Filvælger på dansk */
+  .file-pick { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; position: relative; cursor: pointer; }
+  .file-pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .fp-btn { background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+  .fp-name { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   /* Kopiér-felter */
   .steps { padding-left: 20px; margin: 10px 0 0; display: grid; gap: 10px; }
   .cp-field { margin-top: 8px; }
@@ -298,7 +297,6 @@
     .set-cat .name { grid-column: 2 / -1; }
     .set-cat .kind { grid-column: 1 / 3; }
     .tiles { grid-template-columns: 1fr 1fr; }
-    .stat .v { font-size: 15px; }
   }
 
   .banner { border-color: var(--warn); }
@@ -736,7 +734,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116165553";</script>
+<script>window.APP_VERSION = "20261116170601";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -942,8 +940,9 @@ async function load() {
     state.sessions = sessions.data ?? [];
     if (!state.me) state.me = await callFn("bank-connect", { action: "credentials-status" }).catch(() => null);
     state.accounts = accounts.data ?? [];
-    const hidden = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.uid));
-    state.txs = txs.filter((t) => !hidden.has(t.account_uid)).map((t) => ({ ...t, amount: Number(t.amount) }));
+    const keyOf = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
+    const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
+    state.txs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
     $("footer").textContent = last ? `Senest hentet fra banken ${new Date(last).toLocaleString("da-DK")}` : "";
@@ -2129,14 +2128,21 @@ async function renderBank() {
     catch (e) { toast("Fejl: " + e.message, 6000); b.disabled = false; }
   });
 
-  const accs = state.accounts.filter((a) => a.uid !== "demo-konto");
-  const count = new Map(); for (const t of state.txs) count.set(t.account_uid, (count.get(t.account_uid) ?? 0) + 1);
+  // Én række pr. konto: ved fornyelse findes samme konto med flere uid'er – vis den med aktiv forbindelse
+  const byKey = new Map();
+  for (const a of state.accounts.filter((a) => a.uid !== "demo-konto")) {
+    const k = a.account_key ?? a.uid, cur = byKey.get(k);
+    if (!cur || (!cur.session_id && a.session_id)) byKey.set(k, a);
+  }
+  const accs = [...byKey.values()];
+  const keyOfUid = new Map(state.accounts.map((a) => [a.uid, a.account_key ?? a.uid]));
+  const count = new Map(); for (const t of state.txs) { const k = keyOfUid.get(t.account_uid); count.set(k, (count.get(k) ?? 0) + 1); }
   $("bkAccounts").innerHTML = accs.length ? accs.map((a) => {
     const sess = state.sessions.find((s) => s.id === a.session_id);
     return `<div class="acc-row ${a.hidden ? "is-hidden" : ""}" data-uid="${esc(a.uid)}">
       <div class="acc-main">
         <input class="acc-name" value="${esc(accName(a))}" aria-label="Navn på kontoen" ${"hidden" in a ? "" : "disabled"}>
-        <div class="sub">${a.iban_last4 ? `•••• ${esc(a.iban_last4)} · ` : ""}${esc(a.currency ?? "")} · ${a.hidden ? "skjult" : `${count.get(a.uid) ?? 0} posteringer`} · ${sess ? `hentet ${fmtDT(a.last_synced_at)}` : "ingen aktiv forbindelse"}</div>
+        <div class="sub">${a.iban_last4 ? `•••• ${esc(a.iban_last4)} · ` : ""}${esc(a.currency ?? "")} · ${a.hidden ? "skjult" : `${count.get(a.account_key ?? a.uid) ?? 0} posteringer`} · ${sess ? `hentet ${fmtDT(a.last_synced_at)}` : "ingen aktiv forbindelse"}</div>
       </div>
       <label class="switch" title="Vis i overblikket"><input type="checkbox" class="acc-vis" ${a.hidden ? "" : "checked"} ${"hidden" in a ? "" : "disabled"}><span></span></label>
     </div>`;
@@ -2146,12 +2152,14 @@ async function renderBank() {
     const uid = row.dataset.uid;
     row.querySelector(".acc-name").onchange = async (e) => {
       const v = e.target.value.trim();
-      const { error } = await sb.from("accounts").update({ display_name: v || null }).eq("uid", uid);
+      const key = state.accounts.find((a) => a.uid === uid)?.account_key;
+      const { error } = await (key ? sb.from("accounts").update({ display_name: v || null }).eq("account_key", key) : sb.from("accounts").update({ display_name: v || null }).eq("uid", uid));
       if (error) return toast("Fejl: " + error.message);
-      state.accounts.find((a) => a.uid === uid).display_name = v || null; toast("Gemt.", 1500);
+      state.accounts.filter((a) => a.uid === uid || (key && a.account_key === key)).forEach((a) => a.display_name = v || null); toast("Gemt.", 1500);
     };
     row.querySelector(".acc-vis").onchange = async (e) => {
-      const { error } = await sb.from("accounts").update({ hidden: !e.target.checked }).eq("uid", uid);
+      const key = state.accounts.find((a) => a.uid === uid)?.account_key;
+      const { error } = await (key ? sb.from("accounts").update({ hidden: !e.target.checked }).eq("account_key", key) : sb.from("accounts").update({ hidden: !e.target.checked }).eq("uid", uid));
       if (error) { toast("Fejl: " + error.message); e.target.checked = !e.target.checked; return; }
       toast(e.target.checked ? "Kontoen vises igen." : "Kontoen er skjult.", 2000);
       await load(); showTab("settings"); setPage("bank");
@@ -2197,6 +2205,7 @@ async function renderOwnApp() {
     $("ownAppState").textContent = ""; box.innerHTML = `<p class="small warn-t">Kræver databaseopdateringen (Data og om appen → Database).</p>`; return;
   }
   fillCopyFields();
+  $("ownAppCard").classList.toggle("hidden", !!st.owner && !st.own);   // ejeren bruger appen fra Supabase-hemmelighederne
   $("ownAppGuide").open = !st.own && st.owner === false;
   $("ownAppState").textContent = st.own ? "I brug" : st.owner ? "Bruger fælles app" : "Ikke sat op";
   $("ownAppState").className = "pill-s " + (st.own ? "good-t" : "");
@@ -2213,9 +2222,11 @@ async function renderOwnApp() {
   }
   box.innerHTML = `<form id="ownAppForm" style="display:grid;gap:8px">
       <input id="ownAppId" placeholder="Application ID (fx 1a2b3c4d-…)" autocomplete="off" required>
-      <label class="small muted">Din .pem-fil<input id="ownAppKey" type="file" accept=".pem,application/x-pem-file,text/plain" required style="margin-top:4px"></label>
+      <label class="file-pick"><input id="ownAppKey" type="file" accept=".pem,application/x-pem-file,text/plain" required>
+        <span class="fp-btn">Vælg .pem-fil</span><span class="fp-name" id="ownAppKeyName">Ingen fil valgt</span></label>
       <button class="primary">Gem</button>
     </form>`;
+  $("ownAppKey").onchange = (e) => { $("ownAppKeyName").textContent = e.target.files[0]?.name ?? "Ingen fil valgt"; };
   $("ownAppForm").onsubmit = async (e) => {
     e.preventDefault();
     const file = $("ownAppKey").files[0];

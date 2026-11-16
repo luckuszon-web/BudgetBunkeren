@@ -1,114 +1,99 @@
-# Forbrugsoverblik
+# BudgetBunkeren
 
-Dit eget overblik over forbruget. Posteringerne hentes automatisk fra Nordea hver nat og kategoriseres efter dine egne regler, og AI tager resten. Når du retter en kategori, kan du gemme det som en regel, så samme fejl ikke sker igen.
+Dit eget overblik over økonomien. Posteringerne hentes automatisk fra banken hver nat (læseadgang via Enable Banking), sorteres i kategorier efter dine regler – og AI tager resten. Appen viser, hvad du har tilbage, hvor pengene går hen, og hvordan næste måned ser ud.
+
+Side: **https://luckuszon-web.github.io/BudgetBunkeren/** – kan lægges på telefonens hjemmeskærm (Del → *Føj til hjemmeskærm*).
 
 ## Hvad ligger hvor
 
 | Del | Hvor | Hvad |
 |---|---|---|
-| Siden du kigger på | GitHub Pages (`docs/`) | Login-skærm + overblik. Indeholder ingen data eller hemmeligheder. |
-| Database + login | Supabase (EU) | Dine posteringer, kategorier og regler. Beskyttet af sikkerhedsregler, så kun du har adgang. |
-| Bankforbindelse og natlig hentning | Supabase Edge Functions | Taler med Enable Banking. Nøglerne ligger kun her, som hemmeligheder. |
-| Bankadgang | Enable Banking | Reguleret PSD2-udbyder med adgang, der kun kan læse. Ingen adgang til at flytte penge. |
+| Appen | GitHub Pages (`docs/`) | Det, du ser. Indeholder ingen data eller hemmeligheder. |
+| Database + login | Supabase (EU) | Posteringer, kategorier, regler, mål, formue. Hver bruger kan kun se sine egne data. |
+| Serverfunktioner | Supabase Edge Functions | Bankforbindelse, natlig hentning, kategorisering, AI-rådgiver. Nøgler ligger kun her. |
+| Bankadgang | Enable Banking | Reguleret PSD2-udbyder. Kun læseadgang – kan ikke flytte penge. |
 
 ---
 
-## Opsætning (ca. 30–45 min.)
+## Opsætning (ca. 45 min. – computer anbefales)
 
-### 1. Supabase: database og login
-1. Opret en gratis konto på **supabase.com** og opret et nyt projekt. Vælg region **Frankfurt** eller **Stockholm**, og gem database-adgangskoden et sikkert sted.
-2. Gå til **SQL Editor → New query**, indsæt hele indholdet af `supabase/migrations/001_init.sql`, og tryk **Run**. Kør derefter `supabase/opdater-database.sql` på samme måde. Den indeholder alle senere opdateringer (budget, ikoner, mål, formue, gæld og udfordringer) og kan køres flere gange. Mangler en opdatering, viser siden en gul boks med en vejledning.
-3. Gå til **Authentication → Sign In / Providers**, og **slå "Allow new users to sign up" fra**. Så kan ingen andre oprette sig.
-4. Gå til **Authentication → Users → Add user → Create new user**. Indtast din e-mail og en stærk adgangskode, og sæt flueben i *Auto Confirm User*.
-5. Gå til **Project Settings → API**, og notér **Project URL** og **anon/publishable key**. De skal bruges i trin 2.
+### 1. Supabase
+1. Opret et gratis projekt på **supabase.com** (region **Frankfurt**, **Stockholm** eller **Irland**).
+2. **SQL Editor → New query**: kør `supabase/migrations/001_init.sql`, og derefter `supabase/opdater-database.sql` (alle senere opdateringer – kan køres flere gange). Fra telefonen: brug **[opdater.html](https://luckuszon-web.github.io/BudgetBunkeren/opdater.html)** med *Kopiér SQL*-knap.
+3. **Authentication → Sign In / Providers**: slå *Allow new users to sign up* **fra**.
+4. **Authentication → URL Configuration**: sæt **Site URL** og **Redirect URL** til `https://luckuszon-web.github.io/BudgetBunkeren/` (ellers virker links i mails ikke).
+5. **Authentication → Users → Add user**: opret dig selv med *Auto Confirm User*. Du er nu **ejeren**.
+6. **Project Settings → API**: Project URL og publishable key står i `docs/config.js` (de er offentlige).
 
-### 2. GitHub: kode og side
-1. Koden ligger allerede i repoet **luckuszon-web/BudgetBunkeren**.
-   - **Bemærk:** GitHub Pages er kun gratis for *offentlige* repositories. Det er sikkert her, fordi koden ikke indeholder nogen hemmeligheder. Vil du have repoet privat, kræver Pages GitHub Pro, eller også kan siden hostes gratis på Vercel/Netlify i stedet.
-2. Ret `docs/config.js`, og indsæt din Project URL og anon key fra trin 1.5.
-3. Gå til **Settings → Pages**, vælg *Deploy from a branch*, vælg repoets hovedbranch og mappen `/docs`, og gem.
-4. Efter et minut er siden live på `https://luckuszon-web.github.io/BudgetBunkeren/`. Det er din **side-URL**.
+### 2. GitHub Pages
+**Settings → Pages** → *Deploy from a branch* → `main` / `/docs`. Repoet skal være offentligt (det er sikkert – koden indeholder ingen hemmeligheder).
 
-### 3. Enable Banking: bankadgang (computer anbefales)
-1. Gå til **enablebanking.com/sign-in/**, skriv din e-mail, og klik på linket i den mail, du får. Kontoen oprettes automatisk.
-2. Vælg **API applications** i topmenuen, og opret en ny app:
-   - Environment: **Production**
-   - Lad browseren **generere nøglen** (standard). Der downloades en `.pem`-fil, der hedder det samme som dit Application ID. **Den må aldrig lægges på GitHub eller sendes i en chat.**
-   - Application name: `BudgetBunkeren`
-   - Redirect URL: `https://luckuszon-web.github.io/BudgetBunkeren/` (præcis sådan, med `/` til sidst)
-   - Hvis den spørger: Description `Privat overblik over egen økonomi`, e-mail til databeskyttelse: din egen e-mail,
-     Privacy policy: `https://luckuszon-web.github.io/BudgetBunkeren/privatliv.html`,
-     Terms of service: `https://luckuszon-web.github.io/BudgetBunkeren/vilkaar.html`
-   - Tryk **Register**.
-3. Notér **Application ID** (en lang kode som `aaaaaaaa-bbbb-…`, samme navn som `.pem`-filen).
-4. Appen står som *Inactive*. Tryk **Activate by linking accounts**, vælg Nordea, log ind med MitID, og godkend. Så er appen *Active* (begrænset til dine egne konti – det er den gratis model til personligt brug).
+### 3. Enable Banking (gratis til personligt brug)
+1. **enablebanking.com/sign-in/** → log ind via mail-link.
+2. **API applications** → ny app: **Production**, lad browseren lave nøglen (`.pem`-fil downloades – del den **aldrig**), og udfyld:
+   - Application name: `BudgetBunkeren` · Redirect URL: `https://luckuszon-web.github.io/BudgetBunkeren/`
+   - Description: `Privat overblik over egen økonomi` · e-mail: din egen
+   - Privacy policy: `…/BudgetBunkeren/privatliv.html` · Terms: `…/BudgetBunkeren/vilkaar.html`
+3. **Register** → **Activate by linking accounts** → log ind med MitID.
 
-### 4. Supabase: hemmeligheder
-Gå til **Edge Functions → Secrets**, og tilføj:
+### 4. Supabase-hemmeligheder (Edge Functions → Secrets)
 
 | Navn | Værdi |
 |---|---|
-| `EB_APP_ID` | Application ID fra trin 3.3 |
-| `EB_PRIVATE_KEY` | Hele indholdet af `.pem`-filen, inklusive `-----BEGIN PRIVATE KEY-----`-linjerne |
-| `EB_REDIRECT_URL` | Din side-URL (samme som i Enable Banking) |
-| `SITE_ORIGIN` | `https://luckuszon-web.github.io` (uden `/BudgetBunkeren`) |
-| `SYNC_SECRET` | En lang, tilfældig tekst, f.eks. fra en password-generator |
-| `ANTHROPIC_API_KEY` | *Valgfri.* Slår AI-kategorisering af ukendte posteringer og **AI-rådgiveren** til (få kroner om måneden) |
+| `EB_APP_ID` | Application ID fra Enable Banking |
+| `EB_PRIVATE_KEY` | Hele indholdet af `.pem`-filen (begge formater virker) |
+| `EB_REDIRECT_URL` | `https://luckuszon-web.github.io/BudgetBunkeren/` |
+| `SITE_ORIGIN` | `https://luckuszon-web.github.io` |
+| `SYNC_SECRET` | Lang tilfældig tekst – lav den på **[hemmelighed.html](https://luckuszon-web.github.io/BudgetBunkeren/hemmelighed.html)** og gem den |
+| `ANTHROPIC_API_KEY` | *Valgfri.* Slår AI-kategorisering og AI-rådgiveren til (få kroner om måneden) |
 
-Begge nøgleformater virker (`BEGIN PRIVATE KEY` og `BEGIN RSA PRIVATE KEY`) – du skal ikke konvertere noget.
+### 5. Serverfunktioner
+1. Lav en adgangsnøgle på **supabase.com/dashboard/account/tokens** (fx 1 års udløb).
+2. GitHub → **Settings → Secrets and variables → Actions**: tilføj `SUPABASE_ACCESS_TOKEN` (nøglen) og `SUPABASE_PROJECT_REF` (projekt-id'et).
+3. **Actions → Deploy Supabase functions → Run workflow**. Derefter lægges funktionerne automatisk op, når de ændres.
 
-### 5. Læg serverfunktionerne op
-1. Opret en adgangsnøgle på **supabase.com/dashboard/account/tokens**.
-2. Gå til GitHub-repoet → **Settings → Secrets and variables → Actions**, og tilføj:
-   - `SUPABASE_ACCESS_TOKEN`: nøglen fra trin 5.1
-   - `SUPABASE_PROJECT_REF`: projekt-id'et (delen før `.supabase.co` i din Project URL)
-3. Gå til fanen **Actions → Deploy Supabase functions → Run workflow**. Når den er grøn, er funktionerne oppe.
+### 6. Natlig hentning
+Kør i **SQL Editor** (erstat kun `DIN-SYNC-SECRET`):
+```sql
+select cron.schedule('nightly-bank-sync', '0 3 * * *', $$
+  select net.http_post(
+    url := 'https://xqxgnfwwkdlgcatyajhx.supabase.co/functions/v1/sync',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-sync-secret', 'DIN-SYNC-SECRET'),
+    body := '{}'::jsonb, timeout_milliseconds := 120000);
+$$);
+```
 
-### 6. Slå den natlige hentning til
-Åbn `supabase/nightly-sync.sql`, erstat `<DIT-PROJEKT-REF>` og `<DIN-SYNC-SECRET>`, og kør filen i **SQL Editor**.
-
-### 7. Forbind Nordea
-1. Åbn din side-URL på mobilen, og log ind.
-2. Tryk **Forbind Nordea**, og log ind med MitID hos Nordea.
-3. Du sendes tilbage til siden, og dine posteringer hentes (op til 2 år tilbage, afhængigt af banken).
-4. Tip: Læg siden på hjemmeskærmen via Del → *Føj til hjemmeskærm*.
+### 7. Forbind banken
+Åbn appen på telefonen → **Forbind Nordea** → MitID. Posteringerne hentes (op til 2 år tilbage).
 
 ---
 
-## Prøv siden med demodata (valgfrit)
-Vil du se siden i brug, før banken er forbundet? Kør `supabase/demo-data.sql` i **SQL Editor**. Så får du ca. et halvt års opdigtede posteringer på en "Demokonto".
-Har du kørt `004_plan.sql`, får du også demo-mål, -formue, -gæld og en udfordring.
-Fjern det hele igen med:
-```sql
-delete from public.accounts where uid = 'demo-konto';
-delete from public.goals where demo; delete from public.assets where demo; delete from public.challenges where demo;
-```
+## Appen
 
-## Siden består af fire faner
-- **Overblik:** Dit disponible beløb, nøgletal, økonomisk score, ugens status, **prognose for næste måned** (med interval for svingende løn og dit eget skøn), indsigter, grafer, kategorier og posteringer.
-- **Planlæg:** Nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer. Værdierne indtaster du selv – opdatér dem fx en gang om måneden.
-- **Værktøjer:** Økonomisk kalender med forventede regninger og indtægter og en prognose for saldoen, hvad-nu-hvis-beregner (bil, bolig, lønforhøjelse, rejse), årsprognose, kvartalsrapport og en beregner for løn efter skat (et skøn – tjek skat.dk).
-- **Rådgiver:** Stil spørgsmål som "Hvor kan jeg spare 1.000 kr. om måneden?". Kræver `ANTHROPIC_API_KEY` og at serverfunktionerne er lagt op (trin 4–5). Rådgiveren får et sammendrag af dine tal, ikke de enkelte posteringer.
+**Overblik** – dit disponible beløb resten af måneden, nøgletal (indtægter, faste/variable udgifter, opsparing), økonomisk score, ugens status, prognose for næste måned (med interval for svingende/provisionsløn og eget skøn), indsigter og budgetadvarsler, forbrugskurve, 12-måneders graf, cirkeldiagram pr. kategori og posteringer. Vælg **År / Måned / Uge / Dag**.
 
-## Daglig brug
-- **Indstillinger** (fanen nederst til højre): bank og konti (se adgang og udløb, forny, fjern, omdøb eller skjul konti, forbind flere banker), kategorier, regler, login og totrinsbekræftelse, download af posteringer (CSV).
-- **Hurtig sortering:** Under ⚙ Indstillinger ser du de posteringer uden kategori, der går igen. Vælg en kategori, så får alle lignende posteringer den – også fremover. **Kategorisér igen** kører alle regler (og AI) forfra.
-- **Overfør ubrugt budget:** Sæt flueben i *Overfør* ud for en kategori under Indstillinger. Ubrugt budget lægges til næste måned (og overforbrug trækkes fra).
-- **Dit disponible beløb** øverst viser, hvad der er tilbage resten af måneden: forventet indkomst (snit af de 3 forrige måneder, hvis lønnen ikke er kommet endnu) minus det brugte, de faste regninger der mangler, og det du har sat til side. For afsluttede perioder vises periodens resultat.
-- **Økonomisk score (0–100)** bygger på opsparingsrate (mål 20 %), overholdte budgetter og forbrug mod dit snit.
-- **Indsigter** advarer om budgetter, viser store ændringer pr. kategori, opsparingsmilepæle og hvad abonnementer koster om året.
-- **Vælg periode:** Skift mellem **År, Måned, Uge og Dag** øverst. Skift periode ved at trykke på en søjle i grafen, vælge i menuen, bruge pilene eller swipe til siden på overblikket.
-- **Forbrug gennem perioden:** Kurven viser, om du bruger mere eller mindre end normalt på samme tidspunkt (snittet af de 3 forrige perioder).
-- **Ikoner:** Hver kategori får automatisk et ikon. Du kan vælge en anden emoji under **⚙ Indstillinger**.
-- **Budget:** Sæt et månedligt budget pr. kategori under **⚙ Indstillinger**. Kategorien bliver rød, når budgettet er overskredet.
-- **Faste udgifter og abonnementer** findes automatisk og vises med en samlet månedlig sum.
-- **Indstillinger:** Omdøb og slet kategorier, skift type (udgift/indtægt/overførsel), og se eller slet dine regler.
-- **Ret en kategori:** Vælg den rigtige i menuen under posteringen. Du bliver spurgt, om fremtidige posteringer med samme tekst også skal have den kategori. Det er sådan, systemet lærer.
-- **Tjek AI'ens forslag:** Vælg filteret *Sat af AI* og ret de forkerte.
-- **Store engangskøb** (fx bilkøb, større investeringer): Giv dem kategorien *Store køb & investeringer* (eller en kategori af typen *Engangskøb*). De vises, men holdes uden for overskud, snit, prognoser og score.
-- **Modregning:** Giv en indbetaling en udgiftskategori, så trækkes den fra udgiften i stedet for at tælle som indtægt – fx fremleje under *Bolig* eller en returvare under *Shopping*.
-- **Overførsler mellem egne konti** og **opsparing** tælles ikke som forbrug. Giv dem kategorien *Overførsel mellem egne konti*.
-- **Fornyelse:** Cirka hvert halve år udløber bankadgangen. Fra 14 dage før vises en gul boks med knappen *Forny adgang*.
+**Planlæg** – nettoformue (konti, investeringer, pension, bolig, bil minus gæld) med udvikling, gæld med afbetalingstid og renter, opsparingsmål og spareudfordringer.
+
+**Værktøjer** – kalender med kommende regninger/indtægter og saldoprognose, hvad-nu-hvis-beregner (bil, bolig, løn, rejse), årsprognose, kvartalsrapport og løn efter skat (et skøn – tjek skat.dk).
+
+**Rådgiver** – stil spørgsmål om din økonomi (kræver `ANTHROPIC_API_KEY`). Den får et sammendrag af dine tal, ikke de enkelte posteringer.
+
+**Indstillinger** – bank og konti (adgang og udløb, forny/fjern, omdøb/skjul konti), hurtig sortering, kategorier og budget, regler, login og sikkerhed (adgangskode, totrinsbekræftelse, invitationer), data (CSV-download, kategorisér igen, databasestatus).
+
+### Gode at vide
+- **Ret en kategori** → vælg *Gem som regel*, så lærer appen. ✕ eller *Fortryd valget* lukker/fortryder.
+- **Hurtig sortering** (Indstillinger) sorterer alle lignende posteringer med ét valg.
+- **Kategorityper:** *Udgift*, *Indtægt*, *Overførsel* (opsparing/egne konti – tæller ikke som forbrug) og *Engangskøb* (fx bilkøb – vises, men holdes uden for overskud, snit og prognoser).
+- **Modregning:** en indbetaling med en udgiftskategori trækkes fra udgiften – fx fremleje under *Husleje* eller en returvare under *Shopping*. Automatiske regler/AI giver aldrig løn en udgiftskategori.
+- **Løn** skal have kategorien *Løn*, så prognosen kan se den.
+- **Budget** pr. kategori, evt. med overførsel af ubrugt budget til næste måned.
+- **Opdateringer:** når der er en ny version, kommer en bjælke frem – tryk *Opdater*.
+- **Fornyelse:** bankadgangen udløber ca. hvert halve år. Fra 14 dage før vises en gul boks med *Forny adgang*.
+
+## Flere brugere
+- Ejeren laver en **invitationskode** (Indstillinger → Login og sikkerhed). Den nye bruger vælger *Opret bruger* på login-siden, får en mail og vælger adgangskode.
+- Hver bruger ser **kun sine egne data**.
+- Enable Bankings gratis vilkår kræver, at hver person bruger **sin egen** gratis Enable Banking-app til sine egne konti. Den nye bruger lægger App ID og `.pem` ind under *Bank og konti* (vejledning med *Kopiér*-knapper står dér).
 
 ## Luk det hele ned
-Træk adgangen tilbage i Enable Bankings kontrolpanel (eller hos Nordea), og slet Supabase-projektet. Så er alle data væk.
+Træk adgangen tilbage (Indstillinger → Bank og konti → *Fjern*, eller i Enable Banking/banken), og slet Supabase-projektet. Så er alle data væk.

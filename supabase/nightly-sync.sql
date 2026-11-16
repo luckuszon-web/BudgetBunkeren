@@ -5,7 +5,7 @@ select cron.schedule(
   '0 3 * * *',
   $$
   select net.http_post(
-    url := 'https://<DIT-PROJEKT-REF>.supabase.co/functions/v1/sync',
+    url := 'https://xqxgnfwwkdlgcatyajhx.supabase.co/functions/v1/sync',
     headers := jsonb_build_object('Content-Type', 'application/json', 'x-sync-secret', '<DIN-SYNC-SECRET>'),
     body := '{}'::jsonb,
     timeout_milliseconds := 120000

@@ -151,6 +151,12 @@ Deno.serve(async (req) => {
         };
       }));
       if (accounts.length) {
+        // Ved fornyelse får kontoen et nyt uid: behold navn og "skjult" fra den tidligere udgave af samme konto
+        const { data: prev } = await db.from("accounts").select("*").eq("user_id", user.id).in("account_key", accounts.map((a) => a.account_key));
+        for (const acc of accounts as Record<string, unknown>[]) {
+          const old = (prev ?? []).find((p) => p.account_key === acc.account_key && p.uid !== acc.uid);
+          if (old && "hidden" in old) { acc.display_name = old.display_name ?? null; acc.hidden = old.hidden ?? false; }
+        }
         const { error: aErr } = await db.from("accounts").upsert(accounts);
         if (aErr) throw aErr;
         // Gamle forbindelser til de samme konti hentes ikke længere (posteringerne bevares)
