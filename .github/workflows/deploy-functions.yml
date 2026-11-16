@@ -28,6 +28,6 @@ jobs:
             echo "Mangler SUPABASE_ACCESS_TOKEN eller SUPABASE_PROJECT_REF under Settings → Secrets and variables → Actions (README trin 5)."
             exit 1
           fi
-          supabase functions deploy bank-connect --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
-          supabase functions deploy sync --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
-          supabase functions deploy advisor --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
+          supabase functions deploy bank-connect --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --yes
+          supabase functions deploy sync --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --yes
+          supabase functions deploy advisor --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --yes
