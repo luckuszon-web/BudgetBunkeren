@@ -157,13 +157,23 @@ Deno.serve(async (req) => {
       if (sErr) throw sErr;
 
       // deno-lint-ignore no-explicit-any
+      const ibanOf = (a: any): string | undefined => a.account_id?.iban?.replace(/\s/g, "") || undefined;
+      const ibanCount = new Map<string, number>();
+      for (const a of session.accounts ?? []) { const i = ibanOf(a); if (i) ibanCount.set(i, (ibanCount.get(i) ?? 0) + 1); }
+      // deno-lint-ignore no-explicit-any
       const accounts = await Promise.all((session.accounts ?? []).map(async (a: any) => {
-        const iban: string | undefined = a.account_id?.iban?.replace(/\s/g, "");
+        const iban = ibanOf(a);
+        // Fast nøgle (gemmes ikke i klartekst) – konto-uid'en skifter ved hver fornyelse.
+        // Normalt hash af IBAN. Deler flere konti samme IBAN (fx et kort på en konto), skelnes de med
+        // Enable Bankings faste identification_hash, så de ikke smelter sammen til én konto.
+        const ident = a.identification_hash ?? a.product ?? a.name ?? a.uid;
+        const account_key = iban
+          ? await sha((ibanCount.get(iban) ?? 0) > 1 ? `iban|${iban}|${ident}` : `iban|${iban}`)
+          : a.identification_hash ? await sha(`eb|${a.identification_hash}`) : a.uid;
         return {
           uid: a.uid,
           user_id: user.id,
-          // Fast nøgle: hash af IBAN (gemmes ikke i klartekst). Konto-uid'en skifter ved hver fornyelse.
-          account_key: iban ? await sha(`iban|${iban}`) : a.uid,
+          account_key,
           session_id: session.session_id,
           name: a.name ?? a.product ?? "Konto",
           iban_last4: iban ? iban.slice(-4) : null,
