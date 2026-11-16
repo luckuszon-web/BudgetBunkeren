@@ -263,6 +263,12 @@
   .sug-row .sug-s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
   .sug-row .sug-v { padding: 6px 8px; text-align: right; }
 
+  /* Månedsrapport */
+  .report { border-color: var(--accent-line); background: linear-gradient(160deg, var(--accent-soft), var(--card) 70%); }
+  .rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px 14px; }
+  .rep-grid .bs-v { font-size: 19px; overflow: hidden; text-overflow: ellipsis; }
+  .rep-list { margin: 12px 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+
   /* Planlæg */
   .bbar .b-done { background: var(--green); }
   .nw-list { margin-top: 14px; }
@@ -589,6 +595,9 @@
         <button id="nextPeriod" aria-label="Næste">›</button>
       </div>
     </div>
+
+    <!-- Månedsrapport (i starten af måneden for forrige måned, og når du ser en afsluttet måned) -->
+    <div class="card report hidden" id="reportCard"></div>
 
     <!-- Hovedtal + score -->
     <div class="ov-top">
@@ -1067,7 +1076,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116205242";</script>
+<script>window.APP_VERSION = "20261116205602";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1665,6 +1674,7 @@ function renderDashboard() {
   });
 
   renderScore();
+  renderReport();
   renderInsights(fixedItems, isFixed);
   renderNextMonth();
 }
@@ -1807,6 +1817,78 @@ function renderNextMonth() {
 // Økonomisk score 0-100: opsparing (40), budget (30), forbrugsudvikling (30)
 function renderScore() {
   const m = gran() === "month" ? state.period : todayIso().slice(0, 7);
+  const { sc, budgeted } = scoreFor(m);
+  const col = { good: "var(--green)", warn: "var(--warn)", bad: "var(--red)" }[sc.tone];
+  const C = 2 * Math.PI * 50;
+  $("scoreRing").innerHTML = `<circle cx="60" cy="60" r="50" fill="none" style="stroke:var(--track)" stroke-width="11"/>
+    <circle cx="60" cy="60" r="50" fill="none" style="stroke:${col}" stroke-width="11" stroke-linecap="round"
+      stroke-dasharray="${C * sc.score / 100} ${C}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="64" text-anchor="middle" font-size="34" font-weight="750" style="fill:var(--text)">${sc.score}</text>
+    <text x="60" y="84" text-anchor="middle" font-size="11" style="fill:${col}">${sc.word}</text>`;
+  $("scoreMonth").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
+  const tone = (x) => x.pts / x.max >= .7 ? "var(--green)" : x.pts / x.max >= .4 ? "var(--warn)" : "var(--red)";
+  $("scoreParts").innerHTML = sc.parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
+    <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${tone(x)}"></div></div></div>`).join("");
+  const nw = state.assets.reduce((s, a) => s + (["loan", "mortgage", "credit"].includes(a.kind) ? -a.value : a.value), 0);
+  const weakest = [...sc.parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
+  $("scoreTip").innerHTML = (state.assets.length ? `Nettoformue <b class="num">${kr(nw)}</b> · ` : "") +
+    (!budgeted.length ? "Tip: Sæt budgetter under Budget, så tæller de med." : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!");
+}
+
+// ---------- Månedsrapport ----------
+// "Sådan gik oktober": vises de første 10 dage af en måned (kan lukkes) og når du kigger på en afsluttet måned.
+function renderReport() {
+  const card = $("reportCard");
+  const now = todayIso().slice(0, 7), prev = addMonths(now, -1);
+  let m = null, closable = false;
+  if (gran() === "month" && state.period < now && monthTx(state.period).length) m = state.period;
+  else if (gran() === "month" && state.period === now && +todayIso().slice(8) <= 10 && monthTx(prev).length) {
+    let seen = false; try { seen = localStorage.getItem("report-" + prev) === "closed"; } catch {}
+    if (!seen) { m = prev; closable = true; }
+  }
+  card.classList.toggle("hidden", !m);
+  if (!m) return;
+  const name = fmt(m + "-01", { month: "long" });
+  const t = totals(monthTx(m)), res = t.inc - t.out;
+  const before = prevMonthsWithData(m, 3), avg = (f) => avgOf(before.map((q) => f(totals(monthTx(q)))));
+  const avgOut = avg((x) => x.out), avgRes = avg((x) => x.inc - x.out);
+  // Største ændringer pr. kategori mod snittet
+  const byCat = (mm) => { const r = new Map(); for (const x of monthTx(mm)) if (isExp(x)) { const k = String(effCat(x) ?? "none"); r.set(k, (r.get(k) ?? 0) - x.amount); } return r; };
+  const cur = byCat(m), prevMaps = before.map(byCat);
+  const changes = [...new Set([...cur.keys(), ...prevMaps.flatMap((x) => [...x.keys()])])].map((k) => {
+    const a = before.length ? prevMaps.reduce((s2, x) => s2 + (x.get(k) ?? 0), 0) / before.length : 0;
+    return { k, v: cur.get(k) ?? 0, d: (cur.get(k) ?? 0) - a };
+  }).filter((x) => Math.abs(x.d) >= 200 && x.k !== "none").sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
+  const { sc, budgeted } = scoreFor(m);
+  const realBudgetsOk = budgeted.filter((c) => sumOut(monthTx(m).filter((x) => String(effCat(x)) === String(c.id))) <= monthBudget(c, m)).length;
+  const pctOut = avgOut ? Math.round((t.out - avgOut) / avgOut * 100) : null;
+  card.innerHTML = `<div class="head"><h2>Sådan gik ${name}</h2>${closable ? `<button class="ghost small" id="repClose" aria-label="Luk rapporten">✕</button>` : `<span class="pill-s">Månedsrapport</span>`}</div>
+    <div class="rep-grid">
+      <div><div class="bs-l">Resultat</div><div class="bs-v num ${res < 0 ? "neg" : "pos"}">${res > 0 ? "+" : ""}${kr(res)}</div>
+        ${before.length ? `<div class="small muted">${res >= avgRes ? "bedre" : "dårligere"} end snittet (${kr(avgRes)})</div>` : ""}</div>
+      <div><div class="bs-l">Udgifter</div><div class="bs-v num">${kr(t.out)}</div>
+        ${pctOut != null ? `<div class="small ${pctOut > 0 ? "up" : "down"}">${pctOut > 0 ? "▲" : "▼"} ${Math.abs(pctOut)}% mod snit</div>` : ""}</div>
+      <div><div class="bs-l">Score</div><div class="bs-v num">${sc.score}</div><div class="small muted">${sc.word}</div></div>
+    </div>
+    <ul class="rep-list">
+      <li>Indtægter ${kr(t.inc)}${t.saved > 0 ? ` · sat til side ${kr(t.saved)} (${t.inc ? Math.round(t.saved / t.inc * 100) : 0}%)` : ""}</li>
+      ${budgeted.length ? `<li>${realBudgetsOk} af ${budgeted.length} budgetter overholdt</li>` : ""}
+      ${changes.map((x) => `<li>${esc(catById(x.k)?.name ?? "?")}: ${kr(x.v)} – <span class="${x.d > 0 ? "up" : "down"}">${x.d > 0 ? "+" : "−"}${kr(Math.abs(x.d))}</span> mod snittet</li>`).join("")}
+      ${t.oneoff > 0 ? `<li>${kr(t.oneoff)} i engangskøb holdt udenfor</li>` : ""}
+    </ul>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" id="repAsk">Spørg rådgiveren om ${name}</button>
+      ${closable ? `<button class="small ghost" id="repOpen">Se hele ${name}</button>` : ""}</div>`;
+  if ($("repClose")) $("repClose").onclick = () => { try { localStorage.setItem("report-" + m, "closed"); } catch {} card.classList.add("hidden"); };
+  if ($("repOpen")) $("repOpen").onclick = () => setPeriod(m);
+  $("repAsk").onclick = () => {
+    showTab("advisor");
+    const i = document.querySelector("#advInput");
+    if (i) { i.value = `Hvordan gik ${name}? Hvad skal jeg holde øje med i ${fmt(addMonths(m, 1) + "-01", { month: "long" })}?`; i.focus(); }
+  };
+}
+
+// Økonomisk score for en måned (bruges af score-kortet og månedsrapporten)
+function scoreFor(m) {
   const tx = monthTx(m);
   const { inc } = totals(tx);
   const prevM = prevMonthsWithData(m);
@@ -1833,21 +1915,7 @@ function renderScore() {
     spendRatio: avgOut ? outProj / avgOut : null,
     bufferMonths: cash > 0 && avgOut > 0 ? cash / avgOut : null,
   });
-  const col = { good: "var(--green)", warn: "var(--warn)", bad: "var(--red)" }[sc.tone];
-  const C = 2 * Math.PI * 50;
-  $("scoreRing").innerHTML = `<circle cx="60" cy="60" r="50" fill="none" style="stroke:var(--track)" stroke-width="11"/>
-    <circle cx="60" cy="60" r="50" fill="none" style="stroke:${col}" stroke-width="11" stroke-linecap="round"
-      stroke-dasharray="${C * sc.score / 100} ${C}" transform="rotate(-90 60 60)"/>
-    <text x="60" y="64" text-anchor="middle" font-size="34" font-weight="750" style="fill:var(--text)">${sc.score}</text>
-    <text x="60" y="84" text-anchor="middle" font-size="11" style="fill:${col}">${sc.word}</text>`;
-  $("scoreMonth").textContent = fmt(m + "-01", { month: "long", year: "numeric" });
-  const tone = (x) => x.pts / x.max >= .7 ? "var(--green)" : x.pts / x.max >= .4 ? "var(--warn)" : "var(--red)";
-  $("scoreParts").innerHTML = sc.parts.map((x) => `<div class="p"><span>${x.name}</span><span class="muted">${x.txt}</span>
-    <div class="bar2"><div style="width:${x.pts / x.max * 100}%;background:${tone(x)}"></div></div></div>`).join("");
-  const nw = state.assets.reduce((s, a) => s + (["loan", "mortgage", "credit"].includes(a.kind) ? -a.value : a.value), 0);
-  const weakest = [...sc.parts].sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
-  $("scoreTip").innerHTML = (state.assets.length ? `Nettoformue <b class="num">${kr(nw)}</b> · ` : "") +
-    (!budgeted.length ? "Tip: Sæt budgetter under Indstillinger, så tæller de med." : weakest && weakest.pts / weakest.max < 0.7 ? "Tip: " + weakest.tip : "Flot – fortsæt sådan!");
+  return { sc, budgeted, budgetsOk };
 }
 
 // Indsigter: budgetadvarsler, store ændringer pr. kategori, milepæle og abonnementer
