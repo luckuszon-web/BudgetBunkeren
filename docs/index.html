@@ -1127,8 +1127,9 @@
         <option value="ignore">Ignoreret (helt ude af tal og grafer)</option>
       </select></label>
     <div id="ceBudgetBox">
-      <label class="field"><span>Budget pr. måned (tom = intet budget)</span><input id="ceBudget" type="number" inputmode="numeric" min="0" step="100"></label>
-      <label class="small muted row" style="gap:6px;margin:-4px 0 10px"><input type="checkbox" id="ceRoll" style="width:auto"> Overfør ubrugt budget til næste måned</label>
+      <label class="field"><span id="ceBudgetLbl">Budget pr. måned (tom = intet budget)</span><input id="ceBudget" type="number" inputmode="numeric" min="0" step="50"></label>
+      <label class="small muted row" style="gap:6px;margin:-4px 0 6px"><input type="checkbox" id="ceWeek" style="width:auto"> Budget pr. uge i stedet (nulstilles hver mandag) – fx til dagligvarer</label>
+      <label class="small muted row" id="ceRollRow" style="gap:6px;margin:0 0 10px"><input type="checkbox" id="ceRoll" style="width:auto"> Overfør ubrugt budget til næste måned</label>
     </div>
     <div id="ceDelBox" class="hidden" style="border-top:1px solid var(--line);padding-top:10px;margin-bottom:10px">
       <p class="small" id="ceDelText" style="margin-top:0"></p>
@@ -1188,7 +1189,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116220250";</script>
+<script>window.APP_VERSION = "20261116220533";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1744,14 +1745,24 @@ const salaryCat = () => state.cats.find((c) => /^løn$/i.test(c.name));
 const spentIn = (cat, m) => sumOut(monthTx(m).filter((t) => String(t.category_id) === String(cat.id)));
 function carryOver(cat, m) {
   const b = Number(cat?.monthly_budget) || 0;
-  if (!b || !cat.rollover_from || m <= cat.rollover_from) return 0;
+  if (!b || cat.budget_week || !cat.rollover_from || m <= cat.rollover_from) return 0;
   let carry = 0;
   for (let q = cat.rollover_from; q < m; q = addMonths(q, 1)) carry += b - spentIn(cat, q);
   return carry;
 }
-const monthBudget = (cat, m) => { const b = Number(cat?.monthly_budget) || 0; return b ? Math.max(0, b + carryOver(cat, m)) : 0; };
+// Ugebudget: beløbet gælder pr. uge (mandag–søndag); omregnet til måned = beløb × dage / 7
+const monthBudget = (cat, m) => {
+  const b = Number(cat?.monthly_budget) || 0;
+  if (!b) return 0;
+  return cat.budget_week ? b * daysInMonth(m) / 7 : Math.max(0, b + carryOver(cat, m));
+};
 // Budget for den valgte periode (overførsel gælder kun månedsvisning)
-const periodBudget = (cat) => gran() === "month" ? monthBudget(cat, state.period) : (Number(cat?.monthly_budget) || 0) * budgetFactor();
+const periodBudget = (cat) => {
+  const b = Number(cat?.monthly_budget) || 0;
+  if (gran() === "month") return monthBudget(cat, state.period);
+  if (cat?.budget_week) return b * ({ year: 365 / 7, week: 1, day: 1 / 7 })[gran()];
+  return b * budgetFactor();
+};
 
 // Faste udgifter: samme modtager i mindst 3 af de 4 forrige måneder, højst 2 gange pr. måned, stabilt beløb
 const fixedKey = E.recurringKey;
@@ -2496,7 +2507,18 @@ function renderBudget() {
       <div class="bbar"><div class="${barCls(ts / tb, f)}" style="width:${Math.min(100, ts / tb * 100)}%"></div>${live ? `<i class="pace-mark" style="left:${f * 100}%" title="Så langt er vi i måneden"></i>` : ""}</div>`
     : `<p class="muted small" style="margin:0">Du har ingen budgetter endnu. Tryk <b>Sæt budget</b> ud for en kategori herunder.</p>`;
 
+  // Ugebudget i den igangværende måned: vis denne uge (mandag–i dag) mod ugens beløb
+  const mon = mondayOf(todayIso()), wf = ((D(todayIso()) - D(mon)) / 864e5 + 1) / 7;
+  const weekRow = (x) => {
+    const wb = Number(x.c.monthly_budget), ws = sumOut(state.txs.filter((t) => t.booking_date >= mon && t.booking_date <= todayIso() && String(effCat(t)) === String(x.c.id)));
+    const r = ws / wb, left = wb - ws, dl = 7 - Math.round(wf * 7);
+    return `<button class="bud-row" data-id="${x.c.id}">
+      <span class="br-top"><span class="br-n">${esc(iconOf(x.c))} ${esc(x.c.name)} <span class="tag">uge</span></span><span class="num muted"><span class="br-s">${kr(ws)}</span> / ${kr(wb)}</span></span>
+      <span class="bbar"><span class="${barCls(r, wf)}" style="width:${Math.min(100, r * 100)}%"></span><i class="pace-mark" style="left:${wf * 100}%"></i></span>
+      <span class="br-sub ${left < 0 ? "neg" : ""}">Denne uge: ${left < 0 ? `${kr(-left)} over` : `${kr(left)} tilbage`} · ${dl ? `nulstilles om ${dl} ${dl === 1 ? "dag" : "dage"}` : "nulstilles i morgen"} · måneden ${kr(x.spent)} / ${kr(x.budget)}</span></button>`;
+  };
   const row = (x) => {
+    if (x.c.budget_week && live) return weekRow(x);
     const r = x.spent / x.budget, left = x.budget - x.spent;
     return `<button class="bud-row" data-id="${x.c.id}">
       <span class="br-top"><span class="br-n">${esc(iconOf(x.c))} ${esc(x.c.name)}</span><span class="num muted"><span class="br-s">${kr(x.spent)}</span> / ${kr(x.budget)}</span></span>
@@ -2969,7 +2991,7 @@ function renderSettings() {
       const sub = u.n ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"} · ${kr(Math.round(avg))}/md. i snit` : "Ikke brugt det seneste år";
       return `<button class="cat-row" data-id="${c.id}"><span class="ci">${esc(iconOf(c))}</span>
         <span class="cn"><b>${esc(c.name)}</b><span class="cs">${sub}</span></span>
-        <span class="cb">${Number(c.monthly_budget) > 0 ? "Budget " + kr(Number(c.monthly_budget)) + (c.rollover_from ? " ↻" : "") : ""}</span>${chev}</button>`;
+        <span class="cb">${Number(c.monthly_budget) > 0 ? "Budget " + kr(Number(c.monthly_budget)) + (c.budget_week ? "/uge" : "") + (c.rollover_from ? " ↻" : "") : ""}</span>${chev}</button>`;
     }).join("") || `<p class="small muted" style="margin:8px 0">Ingen endnu. <a href="#" id="mkIgnore" style="color:var(--accent)">Opret kategorien "Ignoreret"</a></p>`}</div>`;
   }).join("");
   document.querySelectorAll("#catList .cat-row").forEach((r) => r.onclick = () => editCategory(catById(r.dataset.id)));
@@ -2988,7 +3010,9 @@ async function editCategory(c) {
   const r = state.rules.filter((x) => String(x.category_id) === String(c.id)).length;
   $("ceTitle").textContent = c.name;
   $("ceIcon").value = iconOf(c); $("ceName").value = c.name; $("ceKind").value = c.kind;
-  $("ceBudget").value = c.monthly_budget ?? ""; $("ceRoll").checked = !!c.rollover_from;
+  $("ceBudget").value = c.monthly_budget ?? ""; $("ceRoll").checked = !!c.rollover_from; $("ceWeek").checked = !!c.budget_week;
+  const syncWeek = () => { const w = $("ceWeek").checked; $("ceBudgetLbl").textContent = w ? "Budget pr. uge (tom = intet budget)" : "Budget pr. måned (tom = intet budget)"; $("ceRollRow").classList.toggle("hidden", w); };
+  $("ceWeek").onchange = syncWeek; syncWeek();
   const sync = () => $("ceBudgetBox").classList.toggle("hidden", $("ceKind").value !== "expense");
   $("ceKind").onchange = sync; sync();
   $("ceDelBox").classList.add("hidden"); $("ceDelBtn").classList.remove("hidden");
@@ -3006,14 +3030,16 @@ async function editCategory(c) {
     if (kind !== c.kind) patch.kind = kind;
     const budget = kind === "expense" && $("ceBudget").value !== "" ? Number($("ceBudget").value) : null;
     if (budget !== (c.monthly_budget == null ? null : Number(c.monthly_budget))) patch.monthly_budget = budget;
-    const roll = kind === "expense" && budget > 0 && $("ceRoll").checked;
+    const week = kind === "expense" && budget > 0 && $("ceWeek").checked;
+    if (week !== !!c.budget_week) patch.budget_week = week;
+    const roll = kind === "expense" && budget > 0 && !week && $("ceRoll").checked;
     if (roll !== !!c.rollover_from) patch.rollover_from = roll ? (c.rollover_from ?? todayIso().slice(0, 7)) : null;
     if (!Object.keys(patch).length) return;
     const { error } = await sb.from("categories").update(patch).eq("id", c.id);
     if (error) {
       const m = error.message;
       return toast(m.includes("kind_check") ? "Den type kræver databaseopdateringen – kør opdater.html." :
-        /monthly_budget|icon|rollover/.test(m) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + m, 6000);
+        /monthly_budget|icon|rollover|budget_week/.test(m) ? "Kræver databaseopdateringen – kør opdater.html." : "Fejl: " + m, 6000);
     }
     Object.assign(c, patch); toast("Gemt.", 1500);
   } else if (res === "del") {
