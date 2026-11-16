@@ -1,5 +1,6 @@
 // Fanen "Værktøjer": økonomisk kalender, hvad-nu-hvis-beregner (inkl. bil), årsprognose, kvartalsrapport og løn efter skat.
-import { lineChart, annuity } from "./ui.js";
+// Samme version som siden (?v=…), så telefonen ikke bruger en gammel kopi
+const { lineChart, annuity } = await import("./ui.js" + new URL(import.meta.url).search);
 
 export function init(ctx, root) {
   const { state, kr, esc, fmt, todayIso, addMonths, addDays, daysInMonth, monthTx, totals, sumOut, avgOf } = ctx;

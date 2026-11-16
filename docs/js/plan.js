@@ -1,5 +1,6 @@
 // Fanen "Planlæg": nettoformue, investeringer, gæld, opsparingsmål og spareudfordringer.
-import { formDialog, lineChart, ring, monthsToPayoff } from "./ui.js";
+// Samme version som siden (?v=…), så telefonen ikke bruger en gammel kopi
+const { formDialog, lineChart, ring, monthsToPayoff } = await import("./ui.js" + new URL(import.meta.url).search);
 
 const KINDS = {
   cash: "Konto", investment: "Investering", pension: "Pension", property: "Bolig", vehicle: "Køretøj", other: "Andet aktiv",

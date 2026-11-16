@@ -228,6 +228,12 @@
   .switch input:checked + span::before { transform: translateX(18px); }
   .switch input:disabled + span { opacity: .4; cursor: default; }
 
+  /* Opdateringsbjælke */
+  .upd { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 30;
+    display: flex; align-items: center; gap: 10px; background: #1f2a40; border: 1px solid #2c3854; border-radius: 14px;
+    padding: 8px 8px 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.45); width: max-content; max-width: calc(100vw - 24px); font-size: 14px; }
+  .upd .ghost { padding: 6px 10px; }
+
   /* Næste måned */
   .pill-s { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
   .nm-big { font-size: 30px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
@@ -632,6 +638,11 @@
 </dialog>
 
 <div id="toast" class="toast hidden"></div>
+<div id="updBar" class="upd hidden" role="status">
+  <span>Der er en ny version af BudgetBunkeren</span>
+  <button class="primary small" id="updBtn">Opdater</button>
+  <button class="ghost small" id="updLater" aria-label="Senere">✕</button>
+</div>
 <div id="tip" class="tip hidden"></div>
 
 <script>
@@ -639,6 +650,7 @@
   for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 </script>
+<script>window.APP_VERSION = "20261116161243";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -2143,6 +2155,29 @@ $("dtExport").onclick = () => {
 };
 $("dtRecat").onclick = () => $("recatBtn").click();
 
+
+// ---------- Ny version? ----------
+// Appen på hjemmeskærmen genindlæses ikke af sig selv. Vi tjekker versionsfilen ved start, når appen kommer frem igen,
+// og hvert kvarter – og viser en bjælke, hvis der er kommet en opdatering.
+let updDismissed = null;
+async function checkForUpdate() {
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return;
+    const { version } = await r.json();
+    if (version && version !== window.APP_VERSION && window.APP_VERSION !== "dev" && version !== updDismissed) {
+      $("updBar").classList.remove("hidden");
+      $("updBtn").onclick = () => location.replace(location.pathname + "?v=" + encodeURIComponent(version));
+      $("updLater").onclick = () => { updDismissed = version; $("updBar").classList.add("hidden"); };
+    }
+  } catch { /* offline – prøv igen senere */ }
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkForUpdate(); });
+setInterval(checkForUpdate, 15 * 60 * 1000);
+checkForUpdate();
+// Ryd ?v=… i adresselinjen efter en opdatering (men behold MitID-svaret ?code=…)
+if (/[?&]v=/.test(location.search) && !/[?&](code|error)=/.test(location.search)) history.replaceState(null, "", location.pathname);
+
 // ---------- Fælles værktøjskasse til modulerne i js/ ----------
 function makeCtx() {
   return {
@@ -2170,7 +2205,8 @@ async function start() {
 // Funktionsmoduler. Fejler et modul, virker resten af siden stadig.
 async function loadModules() {
   const ctx = makeCtx();
-  for (const [name, file] of [["plan", "./js/plan.js"], ["tools", "./js/tools.js"], ["advisor", "./js/advisor.js"]]) {
+  const v = "?v=" + encodeURIComponent(window.APP_VERSION);   // ny version → nye filer, ikke gamle fra telefonens hukommelse
+  for (const [name, file] of [["plan", "./js/plan.js" + v], ["tools", "./js/tools.js" + v], ["advisor", "./js/advisor.js" + v]]) {
     try { modules[name] = (await import(file)).init(ctx, $(name)); }
     catch (e) { console.error(e); $(name).innerHTML = `<div class="card">Denne del kunne ikke indlæses: ${esc(e.message)}</div>`; }
   }

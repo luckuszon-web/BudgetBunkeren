@@ -79,6 +79,10 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 ## Indstillinger (5. fane i bundmenuen)
 - Oversigt (`setHome`) med undersider via `setPage()`: Bank og konti (forbindelser med udløb, forny/fjern via `bank-connect` action `disconnect`, vælg bank via action `banks`, omdøb/skjul konti), Hurtig sortering, Kategorier og budget, Regler, Login og sikkerhed (skift adgangskode, TOTP-MFA via `sb.auth.mfa.enroll`), Data og om appen (CSV-eksport, kategorisér igen, databasestatus `state.dbMissing`).
 
+## Opdateringer når ud til telefonen (VIGTIGT ved hver ændring i docs/)
+- **Kør `sh scripts/bump-version.sh` før hver commit, der ændrer noget i `docs/`.** Den skriver nyt nummer i `docs/version.json` og `window.APP_VERSION` i index.html.
+- Appen tjekker `version.json` (no-store) ved start, når den kommer frem igen (`visibilitychange`) og hvert 15. min.; ved ny version vises bjælken `#updBar` → "Opdater" loader `?v=<version>`. Moduler hentes med `?v=`, og plan/tools importerer ui.js med samme `?v=` (top-level `await import`).
+
 ## App-fornemmelse
 - Zoom er slået fra (viewport + gesturestart/touchmove i index.html + touch-action: manipulation). Felter er 16 px på mobil, så iPhone ikke auto-zoomer.
 - `docs/manifest.webmanifest` + ikoner (`icon-180/192/512.png`) – siden kan lægges på hjemmeskærmen og åbnes uden browserlinje.
