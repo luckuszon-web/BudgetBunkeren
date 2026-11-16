@@ -266,6 +266,18 @@
   .sug-row .sug-s { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
   .sug-row .sug-v { padding: 6px 8px; text-align: right; }
 
+  /* Fællesøkonomi */
+  .sh-accs { display: grid; gap: 4px; }
+  .sh-accs label { display: flex; gap: 8px; align-items: center; font-size: 14.5px; padding: 6px 2px; }
+  .sh-accs input { width: auto; accent-color: var(--accent); }
+  .hh-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .hh-p { background: var(--surface); border-radius: 12px; padding: 10px 12px; }
+  .hh-p .hh-n { font-weight: 650; margin-bottom: 4px; }
+  .hh-p .hh-r { display: flex; justify-content: space-between; font-size: 13.5px; color: var(--muted); }
+  .hh-p .hh-r b { color: var(--text); font-weight: 600; }
+  .hh-fair { margin-top: 12px; font-size: 14px; }
+  .tag.partner { color: var(--accent); border-color: var(--accent-line); }
+
   /* Månedsrapport */
   .report { border-color: var(--accent-line); background: linear-gradient(160deg, var(--accent-soft), var(--card) 70%); }
   .rep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 10px 14px; }
@@ -471,12 +483,12 @@
   .tx select.unset { color: var(--warn); }
   .tx select { grid-column: 1; grid-row: 2; }
   .tx .oo { grid-column: 2; grid-row: 2; justify-self: end; }
-  .tx .mi-open { grid-column: 1 / -1; justify-self: start; }
+  .tx .mi-open, .tx .sh-cat { grid-column: 1 / -1; justify-self: start; }
   @media (min-width: 900px) {
     .tx { grid-template-columns: minmax(0, 1fr) 210px 120px 120px; gap: 12px; padding: 8px 4px; }
     .tx .desc { grid-column: 1; grid-row: 1; }
     .tx select { grid-column: 2; grid-row: 1; width: 100%; }
-    .tx .mi-open { grid-column: 2; grid-row: 1; }
+    .tx .mi-open, .tx .sh-cat { grid-column: 2; grid-row: 1; }
     .tx .oo { grid-column: 3; grid-row: 1; justify-self: start; }
     .tx > .num { grid-column: 4; grid-row: 1; text-align: right; }
     .tx-bar { grid-template-columns: 260px minmax(0, 1fr); align-items: center; }
@@ -589,6 +601,10 @@
   <section id="app" class="hidden">
 
     <div class="card" id="summaryCard">
+      <div class="seg hh-seg hidden" id="hhSel" style="display:flex;margin-bottom:8px" title="Husstand = dig + de konti, din partner har delt med dig">
+        <button data-h="me" style="flex:1" class="on">Mig</button>
+        <button data-h="house" style="flex:1">Husstand</button>
+      </div>
       <div class="seg gran" id="granSel" style="display:flex;margin-bottom:10px">
         <button data-g="year" style="flex:1">År</button>
         <button data-g="month" style="flex:1" class="on">Måned</button>
@@ -626,6 +642,9 @@
 
     <!-- Nøgletal -->
     <div class="kpis" id="kpis"></div>
+
+    <!-- Husstand: hvem har betalt hvad, og hvad er fair? -->
+    <div class="card hidden" id="hhCard"></div>
 
     <!-- Forløb + indsigter -->
     <div class="ov-mid">
@@ -772,6 +791,7 @@
         <button class="set-row" data-page="rules"><span class="si"><svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h10v2H4zm0 6h16v2H4z"/></svg></span><span class="st"><b>Regler</b><span id="ssRules" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
       <div class="set-group">
+        <button class="set-row" data-page="share"><span class="si"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm8 0a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM2 20c0-3.3 2.7-6 6-6s6 2.7 6 6zm13.5 0c0-1.9-.7-3.6-1.9-4.9A5 5 0 0 1 22 20z"/></svg></span><span class="st"><b>Fællesøkonomi</b><span id="ssShare" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="acct"><span class="si"><svg viewBox="0 0 24 24"><path d="M12 1l9 4v6c0 5.5-3.8 10.7-9 12-5.2-1.3-9-6.5-9-12V5z"/></svg></span><span class="st"><b>Login og sikkerhed</b><span id="ssAcct" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
         <button class="set-row" data-page="data"><span class="si"><svg viewBox="0 0 24 24"><path d="M12 3C7 3 3 4.8 3 7v10c0 2.2 4 4 9 4s9-1.8 9-4V7c0-2.2-4-4-9-4zm0 2c4.4 0 7 1.4 7 2s-2.6 2-7 2-7-1.4-7-2 2.6-2 7-2z"/></svg></span><span class="st"><b>Data og om appen</b><span id="ssData" class="ss"></span></span><svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
@@ -914,6 +934,22 @@
     </div>
 
     <!-- Data og om appen -->
+    <!-- Fællesøkonomi -->
+    <div id="setShare" class="set-page hidden">
+      <button class="ghost small set-back">‹ Indstillinger</button>
+      <div class="card">
+        <div class="head"><h2>Del konti med din partner</h2></div>
+        <p class="small muted" style="margin-top:0">Din partner skal have sin egen bruger i BudgetBunkeren. De konti, du deler, kan din partner <b>se</b> (posteringer og kategorier) – men aldrig ændre. Så kan I hver især slå <b>Husstand</b> til på Overblik og se jeres samlede økonomi og en fair fordeling af udgifterne.</p>
+        <form id="shForm" style="display:grid;gap:8px">
+          <input id="shEmail" type="email" placeholder="Din partners e-mail (den, der logges ind med)" autocomplete="off" required>
+          <div id="shAccs" class="sh-accs"></div>
+          <button class="primary">Del de valgte konti</button>
+        </form>
+      </div>
+      <div class="card"><div class="head"><h2>Det deler du</h2></div><div id="shOut"></div></div>
+      <div class="card"><div class="head"><h2>Delt med dig</h2></div><div id="shIn"></div></div>
+    </div>
+
     <div id="setData" class="set-page hidden">
       <button class="ghost small set-back">‹ Indstillinger</button>
       <div class="card">
@@ -1089,7 +1125,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261116210305";</script>
+<script>window.APP_VERSION = "20261116210752";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1271,6 +1307,71 @@ $("syncBtn").onclick = async () => {
 // ---------- Data ----------
 // Indtægter, du selv har tastet ind (fx løn, der ikke kommer ind på en forbundet konto).
 // De lægges ind blandt posteringerne som "kunstige" posteringer, så alle beregninger tager dem med.
+// ---------- Fællesøkonomi ----------
+// Konti, som en partner har delt med dig (kun læseadgang via databasens regler). Partnerens kategorier
+// kobles til dine efter navn, så "Dagligvarer" er samme kategori i husstandsvisningen.
+async function loadShared(since) {
+  const { data: shares, error } = await sb.from("account_shares").select("owner_id, account_key").eq("shared_with", state.uid);
+  state.sharesReady = !error;
+  state.shares = shares ?? [];
+  state.sharedTxs = []; state.sharedCats = []; state.sharedOwners = [];
+  if (!state.shares.length) { state.household = false; return; }
+  const [cats, accs, txs] = await Promise.all([
+    sb.from("categories").select("*").neq("user_id", state.uid),
+    sb.from("accounts").select("uid, user_id, account_key, name, display_name").neq("user_id", state.uid),
+    fetchAll(() => sb.from("transactions").select(TX_COLS + (state.oneOffReady ? ", one_off" : "")).neq("user_id", state.uid)
+      .gte("booking_date", since).order("booking_date", { ascending: false }).order("id")).catch(() => []),
+  ]);
+  state.sharedCats = (cats.data ?? []).map((c) => ({ ...c, shared: true }));
+  const mine = new Map(state.cats.map((c) => [c.name.toLowerCase(), c.id]));
+  const ownerOf = new Map((accs.data ?? []).map((a) => [a.uid, a.user_id]));
+  state.sharedOwners = [...new Set(state.shares.map((x) => x.owner_id))];
+  state.sharedTxs = txs.map((t) => {
+    const pc = state.sharedCats.find((c) => String(c.id) === String(t.category_id));
+    return { ...t, amount: Number(t.amount), shared: true, owner: ownerOf.get(t.account_uid),
+      category_id: pc ? (mine.get(pc.name.toLowerCase()) ?? pc.id) : null, category_source: t.category_id ? "manual" : null };
+  });
+  try { state.household = localStorage.getItem("household") === "1"; } catch {}
+  // Navne på dem, der deler (e-mail hentes af serveren)
+  const ls = await callFn("bank-connect", { action: "list-shares" }).catch(() => null);
+  state.shareEmails = Object.fromEntries((ls?.incoming ?? []).map((x) => [x.owner_id, x.email]));
+}
+// Navn på en partner (fra e-mailen, hvis den er hentet)
+const ownerName = (id) => { const e = state.shareEmails?.[id]; return e ? e.split("@")[0].replace(/^./, (c) => c.toUpperCase()) : "Partner"; };
+// Grundlaget for tal og liste: dine egne posteringer – plus partnerens delte i husstandsvisning
+const baseTxs = () => state.household && state.sharedTxs?.length ? state.allTxs.concat(state.sharedTxs) : state.allTxs;
+
+// Mig / Husstand på Overblik
+$("hhSel").onclick = (e) => {
+  const b = e.target.closest("button[data-h]"); if (!b) return;
+  state.household = b.dataset.h === "house";
+  try { localStorage.setItem("household", state.household ? "1" : "0"); } catch {}
+  fixedCache.clear(); refresh();
+};
+function renderHousehold() {
+  const has = !!state.sharedTxs?.length;
+  $("hhSel").classList.toggle("hidden", !has);
+  $("hhSel").querySelectorAll("button").forEach((b) => b.classList.toggle("on", (b.dataset.h === "house") === !!(state.household && has)));
+  const card = $("hhCard");
+  card.classList.toggle("hidden", !(state.household && has));
+  if (!(state.household && has)) return;
+  // Pr. person i perioden: indtægter og udgifter (efter kategoriernes type, som resten af appen)
+  const list = txsIn(state.period);
+  const people = [{ id: state.uid, name: "Dig" }, ...state.sharedOwners.map((id) => ({ id, name: ownerName(id) }))];
+  const stats = people.map((p) => { const t = totals(list.filter((x) => (x.shared ? x.owner : state.uid) === p.id)); return { ...p, inc: t.inc, out: t.out }; });
+  const totInc = stats.reduce((s2, x) => s2 + x.inc, 0), totOut = stats.reduce((s2, x) => s2 + x.out, 0);
+  const fair = stats.map((x) => ({ ...x, should: totInc ? totOut * x.inc / totInc : totOut / stats.length }));
+  const me = fair[0], diff = me.out - me.should;   // positiv = du har betalt mere end din andel
+  card.innerHTML = `<div class="head"><h2>Husstand</h2><span class="small muted">${esc(periodLabel(state.period))}</span></div>
+    <div class="hh-grid">${fair.map((x) => `<div class="hh-p"><div class="hh-n">${esc(x.name)}</div>
+      <div class="hh-r"><span>Indtægter</span><b class="num">${kr(x.inc)}</b></div>
+      <div class="hh-r"><span>Udgifter</span><b class="num">${kr(x.out)}</b></div>
+      <div class="hh-r"><span>Andel af udgifter</span><b class="num">${totOut ? Math.round(x.out / totOut * 100) : 0}%</b></div></div>`).join("")}</div>
+    <div class="hh-fair">${totOut ? `Fordelt efter indkomst skulle du betale <b>${kr(me.should)}</b> (${totInc ? Math.round(me.inc / totInc * 100) : 50}%) af husstandens udgifter på ${kr(totOut)} ` +
+      (Math.abs(diff) < 50 ? "– det passer næsten præcis." : diff > 0 ? `– du har betalt <b class="pos">${kr(diff)} mere</b> end din andel.` : `– du har betalt <b class="neg">${kr(-diff)} mindre</b> end din andel.`) +
+      `<div class="small muted" style="margin-top:4px">Ved 50/50 skulle hver betale ${kr(totOut / stats.length)} – kun de konti, der er delt, tæller med for din partner.</div>` : "Ingen udgifter i perioden."}</div>`;
+}
+
 // Opdelinger af posteringer (kræver databaseopdatering 015)
 async function loadSplits() {
   const { data, error } = await sb.from("tx_splits").select("id, tx_id, category_id, amount").eq("user_id", state.uid);
@@ -1299,7 +1400,7 @@ function syncVisible() {
   const bySplit = new Map();
   for (const sp of state.splits ?? []) { if (!bySplit.has(sp.tx_id)) bySplit.set(sp.tx_id, []); bySplit.get(sp.tx_id).push(sp); }
   const expanded = [];
-  for (const t of state.allTxs ?? []) {
+  for (const t of baseTxs() ?? []) {
     const parts = bySplit.get(t.id);
     if (!parts) { expanded.push(t); continue; }
     const sum = parts.reduce((s, p) => s + p.amount, 0);
@@ -1357,6 +1458,7 @@ async function load() {
     const hiddenKeys = new Set(state.accounts.filter((a) => a.hidden).map((a) => a.account_key ?? a.uid));
     state.allTxs = txs.filter((t) => !hiddenKeys.has(keyOf.get(t.account_uid))).map((t) => ({ ...t, amount: Number(t.amount) }));
     await loadSplits();
+    await loadShared(since);
     await loadManualIncome();
     renderConsent(state.sessions[0]);
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
@@ -1376,6 +1478,7 @@ async function load() {
   if (state.manualReady === false) missing.push("at indtaste løn selv");
   if (state.oneOffReady === false) missing.push("engangskøb på den enkelte postering");
   if (state.noteReady === false || state.splitsReady === false) missing.push("noter og opdeling af posteringer");
+  if (state.sharesReady === false) missing.push("fællesøkonomi");
   if (state.me && state.me.available === false) missing.push("invitationer og egen bankapp til ekstra brugere");
   state.dbMissing = missing;
   $("dbCard").classList.toggle("hidden", !missing.length);
@@ -1388,7 +1491,7 @@ async function load() {
 // De sidst hentede data gemmes i browseren på denne enhed, så appen kan vise dem med det samme ved næste åbning
 // (og så hente nye i baggrunden). Ryddes ved log ud.
 const CACHE_KEYS = ["cats", "rules", "sessions", "accounts", "splits", "manual", "goals", "assets", "history", "challenges", "planReady", "me",
-  "oneOffReady", "noteReady", "splitsReady", "manualReady", "dbMissing"];
+  "oneOffReady", "noteReady", "splitsReady", "manualReady", "dbMissing", "shares", "sharedTxs", "sharedCats", "sharedOwners", "shareEmails", "household", "sharesReady"];
 const cacheKey = () => "bb-cache-" + state.uid;
 function saveCache() {
   if (!state.uid) return;
@@ -1735,6 +1838,7 @@ function renderDashboard() {
   });
 
   renderScore();
+  renderHousehold();
   renderReport();
   renderInsights(fixedItems, isFixed);
   renderNextMonth();
@@ -2448,7 +2552,7 @@ function renderTxs() {
   const f = state.txF || "all";
   const q = $("search").value.trim().toLowerCase();
   // Søgning gælder alle perioder; ellers den valgte periode (også ignorerede – de vises med mærke)
-  let list = q ? state.allTxs : state.allTxs.filter((t) => inPeriod(t, state.period));
+  let list = q ? baseTxs() : baseTxs().filter((t) => inPeriod(t, state.period));
   $("txPeriodLbl").textContent = q ? "Alle perioder" : periodLabel(state.period);
   $("txNext").disabled = !!q || stepP(state.period, 1) > keyOf(todayIso());
   $("txPrev").disabled = !!q;
@@ -2483,13 +2587,13 @@ function renderTxs() {
     }
     const text = t.counterparty && !t.description.toLowerCase().includes(t.counterparty.toLowerCase()) ? `${t.counterparty} · ${t.description}` : t.description;
     const nSplit = (state.splits ?? []).filter((x) => x.tx_id === t.id).length;
-    const pickable = state.selMode && !t.manual;
+    const pickable = state.selMode && !t.manual && !t.shared;
     html += `<div class="tx ${t.note ? "has-note" : ""} ${pickable ? "pickable" : ""} ${pickable && state.sel.has(t.id) ? "picked" : ""}" ${pickable ? `data-pick="${esc(t.id)}"` : ""}>
-      <span class="desc" ${t.manual ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
+      <span class="desc" ${t.manual || t.shared ? "" : `data-open="${esc(t.id)}" role="button" tabindex="0"`} title="${t.manual ? esc(text) : "Tryk for note, opdeling og engangskøb"}">${esc(text)}${nSplit ? `<span class="tag" title="Delt i flere kategorier">delt i ${nSplit + 1}</span>` : ""}${t.category_source === "ai" ? '<span class="tag ai">AI</span>' : ""}${isOneoff(t) ? `<span class="tag" title="Holdes uden for overskud, snit og prognoser">holdt udenfor</span>` : ""}${isIgnored(t) ? `<span class="tag" title="Tæller ikke med i tal og grafer">ignoreret</span>` : ""}${isOffset(t) ? `<span class="tag" title="${t.amount > 0 ? "Trækkes fra udgifterne i kategorien i stedet for at tælle som indtægt" : "Trækkes fra indtægten i kategorien"}">modregnes</span>` : ""}</span>
       <span class="num ${t.amount < 0 ? "" : "pos"}">${kr(t.amount)}</span>
       ${t.note ? `<span class="tx-note">${esc(t.note)}</span>` : ""}
-      ${t.manual ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
-      ${t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
+      ${t.manual || t.shared ? "" : `<label class="oo" title="Engangskøb holdes uden for snit, prognoser og score"><input type="checkbox" class="oo-cb" data-id="${esc(t.id)}" ${t.one_off ? "checked" : ""}>Engangskøb</label>`}
+      ${t.shared ? `<span class="small muted sh-cat"><span class="tag partner">${esc(ownerName(t.owner))}</span> ${esc(catById(effCat(t))?.name ?? "Uden kategori")}</span>` : t.manual ? `<button type="button" class="small ghost mi-open" title="Ret eller slet under Indstillinger → Indtastet løn">${esc(catById(effCat(t))?.name ?? "Indtægt")} · indtastet ›</button>`
         : `<select data-id="${esc(t.id)}" class="${effCat(t) ? "" : "unset"}" aria-label="Kategori">${options(effCat(t))}</select>`}
     </div>`;
   }
@@ -2497,7 +2601,7 @@ function renderTxs() {
   $("moreBtn").classList.toggle("hidden", list.length <= state.shown);
   $("moreBtn").textContent = `Vis flere (${list.length - state.shown} til)`;
   document.querySelectorAll("#txList select").forEach((s) => s.onchange = () => setCategory(s.dataset.id, s.value));
-  state.visibleIds = list.slice(0, state.shown).filter((t) => !t.manual).map((t) => t.id);
+  state.visibleIds = list.slice(0, state.shown).filter((t) => !t.manual && !t.shared).map((t) => t.id);
   document.querySelectorAll("#txList [data-pick]").forEach((r) => r.onclick = (e) => {
     e.preventDefault(); e.stopPropagation();
     const id = r.dataset.pick; state.sel.has(id) ? state.sel.delete(id) : state.sel.add(id);
@@ -2911,10 +3015,10 @@ function renderRules() {
 
 
 // ---------- Indstillinger: oversigt og undersider ----------
-const SET_PAGES = { home: "setHome", bank: "setBank", quick: "setQuick", cats: "setCats", rules: "setRules", income: "setIncome", acct: "setAcct", data: "setData" };
+const SET_PAGES = { home: "setHome", bank: "setBank", quick: "setQuick", cats: "setCats", rules: "setRules", income: "setIncome", share: "setShare", acct: "setAcct", data: "setData" };
 function setPage(page) {
   for (const [k, id] of Object.entries(SET_PAGES)) $(id).classList.toggle("hidden", k !== page);
-  ({ home: renderSetHome, bank: renderBank, quick: renderQuick, cats: renderSettings, rules: renderRules, income: renderIncome, acct: renderAcct, data: renderData })[page]?.();
+  ({ home: renderSetHome, bank: renderBank, quick: renderQuick, cats: renderSettings, rules: renderRules, income: renderIncome, share: renderShare, acct: renderAcct, data: renderData })[page]?.();
   window.scrollTo(0, 0);
 }
 document.querySelectorAll(".set-row").forEach((r) => r.onclick = () => setPage(r.dataset.page));
@@ -2933,11 +3037,45 @@ function renderSetHome() {
   $("ssCats").textContent = `${state.cats.length} kategorier · ${state.cats.filter((c) => Number(c.monthly_budget) > 0).length} med budget`;
   $("ssIncome").textContent = state.manualReady === false ? "Kræver databaseopdateringen" : state.manual?.length
     ? `Senest ${fmt(state.manual[0].pay_date, { day: "numeric", month: "short" })}: ${kr(state.manual[0].amount)}` : "Skriv din løn selv, hvis banken ikke viser den";
+  $("ssShare").textContent = state.sharedTxs?.length ? `${Object.values(state.shareEmails ?? {}).join(", ") || "En partner"} deler konti med dig` : "Del konti med din partner";
   $("ssRules").textContent = `${state.rules.filter((r) => r.priority >= 200).length} egne regler · ${state.rules.filter((r) => r.priority < 200).length} standard`;
   sb.auth.mfa.listFactors().then(({ data }) => { $("ssAcct").textContent = data?.totp?.some((f) => f.status === "verified") ? "Totrinsbekræftelse er slået til" : "Totrinsbekræftelse er slået fra"; }).catch(() => {});
   $("ssData").textContent = state.dbMissing.length ? "Databasen mangler en opdatering" : `${state.allTxs.length} posteringer`;
   $("ssData").classList.toggle("warn-t", !!state.dbMissing.length);
 }
+
+// --- Fællesøkonomi (Indstillinger) ---
+async function renderShare() {
+  const accs = state.accounts.filter((a) => a.uid !== "demo-konto");
+  const byKey = new Map(); for (const a of accs) if (!byKey.has(a.account_key ?? a.uid)) byKey.set(a.account_key ?? a.uid, a);
+  $("shAccs").innerHTML = byKey.size ? [...byKey.entries()].map(([k, a]) => `<label><input type="checkbox" value="${esc(k)}"> ${esc(accName(a))}${a.iban_last4 ? ` <span class="muted small">••${esc(a.iban_last4)}</span>` : ""}</label>`).join("")
+    : `<p class="small muted" style="margin:0">Du har ingen konti at dele endnu – forbind din bank først.</p>`;
+  $("shOut").innerHTML = $("shIn").innerHTML = `<p class="small muted" style="margin:0">Henter …</p>`;
+  const r = await callFn("bank-connect", { action: "list-shares" }).catch((e) => ({ error: e.message }));
+  if (r.error || r.available === false) { $("shOut").innerHTML = $("shIn").innerHTML = `<p class="small warn-t" style="margin:0">${r.error ? esc(r.error) : "Kræver databaseopdateringen – kør opdater.html."}</p>`; return; }
+  const group = (rows, idKey) => { const m = new Map(); for (const x of rows) { if (!m.has(x[idKey])) m.set(x[idKey], { email: x.email, items: [] }); m.get(x[idKey]).items.push(x); } return m; };
+  const out = group(r.outgoing, "shared_with"), inc = group(r.incoming, "owner_id");
+  $("shOut").innerHTML = out.size ? [...out.entries()].map(([id, g]) => `<div class="list-row" style="grid-template-columns:1fr auto"><div><div>${esc(g.email)}</div>
+      <div class="sub">${g.items.map((x) => esc(x.account)).join(", ")}</div></div><button class="small ghost danger" data-unshare="${esc(id)}">Stop deling</button></div>`).join("")
+    : `<p class="small muted" style="margin:0">Du deler ingen konti.</p>`;
+  $("shIn").innerHTML = inc.size ? [...inc.values()].map((g) => `<div class="list-row"><div><div>${esc(g.email)}</div><div class="sub">${g.items.map((x) => esc(x.account)).join(", ")}</div></div></div>`).join("") +
+      `<p class="small muted" style="margin:8px 0 0">Slå <b>Husstand</b> til øverst på Overblik for at se det samlede billede.</p>`
+    : `<p class="small muted" style="margin:0">Ingen har delt konti med dig.</p>`;
+  document.querySelectorAll("[data-unshare]").forEach((b) => b.onclick = async () => {
+    if (!confirm("Stop med at dele dine konti med denne person?")) return;
+    try { await callFn("bank-connect", { action: "unshare", shared_with: b.dataset.unshare }); toast("Delingen er stoppet."); renderShare(); }
+    catch (e) { toast("Fejl: " + e.message, 6000); }
+  });
+}
+$("shForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const keys = [...$("shAccs").querySelectorAll("input:checked")].map((i) => i.value);
+  if (!keys.length) return toast("Vælg mindst én konto.");
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  try { const r = await callFn("bank-connect", { action: "share-accounts", email: $("shEmail").value.trim(), account_keys: keys }); toast(`${r.shared} ${r.shared === 1 ? "konto" : "konti"} delt.`); $("shEmail").value = ""; renderShare(); }
+  catch (err) { toast(err.message, 7000); }
+  btn.disabled = false;
+};
 
 // --- Indtastet løn ---
 function renderIncome() {

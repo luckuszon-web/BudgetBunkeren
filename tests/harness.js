@@ -22,7 +22,7 @@ function applyFilters(rows, params){
     if (['select','order','limit','offset','on_conflict','columns'].includes(k)) continue;
     const [op,...rest]=v.split('.'); const val=rest.join('.');
     rows = rows.filter(r=>{ const x=r[k]; switch(op){
-      case 'eq': return String(x)===val; case 'gte': return String(x)>=val; case 'lte': return String(x)<=val;
+      case 'eq': return String(x)===val; case 'neq': return String(x)!==val; case 'gte': return String(x)>=val; case 'lte': return String(x)<=val;
       case 'lt': return String(x)<val; case 'is': return val==='null'? x==null : true;
       case 'in': return val.replace(/[()"]/g,'').split(',').includes(String(x)); default: return true; }});
   }
@@ -42,6 +42,9 @@ async function setup(page, db, log){
       if (b.action==='credentials-status') return json({ available: global.credsAvail !== false, owner: global.isOwner !== false, own: !!global.ownApp, app_id: global.ownApp?.app_id ?? null, since: global.ownApp ? new Date().toISOString() : null });
       if (b.action==='save-credentials') { if (!/BEGIN PRIVATE KEY/.test(b.private_key)) return json({ error: 'Filen ligner ikke en .pem-nøgle' }, 400); global.ownApp = { app_id: b.app_id }; return json({ ok: true }); }
       if (b.action==='remove-credentials') { global.ownApp = null; return json({ ok: true }); }
+      if (b.action==='list-shares') return json({ available: true, outgoing: global.outShares||[], incoming: (db.account_shares||[]).filter(s=>s.shared_with===uid).map(s=>({ owner_id: s.owner_id, email: 'partner@example.com', account_key: s.account_key, account: 'Fælleskonto' })) });
+      if (b.action==='share-accounts') { global.outShares = (b.account_keys||[]).map(k=>({ shared_with: 'p-2', email: b.email, account_key: k, account: 'Konto' })); return json({ ok: true, shared: (b.account_keys||[]).length }); }
+      if (b.action==='unshare') { global.outShares = []; return json({ ok: true }); }
       if (b.action==='banks') return json({ banks:['Danske Bank','Jyske Bank','Lunar','Nordea'] }); if (b.action==='delete-accounts') { const keys = b.account_keys||[]; const del = db.accounts.filter(a => b.all || keys.includes(a.account_key ?? a.uid)).map(a => a.uid); db.accounts = db.accounts.filter(a => !del.includes(a.uid)); db.transactions = db.transactions.filter(t => !del.includes(t.account_uid)); if (b.all) db.bank_sessions = []; log.push('DELETE '+del.join(',')); return json({ ok:true, deleted: del.length }); }
       if (b.action==='disconnect') { db.bank_sessions = []; for (const a of db.accounts) if (a.session_id===b.session_id) a.session_id=null; return json({ ok:true }); } return json({ url: 'https://example.com/auth' }); }
     if (u.pathname.startsWith('/functions/v1/')) return json({ ok:true, report:[] });
@@ -90,4 +93,4 @@ async function open(opts={}){
   await page.goto(opts.url ?? SITE); await page.waitForTimeout(2500);
   return { browser, page, log, errors, db };
 }
-module.exports = { open, SITE };
+module.exports = { open, SITE, uid };
