@@ -32,7 +32,9 @@
   html, body { height: 100%; overflow: hidden; }
   /* Strækkes til skærmens faktiske kanter (inset: 0) i stedet for 100vh/100dvh, som iPhone regner forkert
      i apps på hjemmeskærmen (for kort med statuslinjens højde → menuen sad for højt). */
-  body { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+  /* Som app på hjemmeskærmen sætter JavaScript højden til skærmens fulde højde (se fitAppHeight) */
+  body.standalone { bottom: auto; height: var(--app-h, 100vh); }
   main { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     padding: calc(16px + env(safe-area-inset-top)) max(14px, calc((100% - 732px) / 2)) 40px; }
   h1 { font-size: 20px; margin: 4px 0 12px; }
@@ -722,7 +724,25 @@
   for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
   document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
 </script>
-<script>window.APP_VERSION = "20261116164542";</script>
+<script>
+  // iPhone regner højden forkert i apps på hjemmeskærmen (for kort → tomt felt under menuen).
+  // Der fylder appen hele skærmen, så vi bruger skærmens højde direkte.
+  (function fitAppHeight() {
+    const standalone = window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    const apply = () => {
+      if (!standalone) { document.body?.classList.remove("standalone"); return; }
+      const portrait = innerHeight >= innerWidth;
+      const full = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width);
+      document.documentElement.style.setProperty("--app-h", Math.max(full, innerHeight) + "px");
+      document.body?.classList.add("standalone");
+    };
+    document.addEventListener("DOMContentLoaded", apply);
+    addEventListener("resize", apply);
+    addEventListener("orientationchange", () => setTimeout(apply, 300));
+    apply();
+  })();
+</script>
+<script>window.APP_VERSION = "20261116165058";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -733,7 +753,8 @@ const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
 const urlAuth = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = (id) => document.getElementById(id);
-const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(n);
+const kr = (n) => new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(Math.round(n) || 0);   // || 0: aldrig "-0 kr."
+const minus = (v) => (Math.round(v) ? "−" + kr(v) : kr(0));   // "−1.234 kr." – men "0 kr." i stedet for "−0 kr."
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const PAGE = 150;
 
@@ -1175,9 +1196,9 @@ function renderDashboard() {
     $("heroSub").innerHTML = `Tilbage resten af ${fmt(m + "-01", { month: "long" })}` +
       (disp > 0 ? ` · ca. <b>${kr(disp / daysLeft)}</b> pr. dag i ${daysLeft} dage` : "");
     rows.push(["Forventet indkomst", kr(expInc), inc < expInc ? `${kr(expInc - inc)} er endnu ikke kommet ind (snit af ${prevMonthsWithData(m).length} mdr.)` : ""]);
-    rows.push(["Brugt indtil nu", "−" + kr(out), ""]);
-    if (upSum) rows.push(["Faste regninger på vej", "−" + kr(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
-    if (saved > 0) rows.push(["Sat til side", "−" + kr(saved), ""]);
+    rows.push(["Brugt indtil nu", minus(out), ""]);
+    if (upSum) rows.push(["Faste regninger på vej", minus(upSum), upcoming.slice(0, 4).map((f) => `${esc(f.name)} ~${f.day}.`).join(", ") + (upcoming.length > 4 ? ` +${upcoming.length - 4} til` : "")]);
+    if (saved > 0) rows.push(["Sat til side", minus(saved), ""]);
     if (oneoff > 0) rows.push(["Store køb (holdt udenfor)", kr(oneoff), "Indgår ikke i beløbet ovenfor"]);
     if (expInc > 0) {
       const w = (v) => Math.max(0, v / expInc * 100);
