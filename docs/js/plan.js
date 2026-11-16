@@ -1,6 +1,6 @@
 // Fanen "Planlæg": nettoformue, investeringer, gæld, opsparingsmål og spareudfordringer.
 // Samme version som siden (?v=…), så telefonen ikke bruger en gammel kopi
-const { formDialog, lineChart, ring, monthsToPayoff } = await import("./ui.js" + new URL(import.meta.url).search);
+const { formDialog, lineChart, monthsToPayoff } = await import("./ui.js" + new URL(import.meta.url).search);
 
 const KINDS = {
   cash: "Konto", investment: "Investering", pension: "Pension", property: "Bolig", vehicle: "Køretøj", other: "Andet aktiv",
@@ -19,28 +19,28 @@ export function init(ctx, root) {
       <p class="small" style="margin:6px 0 0">Mål, formue, gæld og spareudfordringer kræver databaseopdateringen øverst på siden.</p>
     </div>
 
-    <div class="card" id="nwCard">
-      <div class="head"><h2>Nettoformue</h2><button class="small" id="addAsset">+ Tilføj</button></div>
-      <div class="big" id="nwTotal"></div>
-      <div class="small muted" id="nwChange"></div>
-      <div id="nwBar" class="seg-bar" style="margin-top:12px"></div>
-      <div id="nwLegend" class="seg-legend"></div>
-      <div id="nwChart" style="margin-top:14px"></div>
+    <div class="ov-two">
+      <div class="card" id="nwCard">
+        <div class="head"><h2>Nettoformue</h2><button class="small" id="addAsset">+ Tilføj</button></div>
+        <div class="big" id="nwTotal"></div>
+        <div class="small muted" id="nwChange"></div>
+        <div id="nwBar" class="seg-bar" style="margin-top:12px"></div>
+        <div id="nwLegend" class="seg-legend"></div>
+        <div id="nwChart" style="margin-top:14px"></div>
+        <div id="assetList" class="nw-list"></div>
+      </div>
+      <div class="card">
+        <div class="head"><h2>Opsparingsmål</h2><button class="small" id="addGoal">+ Nyt mål</button></div>
+        <div id="goalList" class="goal-list"></div>
+      </div>
     </div>
 
-    <div class="duo">
-      <div class="card"><div class="head"><h2>Aktiver</h2><span class="num small" id="assetSum"></span></div><div id="assetList"></div></div>
-      <div class="card"><div class="head"><h2>Gæld</h2><span class="num small" id="debtSum"></span></div><div id="debtList"></div></div>
-    </div>
-
-    <div class="card" id="invCard">
-      <div class="head"><h2>Investeringer og pension</h2><span class="num small" id="invSum"></span></div>
-      <div id="invList"></div>
-    </div>
-
-    <div class="card">
-      <div class="head"><h2>Opsparingsmål</h2><button class="small" id="addGoal">+ Nyt mål</button></div>
-      <div id="goalList" class="grid-cards"></div>
+    <div class="ov-two">
+      <div class="card" id="debtCard"><div class="head"><h2>Gæld – afbetaling</h2><span class="num small muted" id="debtSum"></span></div><div id="debtList"></div></div>
+      <div class="card" id="invCard">
+        <div class="head"><h2>Investeringer og pension</h2><span class="num small muted" id="invSum"></span></div>
+        <div id="invList"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -108,14 +108,21 @@ export function init(ctx, root) {
       });
     } else $("nwChart").innerHTML = state.assets.length ? `<p class="note">Udviklingen vises, når du har opdateret værdierne over et par måneder.</p>` : "";
 
-    const row = (a) => `<div class="list-row" data-id="${a.id}">
-      <div><div>${esc(a.name)}</div><div class="sub">${KINDS[a.kind]}${a.rate != null ? ` · ${String(a.rate).replace(".", ",")}%` : ""}${a.monthly_payment ? ` · ydelse ${kr(a.monthly_payment)}/md.` : ""}</div></div>
-      <div style="text-align:right"><div class="num">${kr(a.value)}</div><button class="ghost small edit" style="padding:2px 6px">Opdater</button></div></div>`;
-    $("assetSum").textContent = kr(A);
-    $("debtSum").textContent = kr(Dt);
-    $("assetList").innerHTML = assets().map(row).join("") || `<p class="empty">Ingen aktiver endnu.</p>`;
-    $("debtList").innerHTML = debts().map(row).join("") || `<p class="empty">Ingen gæld registreret.</p>`;
-    root.querySelectorAll("#assetList .edit, #debtList .edit").forEach((b) => b.onclick = () => editAsset(state.assets.find((a) => String(a.id) === b.closest(".list-row").dataset.id)));
+    // Én enkel liste: aktiver og gæld (gæld med minus i rødt). Tryk på en linje for at opdatere værdien.
+    const row = (a) => {
+      const debt = DEBT.has(a.kind);
+      return `<button class="nw-row" data-id="${a.id}"><span class="nw-n">${esc(a.name)}<span class="nw-k">${KINDS[a.kind]}${a.rate != null ? ` · ${String(a.rate).replace(".", ",")}%` : ""}</span></span>
+        <span class="num ${debt ? "neg" : ""}">${debt ? "−" : ""}${kr(a.value)}</span></button>`;
+    };
+    $("assetList").innerHTML = state.assets.length
+      ? `<div class="nw-h"><span>Aktiver</span><span class="num">${kr(A)}</span></div>${assets().map(row).join("")}` +
+        (debts().length ? `<div class="nw-h"><span>Gæld</span><span class="num neg">−${kr(Dt)}</span></div>${debts().map(row).join("")}` : "") +
+        `<p class="small muted" style="margin:8px 0 0">Tryk på en linje for at opdatere værdien – gør det fx hver måned, så udviklingen kan vises.</p>`
+      : "";
+    root.querySelectorAll("#assetList .nw-row").forEach((b) => b.onclick = () => editAsset(state.assets.find((a) => String(a.id) === b.dataset.id)));
+    $("debtSum").textContent = debts().length ? kr(Dt) : "";
+    $("debtCard").classList.toggle("hidden", !debts().length);
+    $("debtList").innerHTML = "";
 
     // Gæld: hvornår er den betalt, og hvad koster renterne?
     if (debts().length) {
@@ -125,10 +132,11 @@ export function init(ctx, root) {
         if (n === Infinity) return `<div class="note"><span class="up">${esc(d.name)}: ydelsen dækker ikke renterne</span> – gælden vokser.</div>`;
         const interest = n * d.monthly_payment - d.value;
         const done = addMonths(todayIso().slice(0, 7), n);
-        return `<div class="note">${esc(d.name)}: betalt ${fmt(done + "-01", { month: "long", year: "numeric" })} (${n} mdr.) · renter i alt ca. ${kr(interest)}</div>`;
+        return `<div class="fx-row"><div style="min-width:0"><div class="fx-n">${esc(d.name)}</div><div class="muted small">Betalt ${fmt(done + "-01", { month: "long", year: "numeric" })} · ${n} mdr. · ydelse ${kr(d.monthly_payment)}/md.</div></div>
+          <div style="text-align:right"><div class="num neg" style="font-weight:600">−${kr(d.value)}</div><div class="small muted">renter ca. ${kr(interest)}</div></div></div>`;
       }).join("");
       const top = [...debts()].filter((d) => d.rate).sort((a, b) => b.rate - a.rate)[0];
-      $("debtList").insertAdjacentHTML("beforeend", `<div style="margin-top:8px;display:grid;gap:4px">${lines}
+      $("debtList").insertAdjacentHTML("beforeend", `<div style="display:grid;gap:4px">${lines}
         ${debts().length > 1 && top ? `<div class="note">Tip: Betal ekstra af på <b>${esc(top.name)}</b> først – den har den højeste rente (${String(top.rate).replace(".", ",")}%).</div>` : ""}</div>`);
     }
 
@@ -200,16 +208,16 @@ export function init(ctx, root) {
         } else if (etaMonth) status = `Nås ca. ${fmt(etaMonth + "-01", { month: "long", year: "numeric" })} med ${kr(g.monthly_amount)}/md.`;
         else status = "Angiv et månedligt beløb for at se, hvornår målet nås.";
       }
-      return `<div class="sub-card" data-id="${g.id}">
-        <div class="row" style="gap:12px">${ring(frac, done ? "#5fd39a" : "#3987e5", Math.min(100, Math.round(frac * 100)) + "%")}
-          <div style="min-width:0;flex:1"><div class="row between" style="gap:6px"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</b>${pill}</div>
-            <div style="font-variant-numeric:tabular-nums">${kr(g.saved_amount)} <span class="muted small" style="white-space:nowrap">af ${kr(g.target_amount)}</span></div>
-            ${!done ? `<div class="small muted">Mangler ${kr(left)}</div>` : ""}</div></div>
-        <div class="note">${status}</div>
-        <div class="row" style="gap:6px"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>
+      const pctNum = Math.min(100, Math.round(frac * 100));
+      return `<div class="goal" data-id="${g.id}">
+        <div class="g-top"><span class="g-n">${g.icon ? esc(g.icon) + " " : ""}${esc(g.name)}</span>${pill}<span class="num muted">${pctNum}%</span></div>
+        <div class="bbar"><span class="${done ? "b-done" : "b-ok"}" style="width:${pctNum}%"></span></div>
+        <div class="g-sub num">${kr(g.saved_amount)} af ${kr(g.target_amount)}${!done ? ` · mangler ${kr(left)}` : ""}</div>
+        <div class="g-st">${status}</div>
+        <div class="g-act"><button class="small primary dep">+ Indbetal</button><button class="small ghost edit">Rediger</button></div>
       </div>`;
     }).join("") || `<p class="empty">Ingen mål endnu. Opret fx "Buffer", "Ferie" eller "Ny bil".</p>`;
-    root.querySelectorAll("#goalList .sub-card").forEach((c) => {
+    root.querySelectorAll("#goalList .goal").forEach((c) => {
       const g = state.goals.find((x) => String(x.id) === c.dataset.id);
       c.querySelector(".dep").onclick = () => deposit(g);
       c.querySelector(".edit").onclick = () => editGoal(g);
