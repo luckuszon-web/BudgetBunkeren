@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Calculator, Users } from "lucide-react";
+import { Calculator, MessageCircle, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { useFinance } from "@/features/finance-store";
@@ -24,9 +24,10 @@ export function PlanPage() {
   return (
     <>
       <PageHeader title="Planlæg" subtitle="Formue, mål og gæld" />
-      <nav className="mb-4 flex gap-2 md:hidden" aria-label="Genveje">
+      <nav className="mb-4 flex flex-wrap gap-2 md:hidden" aria-label="Genveje">
         <Link to="/faelles" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><Users size={14} /> Fælles post</Link>
         <Link to="/vaerktoejer" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><Calculator size={14} /> Værktøjer</Link>
+        <Link to="/raadgiver" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><MessageCircle size={14} /> Rådgiver</Link>
       </nav>
       {plan.error && !d && <Card><p role="alert" className="text-sm text-bad">{plan.error}</p></Card>}
       {!d && !plan.error && <p className="text-sm text-muted">Henter …</p>}

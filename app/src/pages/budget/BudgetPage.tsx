@@ -13,6 +13,7 @@ import { todayIso } from "@/lib/today";
 import type { Category } from "@/types/finance";
 import { BudgetEditor } from "./BudgetEditor";
 import { BudgetRow } from "./BudgetRow";
+import { SubscriptionsCard } from "./SubscriptionsCard";
 
 export function BudgetPage() {
   const { state, derived } = useFinance();
@@ -68,6 +69,7 @@ export function BudgetPage() {
           )}
         </Card>
       </div>
+      <div className="mt-4"><SubscriptionsCard /></div>
       <BudgetEditor open={!!edit} category={edit?.category ?? null} onClose={() => setEdit(null)} />
     </>
   );

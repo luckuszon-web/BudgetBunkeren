@@ -1,12 +1,12 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { Calculator, LayoutDashboard, ListChecks, LogOut, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
+import { Calculator, LayoutDashboard, ListChecks, LogOut, MessageCircle, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
 import { Toasts } from "@/components/ui/Toasts";
 import type { BootParams } from "@/lib/boot-params";
 import { BankCallback } from "./BankCallback";
 import { LoadState } from "./LoadState";
 import { UpdateBar } from "./UpdateBar";
 
-type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/indstillinger";
+type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger";
 /** `mobile`: står i bundmenuen (5 faner); de andre nås fra Planlæg på mobil. */
 const NAV: { to: To; label: string; icon: LucideIcon; mobile: boolean }[] = [
   { to: "/", label: "Overblik", icon: LayoutDashboard, mobile: true },
@@ -15,6 +15,7 @@ const NAV: { to: To; label: string; icon: LucideIcon; mobile: boolean }[] = [
   { to: "/planlaeg", label: "Planlæg", icon: Target, mobile: true },
   { to: "/faelles", label: "Fælles post", icon: Users, mobile: false },
   { to: "/vaerktoejer", label: "Værktøjer", icon: Calculator, mobile: false },
+  { to: "/raadgiver", label: "Rådgiver", icon: MessageCircle, mobile: false },
   { to: "/indstillinger", label: "Indstillinger", icon: Settings, mobile: true },
 ];
 

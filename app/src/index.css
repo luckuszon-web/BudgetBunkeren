@@ -14,11 +14,23 @@
   --color-warn: #b45309;
   --color-bad: #c02626;
 }
+/* Mørkt tema: følger telefonen, medmindre man har valgt Lyst/Mørkt under Indstillinger (data-theme på <html>). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg: #0f1115; --color-card: #181b22; --color-line: #2a2f3a; --color-ink: #e8eaee; --color-muted: #9aa1ad;
     --color-accent: #6ea8fe; --color-accent-soft: #1e2a40; --color-good: #4ade80; --color-warn: #fbbf24; --color-bad: #f87171;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --color-bg: #0f1115; --color-card: #181b22; --color-line: #2a2f3a; --color-ink: #e8eaee; --color-muted: #9aa1ad;
+  --color-accent: #6ea8fe; --color-accent-soft: #1e2a40; --color-good: #4ade80; --color-warn: #fbbf24; --color-bad: #f87171;
+  color-scheme: dark;
+}
+/* Udskrift (årsoversigt som PDF): kun det, der skal printes */
+@media print {
+  body.printing #root > * { display: none !important; }
+  body.printing #print-root { display: block !important; }
 }
 
 html { -webkit-text-size-adjust: 100%; }

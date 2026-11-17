@@ -47,6 +47,18 @@ export function createSettingsRepository(sb: SupabaseClient) {
       ok(await sb.from("categories").delete().eq("id", Number(id)));
       return ids.length;
     }),
+    /** Abonnementer markeret "opsig"/"behold" (databaseopdatering 017; mangler den, er der ingen). */
+    subMarks: (userId: string): Promise<Record<string, "cancel" | "keep">> => run(async () => {
+      const r = await sb.from("subscription_marks").select("key, status").eq("user_id", userId);
+      if (r.error) { if (toRepositoryError(r.error).code === "missing_migration") return {}; throw r.error; }
+      return Object.fromEntries((r.data as { key: string; status: "cancel" | "keep" }[]).filter((x) => x.status === "cancel" || x.status === "keep").map((x) => [x.key, x.status]));
+    }),
+    /** Sæt eller fjern (null) en markering. */
+    markSub: (userId: string, key: string, status: "cancel" | "keep" | null) => run(async () => {
+      if (!key || key.length > 200) throw new RepositoryError("Ugyldigt abonnement.", "validation");
+      if (status) ok(await sb.from("subscription_marks").upsert({ key, status }, { onConflict: "user_id,key" }));
+      else ok(await sb.from("subscription_marks").delete().eq("user_id", userId).eq("key", key));
+    }),
     deleteRule: (id: string) => run(async () => {
       if (!isId(id)) throw new RepositoryError("Ugyldig regel.", "validation");
       ok(await sb.from("rules").delete().eq("id", Number(id)));

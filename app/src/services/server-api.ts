@@ -51,6 +51,12 @@ export function createServerApi(sb: SupabaseClient) {
     potCreate: (email: string, myPct: number, name: string) =>
       bank("pot-create", { email: EmailInput.parse(email), my_pct: z.number().min(0).max(100).parse(myPct), name: z.string().trim().max(60).parse(name) || undefined }),
     potDelete: (potId: string) => bank("pot-delete", { pot_id: Number(z.string().regex(/^\d+$/).parse(potId)) }),
+    /** Spørg rådgiveren. Den får et sammendrag af tallene (ikke de enkelte posteringer). */
+    advisor: async (messages: { role: "user" | "assistant"; content: string }[], context: unknown) => {
+      const msgs = z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) })).max(40).parse(messages);
+      const r = await call<{ answer?: string; truncated?: boolean }>("advisor", { messages: msgs, context });
+      return (r.answer ?? "") + (r.truncated ? "\n\n(Svaret blev afkortet.)" : "");
+    },
     /** Er AI-nøglen sat op på serveren? */
     advisorPing: async () => !!(await call<{ hasKey?: boolean }>("advisor", { ping: true })).hasKey,
   };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { useFinance } from "@/features/finance-store";
+import { useResource, useServices } from "@/features/services-context";
 import type { Transaction } from "@/types/finance";
 import { ManualDialog } from "./ManualDialog";
 import { SelectionBar } from "./SelectionBar";
@@ -13,11 +14,14 @@ import { SplitDialog } from "./SplitDialog";
 import { TransactionFilters } from "./TransactionFilters";
 import { TransactionRow, type RowHandlers } from "./TransactionRow";
 import { TxDialog } from "./TxDialog";
+import { RuleSuggestions } from "./RuleSuggestions";
 
 const PAGE = 150;
 
 export function TransactionsPage() {
   const { state, derived, actions } = useFinance();
+  const { pots } = useServices();
+  const pot = useResource((s) => s.pots.fetchPot().catch(() => null));
   const [limit, setLimit] = useState(PAGE), [splitTx, setSplitTx] = useState<Transaction | null>(null), [openTx, setOpenTx] = useState<Transaction | null>(null);
   const [manual, setManual] = useState(false), [selectMode, setSelectMode] = useState(false), [sel, setSel] = useState<Set<string>>(new Set());
   const splitCount = useMemo(() => {
@@ -39,12 +43,23 @@ export function TransactionsPage() {
   const sumIn = list.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), sumOut = list.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
   const scope = f.dateFrom || f.dateTo ? "i datointervallet" : f.search.trim() ? "i alle måneder" : "i perioden";
   const closeSel = () => { setSelectMode(false); setSel(new Set()); };
+  /** Læg de valgte udgifter i den fælles post (springer dem over, der allerede ligger der). */
+  const toPot = async () => {
+    const p = pot.data; if (!p) return;
+    const already = new Set(p.items.map((i) => i.tx_id)), pick = list.filter((t) => sel.has(t.id) && t.amount < 0 && !already.has(t.id));
+    try {
+      for (const t of pick) await pots.addItem({ pot_id: p.pot.id, kind: "expense", item_date: t.date, amount: Math.abs(t.amount), description: t.text.slice(0, 120),
+        category: derived.classifier.catById(derived.classifier.effCat(t))?.name ?? null, tx_id: t.id });
+      actions.notify("success", `${pick.length} ${pick.length === 1 ? "udgift" : "udgifter"} lagt i ${p.pot.name}.`); closeSel(); void pot.reload();
+    } catch (e) { actions.notify("error", e instanceof Error ? e.message : String(e)); }
+  };
   const bulk = async (patch: { category_id?: string | null; one_off?: boolean }) => { if (await actions.patchMany([...sel], patch)) closeSel(); };
 
   return (
     <>
       <PageHeader title="Posteringer" action={!f.dateFrom && !f.dateTo && !f.search.trim() ? <PeriodPicker /> : undefined}
         subtitle={derived.uncategorizedCount ? `${derived.uncategorizedCount} uden kategori i perioden` : undefined} />
+      <RuleSuggestions />
       <Card className="mb-4"><TransactionFilters /></Card>
       <Card>
         <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -75,7 +90,8 @@ export function TransactionsPage() {
       {selectMode && (
         <SelectionBar count={sel.size} total={selectable.length} categories={state.data.categories}
           onAll={() => setSel(sel.size === selectable.length ? new Set() : new Set(selectable.map((t) => t.id)))}
-          onCategory={(id) => void bulk({ category_id: id })} onOneOff={(v) => void bulk({ one_off: v })} onClose={closeSel} />
+          onCategory={(id) => void bulk({ category_id: id })} onOneOff={(v) => void bulk({ one_off: v })} onClose={closeSel}
+          potName={pot.data?.pot.name} onPot={() => void toPot()} />
       )}
       <TxDialog tx={openTx} onClose={() => setOpenTx(null)} onSplit={h.onSplit} />
       <SplitDialog tx={splitTx} onClose={() => setSplitTx(null)} />

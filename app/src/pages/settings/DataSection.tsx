@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, RefreshCw, Wand2 } from "lucide-react";
+import { CalendarPlus, Download, Printer, RefreshCw, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Field";
@@ -7,6 +7,8 @@ import { useFinance } from "@/features/finance-store";
 import { useAction, useServices } from "@/features/services-context";
 import { currentMonth } from "@/lib/today";
 import { transactionsCsv, yearCsv, downloadFile } from "./csv";
+import { fixedIcs, printYear } from "./ics-print";
+import { todayIso } from "@/lib/today";
 
 /** Hent nu, kategorisér igen, eksport (CSV) og databaseopdatering. */
 export function DataSection() {
@@ -46,7 +48,14 @@ export function DataSection() {
             </Button>
           </div>
         </div>
-        <p className="mt-2 text-xs text-muted">Åbner i Excel/Numbers (semikolon og decimalkomma).</p>
+        <div className="mt-2 grid gap-2">
+          <Button icon={<Printer size={16} />} disabled={!derived} onClick={() => printYear(year, derived!.calcTxs, derived!.classifier)}>Årsoversigt som PDF (udskriv)</Button>
+          <Button icon={<CalendarPlus size={16} />} disabled={!derived} onClick={() => downloadFile("faste-betalinger.ics",
+            fixedIcs(derived!.fixedExpenses, derived!.forecast ? { amount: derived!.forecast.salary.expected, day: derived!.forecast.salary.day } : null, todayIso()), "text/calendar;charset=utf-8")}>
+            Faste betalinger som kalenderfil (.ics)
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted">CSV åbner i Excel/Numbers (semikolon og decimalkomma). Kalenderfilen kan åbnes i telefonens kalender.</p>
       </Card>
       <Card title="Database">
         <p className="text-sm text-muted">Har appen fået nye funktioner, skal databasen måske opdateres.</p>

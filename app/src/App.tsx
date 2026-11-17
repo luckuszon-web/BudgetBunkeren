@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { RouterProvider, type RouterHistory } from "@tanstack/react-router";
 import { AuthGate, type GateAuth } from "@/features/auth/AuthGate";
+import { PinLock } from "@/features/auth/PinLock";
 import { FinanceProvider, type FinanceServices } from "@/features/finance-store";
 import { ServicesProvider, type UiServices } from "@/features/services-context";
 import type { BootParams } from "@/lib/boot-params";
@@ -24,7 +25,7 @@ export function App({ services, history, today, boot }: {
       {(signOut) => (
         <ServicesProvider services={services}>
           <FinanceProvider services={services} today={today}>
-            <Routed signOut={signOut} history={history} bank={boot?.bank ?? null} />
+            <PinLock onSignOut={signOut}><Routed signOut={signOut} history={history} bank={boot?.bank ?? null} /></PinLock>
           </FinanceProvider>
         </ServicesProvider>
       )}

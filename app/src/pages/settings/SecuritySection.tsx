@@ -5,6 +5,7 @@ import { Input, Label } from "@/components/ui/Field";
 import { useAction, useResource, useServices } from "@/features/services-context";
 import { InvitesCard } from "./InvitesCard";
 import { MfaCard } from "./MfaCard";
+import { PinCard } from "./PinCard";
 
 /** E-mail, seneste login, skift adgangskode, totrinsbekræftelse og invitationer (ejer). */
 export function SecuritySection() {
@@ -35,6 +36,7 @@ export function SecuritySection() {
         </form>
       </Card>
       <MfaCard />
+      <PinCard />
       <InvitesCard />
     </div>
   );

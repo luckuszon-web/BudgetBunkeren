@@ -1,15 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Database, KeyRound, Landmark, PenLine, Tags, Wand2, type LucideIcon } from "lucide-react";
+import { ChevronRight, Database, HeartPulse, KeyRound, Landmark, PenLine, Shuffle, Tags, Wand2, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { ThemePicker } from "./ThemePicker";
 
 export const SECTIONS: { id: string; title: string; text: string; icon: LucideIcon }[] = [
   { id: "bank", title: "Bank og konti", text: "Forbind, forny, omdøb og skjul konti", icon: Landmark },
+  { id: "sortering", title: "Hurtig sortering", text: "Giv mange posteringer kategori på én gang", icon: Shuffle },
   { id: "kategorier", title: "Kategorier", text: "Navne, ikoner, typer og budgetter", icon: Tags },
   { id: "regler", title: "Regler", text: "Automatisk kategorisering", icon: Wand2 },
   { id: "indtastet", title: "Indtastede beløb", text: "Løn og kontantkøb, du selv taster", icon: PenLine },
   { id: "sikkerhed", title: "Login og sikkerhed", text: "Adgangskode, totrinskode og invitationer", icon: KeyRound },
   { id: "data", title: "Data", text: "Hent nu, kategorisér igen, eksport", icon: Database },
+  { id: "tjek", title: "Sundhedstjek", text: "Tjek at alt er sat rigtigt op", icon: HeartPulse },
 ];
 
 export function SettingsPage() {
@@ -29,7 +32,8 @@ export function SettingsPage() {
           ))}
         </ul>
       </Card>
-      <p className="mt-4 text-center text-xs text-muted"><a href="../klassisk.html" className="underline">Klassisk udgave</a> (rådgiver, kalender, abonnementer m.m.)</p>
+      <Card title="Udseende" className="mt-4"><ThemePicker /></Card>
+      <p className="mt-4 text-center text-xs text-muted"><a href="../klassisk.html" className="underline">Den gamle udgave</a> (findes stadig, men alt er nu i denne app)</p>
     </>
   );
 }

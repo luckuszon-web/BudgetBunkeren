@@ -30,7 +30,8 @@ describe("Ny app", () => {
     setup("/");
     expect(await screen.findByText("Til rådighed resten af måneden")).toBeTruthy();
     expect(screen.getByRole("img", { name: /Økonomisk score \d+ af 100/ })).toBeTruthy();
-    expect(screen.getByText(/Restaurant er .* over budget/)).toBeTruthy();
+    expect(screen.getAllByText(/Restaurant er .* over budget/).length).toBe(2);   // advarsel øverst + indsigt
+    expect(screen.getByRole("region", { name: "Advarsler" })).toBeTruthy();
     expect(screen.getByText("Prognose for december")).toBeTruthy();
   });
 
@@ -62,7 +63,9 @@ describe("Ny app", () => {
 
   it("Værktøjer: skat og annuitet regner med det samme", async () => {
     setup("/vaerktoejer");
+    fireEvent.click(await screen.findByRole("tab", { name: "Løn og skat" }));
     expect(await screen.findByText("Udbetalt pr. måned (ca.)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Afdrag" }));
     expect(screen.getByText("1.061 kr.")).toBeTruthy();   // 100.000 kr., 5 %, 10 år
     fireEvent.change(screen.getByLabelText(/^Ekstra afdrag pr\. måned/), { target: { value: "500" } });
     expect(screen.getByText(/Gældfri \d+ mdr\. før/)).toBeTruthy();

@@ -69,7 +69,8 @@ async function functional(page, db) {
       for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer'],
         ['planlaeg', 'Planlæg'], ['faelles', 'Fælles post'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
         ['indstillinger/kategorier', 'Kategorier'], ['indstillinger/regler', 'Regler'], ['indstillinger/indtastet', 'Indtastede beløb'],
-        ['indstillinger/sikkerhed', 'Login og sikkerhed'], ['indstillinger/data', 'Data']]) {
+        ['indstillinger/sikkerhed', 'Login og sikkerhed'], ['indstillinger/data', 'Data'], ['indstillinger/sortering', 'Hurtig sortering'],
+        ['indstillinger/tjek', 'Sundhedstjek'], ['raadgiver', 'Rådgiver']]) {
         await page.goto(h.SITE + 'ny/#/' + route); await page.waitForTimeout(800);
         const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - innerWidth }));
         if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);

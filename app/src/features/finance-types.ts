@@ -26,6 +26,8 @@ export interface FinanceActions {
   addManual(entry: { pay_date: string; amount: number; direction: "in" | "out"; category_id?: string | null; note?: string | null }): Promise<boolean>;
   deleteManual(id: string): Promise<boolean>;
   dismissToast(id: number): void;
+  /** Vis en kort besked (fx fra andre sider). */
+  notify(tone: "info" | "success" | "error", text: string): void;
 }
 export interface FinanceContextValue { state: FinanceState; derived: FinanceDerived | null; user: AuthUser | null; actions: FinanceActions }
 

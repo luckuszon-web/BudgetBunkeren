@@ -173,7 +173,7 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
       catch (e) { dispatch({ type: "manualAdded", entry: old }); toast("error", friendly(e)); return false; }
     },
 
-    dismissToast: (id) => dispatch({ type: "toastDismissed", id }),
+    dismissToast: (id) => dispatch({ type: "toastDismissed", id }), notify: (tone, text) => toast(tone, text),
   }), [refresh, patchTx, svc, toast]);
 
   // ---------- Beregnede værdier ----------

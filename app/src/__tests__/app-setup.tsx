@@ -48,9 +48,9 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot }: { sign
     potDelete: vi.fn(), banks: vi.fn(async () => ["Nordea"]), startBank: vi.fn(), disconnect: vi.fn(), deleteAccounts: vi.fn(async () => 1),
     credentialsStatus: vi.fn(async () => ({ available: true, owner: true, own: false, app_id: null, since: null })), saveCredentials: vi.fn(),
     removeCredentials: vi.fn(), listInvites: vi.fn(async () => ({ owner: true, invites: [] })), createInvite: vi.fn(async () => "ABCDE-FGHJK"),
-    syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
+    advisor: vi.fn(async () => "Du har brugt **mere** på restaurant.\n- Spar på Wolt"), syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
   };
-  const settings = { sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn() };
+  const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn() };
   const history = createMemoryHistory({ initialEntries: [path] });
   const authAll = Object.assign(auth, { userInfo: vi.fn(async () => ({ email: "me@example.com", lastSignIn: null })), mfaEnabled: vi.fn(async () => false),
     mfaEnroll: vi.fn(), mfaConfirm: vi.fn(), mfaDisable: vi.fn(), changePassword: vi.fn(async () => {}), resetPassword: vi.fn(async () => {}) });
