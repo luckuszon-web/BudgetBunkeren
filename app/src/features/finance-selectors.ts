@@ -5,12 +5,13 @@
 import type { Category, FixedExpenseItem, HealthScoreResult, IsoDate, Transaction, YearMonth } from "@/types/finance";
 import type { UserData } from "@/services";
 import {
-  available, avg, detectFixedExpenses, elapsedFraction, expandSplits, forecastNextMonth, makeClassifier, manualToTransactions,
-  monthBudget, monthOf, recurringKey, shiftMonth, sumOut, totals, upcomingFixed, healthScore, type AvailableResult,
+  available, detectFixedExpenses, expandSplits, forecastNextMonth, makeClassifier, manualToTransactions,
+  monthBudget, monthOf, shiftMonth, sumOut, totals, type AvailableResult,
   type Classifier, type ForecastResult,
 } from "@/lib/finance-engine";
 import { periodRange, type Filters, type PeriodSelection } from "./finance-state";
 import { buildInsights, type Insight } from "./insights";
+import { scoreFor, type ScoreCtx } from "./score";
 
 export interface BudgetStatus { category: Category; spent: number; budget: number; ratio: number }
 export interface FinanceDerived {
@@ -32,6 +33,12 @@ export interface FinanceDerived {
   insights: Insight[];
   /** Måneder med data, nyeste først. */
   monthsWithData: YearMonth[];
+  /** Beregningsposteringer i en måned. */
+  monthTxs: (m: YearMonth) => Transaction[];
+  /** Op til n måneder med data før m (nyeste først). */
+  prevMonths: (m: YearMonth, n: number) => YearMonth[];
+  /** Til scoreFor() for andre måneder (fx månedsrapporten). */
+  scoreCtx: ScoreCtx;
 }
 
 export function deriveFinance(data: UserData, period: PeriodSelection, filters: Filters, today: IsoDate, ownSalary: number | null = null): FinanceDerived {
@@ -87,24 +94,9 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   }).sort((a, b) => b.ratio - a.ratio);
   const overBudget = budgets.filter((b) => b.spent > b.budget);
 
-  // Sundhedsscore for den igangværende (eller valgte) måned
-  const sm = period.gran === "month" ? period.key : thisMonth;
-  const smTx = monthTxs(sm), smPrev = prevMonths(sm, 3);
-  const inc = totals(smTx, c).inc;
-  const expInc = sm === thisMonth ? Math.max(inc, avg(smPrev.map((m) => totals(monthTxs(m), c).inc))) : inc;
-  const f = elapsedFraction(sm, today);
-  const fixedKeys = new Set(fixedExpenses.map((x) => x.key));
-  const fixedOut = sumOut(smTx.filter((t) => fixedKeys.has(recurringKey(t))), c);
-  const missing = sm === thisMonth ? upcomingFixed(fixedExpenses, sm, smTx).reduce((s, x) => s + x.amount, 0) : 0;
-  const outProj = fixedOut + missing + (sumOut(smTx, c) - fixedOut) / (sm === thisMonth ? Math.max(f, 0.2) : 1);
-  const avgOut = avg(smPrev.map((m) => totals(monthTxs(m), c).out));
-  const smBudgets = data.categories.filter((x) => x.kind === "expense" && x.monthly_budget > 0);
-  const score = healthScore({
-    savingsRate: expInc ? (expInc - outProj) / expInc : 0,
-    budgetsOk: smBudgets.filter((cat) => spentIn(cat, [sm]) <= monthBudget(cat, sm) * Math.min(1, f * 1.1)).length,
-    budgetsTotal: smBudgets.length,
-    spendRatio: avgOut ? outProj / avgOut : null,
-  });
+  // Sundhedsscore for den valgte måned (ved år: den igangværende)
+  const scoreCtx = { c, categories: data.categories, monthTxs, prevMonths, fixedExpenses, today };
+  const score = scoreFor(period.gran === "month" ? period.key : thisMonth, scoreCtx);
 
   const forecast = forecastNextMonth({ previousMonths: prevMonths(thisMonth, 6), monthTxs, recurring: fixedExpenses, salaryCategoryId,
     classifier: c, nextMonth: shiftMonth(thisMonth, 1), ownSalary });
@@ -113,6 +105,6 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   const insights = buildInsights({ classifier: c, categories: data.categories, monthTxs, today, period, budgets, fixedExpenses, uncategorizedCount });
   return {
     insights, classifier: c, salaryCategoryId, calcTxs, listTxs, periodTotals, fixedExpenses, available: avail, budgets, overBudget, score, forecast,
-    uncategorizedCount, monthsWithData,
+    uncategorizedCount, monthsWithData, monthTxs, prevMonths, scoreCtx,
   };
 }

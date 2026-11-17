@@ -73,6 +73,10 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
   return {
     /** Alle brugerens data for en periode. Posteringer på skjulte konti udelades. Gemmes i offline-cachen. */
     fetchAllUserData: (userId: string, period: Period): Promise<UserData> => run(async () => {
+      for (const d of [period.from, period.to]) {
+        const t = new Date(`${d}T00:00:00Z`);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(t.getTime()) || t.toISOString().slice(0, 10) !== d) throw new RepositoryError(`Ugyldig dato: ${d}`, "validation");
+      }
       const [cats, rules, txs, splits, manual, accounts] = await Promise.all([
         sb.from("categories").select("*").eq("user_id", userId).order("name"),
         fetchPaged((a, b) => sb.from("rules").select("id, pattern, category_id, priority").eq("user_id", userId).order("id").range(a, b)),

@@ -8,7 +8,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 import type { Category, CategoryRule, Transaction, TxSplit } from "@/types/finance";
-import { matchesRule, shiftMonth } from "@/lib/finance-engine";
+import { daysInMonth, matchesRule, shiftMonth } from "@/lib/finance-engine";
 import { getServices, type AuthUser, RepositoryError } from "@/services";
 import { friendly } from "./friendly-error";
 import { deriveFinance } from "./finance-selectors";
@@ -49,7 +49,7 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
     dispatch({ type: "loadStarted" });
     const t = today(), thisMonth = t.slice(0, 7);
     try {
-      const data = await svc.repo.fetchAllUserData(user.id, { from: `${shiftMonth(thisMonth, -historyMonths)}-01`, to: `${thisMonth}-31` });
+      const data = await svc.repo.fetchAllUserData(user.id, { from: `${shiftMonth(thisMonth, -historyMonths)}-01`, to: `${thisMonth}-${String(daysInMonth(thisMonth)).padStart(2, "0")}` });
       hasData.current = true;
       dispatch({ type: "loaded", data, source: "network" });
     } catch (e) {

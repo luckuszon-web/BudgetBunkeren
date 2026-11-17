@@ -38,7 +38,7 @@ describe("FinanceStore", () => {
   it("indlæser data og beregner værdier", async () => {
     const { result, repo } = setup();
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
-    expect(repo.fetchAllUserData).toHaveBeenCalledWith("me", { from: "2024-10-01", to: "2026-11-31" });
+    expect(repo.fetchAllUserData).toHaveBeenCalledWith("me", { from: "2024-10-01", to: "2026-11-30" });
     expect(result.current.derived!.available!.expectedIncome).toBe(42000);
     expect(result.current.derived!.overBudget.map((b) => b.category.name)).toEqual(["Restaurant"]);
   });

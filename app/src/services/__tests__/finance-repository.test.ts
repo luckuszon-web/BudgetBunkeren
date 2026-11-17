@@ -48,6 +48,9 @@ describe("fetchAllUserData", () => {
     expect(d.accounts.find((a) => a.id === "acc2")).toMatchObject({ hidden: true, connected: false });
     expect(d.rejected).toBe(1);
   });
+  it("afviser datoer, der ikke findes (fx 31. november)", async () => {
+    await expect(repo.fetchAllUserData(ME, { from: "2026-10-01", to: "2026-11-31" })).rejects.toMatchObject({ code: "validation" });
+  });
   it("tåler at tabeller fra senere databaseopdateringer mangler", async () => {
     const sb = createFakeSupabase(seed(), ME);
     const orig = sb.client as unknown as { from: (t: string) => unknown };

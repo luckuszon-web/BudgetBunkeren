@@ -52,6 +52,9 @@ async function setup(page, db, log){
     if (u.pathname.startsWith('/auth/v1/user') && m==='PUT') { log.push('SETPW'); return json({ id: uid, email: 'demo@example.com' }); }
     if (u.pathname.startsWith('/auth/v1/user')) return json({ id: uid, email: 'demo@example.com', last_sign_in_at: new Date().toISOString(), factors: [] });
     if (u.pathname.startsWith('/auth/v1/')) return json({});
+    // Som Postgres: datoer, der ikke findes (fx 2026-11-31), afvises
+    for (const [, v] of u.searchParams) { const d = /^(?:gte|lte|gt|lt|eq)\.(\d{4}-\d{2}-\d{2})$/.exec(v)?.[1];
+      if (d && (isNaN(new Date(d + 'T00:00:00Z')) || new Date(d + 'T00:00:00Z').toISOString().slice(0, 10) !== d)) return json({ code: '22008', message: `date/time field value out of range: "${d}"` }, 400); }
     const table = u.pathname.split('/').pop(); const rows = db[table] ??= [];
     if (m==='GET'){
       let out = applyFilters(rows, u.searchParams);
