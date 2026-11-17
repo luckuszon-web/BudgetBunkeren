@@ -41,6 +41,8 @@ describe("Ny app", () => {
     expect(screen.getByRole("region", { name: "Om Buffer" }).textContent).toMatch(/uforudsete udgifter/);
     fireEvent.click(screen.getByRole("button", { name: "Luk forklaring" }));
     expect(screen.queryByRole("region", { name: "Om Buffer" })).toBeNull();
+    fireEvent.click(document.querySelector("[aria-controls=score-forklaring-opsparingsrate]")!);
+    expect(screen.getByRole("region", { name: "Om Opsparingsrate" }).textContent).toMatch(/Fuldt point ved 20 %/);
   });
 
   it("Budget: viser bjælker og gemmer et nyt budget", async () => {

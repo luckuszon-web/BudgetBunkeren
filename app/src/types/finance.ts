@@ -191,7 +191,7 @@ export interface HealthScoreResult {
   score: number;
   word: "Fremragende" | "God" | "Kan forbedres" | "Opmærksomhed";
   tone: "good" | "warn" | "bad";
-  parts: { name: string; pts: number; max: number; txt: string; tip: string }[];
+  parts: { name: string; pts: number; max: number; txt: string; tip: string; /** Forklaring (sættes af scoreFor). */ explain?: string; optimal?: boolean }[];
 }
 
 export interface TaxRates {

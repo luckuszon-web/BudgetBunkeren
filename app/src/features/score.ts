@@ -1,7 +1,8 @@
 /** Økonomisk sundhedsscore for en måned (bruges af Overblik og månedsrapporten). */
 import type { Asset, Category, FixedExpenseItem, HealthScoreResult, IsoDate, Transaction, YearMonth } from "@/types/finance";
 import { planFigures } from "./plan-figures";
-import { avg, elapsedFraction, healthScore, monthBudget, monthOf, recurringKey, sumOut, totals, upcomingFixed, type Classifier } from "@/lib/finance-engine";
+import { withTips } from "./score-tips";
+import { avg, elapsedFraction, healthScore, monthBudget, monthOf, recurringKey, spendByCategory, sumOut, totals, upcomingFixed, type Classifier } from "@/lib/finance-engine";
 
 export interface ScoreCtx {
   c: Classifier; categories: readonly Category[]; monthTxs: (m: YearMonth) => readonly Transaction[];
@@ -36,5 +37,14 @@ export function scoreFor(m: YearMonth, x: ScoreCtx): HealthScoreResult & { budge
     expensiveDebtMonths: pf && avgInc ? pf.expensiveDebt / avgInc : null,
     netWorthMonths: pf && avgOut ? pf.netWorth / avgOut : null,
   });
+  // Til forklaringer: budgetter der ikke holder og kategorien med størst stigning mod snittet
+  const offBudget = budgeted.filter((cat) => spent(cat) > monthBudget(cat, m) * Math.min(1, f * 1.1)).map((cat) => cat.name);
+  const cur = spendByCategory(tx, c), prevBy = prev.map((q) => spendByCategory(x.monthTxs(q), c));
+  let rising: { name: string; diff: number } | null = null;
+  for (const [id, v] of cur) {
+    const diff = v - avg(prevBy.map((p) => p.get(id) ?? 0)) * (isCur ? f : 1);
+    if (diff > 0 && (!rising || diff > rising.diff)) rising = { name: x.categories.find((k) => k.id === id)?.name ?? "Uden kategori", diff };
+  }
+  sc.parts = withTips(sc.parts, { inc: expInc, out: outProj, avgInc, avgOut, cash, plan: pf, offBudget, rising });
   return { ...sc, budgetsOk: budgeted.filter((cat) => spent(cat) <= monthBudget(cat, m)).length, budgetsTotal: budgeted.length };
 }

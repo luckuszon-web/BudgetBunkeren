@@ -1,7 +1,8 @@
 import { Fragment, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CheckCircle2, Info, Lightbulb, X } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Info } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { ExplainBox } from "@/components/ui/ExplainBox";
 import { Money } from "@/components/ui/Money";
 import type { KeyFigure, KeyTone } from "@/features/key-figures";
 
@@ -14,25 +15,6 @@ function Value({ f }: { f: KeyFigure }) {
   if (f.unit === "kr") return <Money value={f.value} />;
   if (f.unit === "pct") return <span className="num">{Math.round(f.value * 100)} %</span>;
   return <span className="num">{f.value.toFixed(1).replace(".", ",")} mdr.</span>;
-}
-
-/** Forklaring og tip – vises lige under rækken med det valgte nøgletal (grid-flow-dense holder de andre på plads). */
-function Explain({ f, onClose }: { f: KeyFigure; onClose: () => void }) {
-  const TipIcon = f.optimal ? CheckCircle2 : Lightbulb;
-  return (
-    <div id={`kpi-forklaring-${f.id}`} role="region" aria-label={`Om ${f.label}`} className="col-span-2 rounded-xl border border-border bg-surface p-3 text-sm lg:col-span-4">
-      <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold">{f.label}</p>
-        <button type="button" onClick={onClose} aria-label="Luk forklaring" className="-m-1 rounded-full p-1 text-muted-foreground hover:bg-muted"><X size={16} /></button>
-      </div>
-      <p className="mt-1 text-muted-foreground">{f.explain}</p>
-      <p className="mt-2 flex gap-2">
-        <TipIcon size={16} className={`mt-0.5 shrink-0 ${f.optimal ? "text-success" : "text-warning"}`} aria-hidden />
-        <span><span className="sr-only">{f.optimal ? "Status: " : "Tip: "}</span>{f.tip}</span>
-      </p>
-      {f.value == null && f.missing?.includes("Planlæg") && <Link to="/planlaeg" className="mt-2 inline-block text-primary underline-offset-2 hover:underline">Gå til Planlæg</Link>}
-    </div>
-  );
 }
 
 /** Fire nøgletal med pil i forhold til vejledende pejlemærker. Tryk på et tal for forklaring og tip. */
@@ -54,7 +36,11 @@ export function KeyFiguresCard({ figures }: { figures: KeyFigure[] }) {
                 <span className="mt-1 block truncate text-lg font-semibold"><Value f={f} /></span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">{f.value == null ? f.missing : f.target}</span>
               </button>
-              {isOpen && <Explain f={f} onClose={() => setOpen(null)} />}
+              {isOpen && (
+                <ExplainBox id={`kpi-forklaring-${f.id}`} title={f.label} explain={f.explain} tip={f.tip} optimal={f.optimal} onClose={() => setOpen(null)} className="col-span-2 lg:col-span-4">
+                  {f.value == null && f.missing?.includes("Planlæg") && <Link to="/planlaeg" className="mt-2 inline-block text-primary underline-offset-2 hover:underline">Gå til Planlæg</Link>}
+                </ExplainBox>
+              )}
             </Fragment>
           );
         })}
