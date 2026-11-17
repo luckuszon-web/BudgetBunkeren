@@ -33,7 +33,7 @@ Personligt budgetværktøj (Nordea via Enable Banking). Ejeren + inviterede brug
 - Kategorityper: `expense`, `income`, `transfer` (tæller ikke), `oneoff` (holdes udenfor), `ignore` (helt ude). `one_off` på posteringen = engangskøb.
 - Modregning: udgift/indtægt afgøres af kategoriens type, ikke fortegnet (fremleje under Husleje trækkes fra).
 - Kategorisering: egne regler (200) → standardregler (100) → AI; automatik kun i pengenes retning; manuelle valg røres aldrig. `matchesRule`: æøå udskrevet, mellemrum = ordgrænse, ≤3 tegn = helt ord.
-- Disponibelt = max(indtægt, snit 3 mdr.) − brugt − manglende faste regninger − opsparing. Score 40/30/30 (+ buffer). Løn = kategorien "Løn" (eller indtastet).
+- Disponibelt = max(indtægt, snit 3 mdr.) − brugt − manglende faste regninger − opsparing. Score 40/30/30 (+ buffer 20, dyr gæld 20, formue 10 fra Planlæg – ukendt udelades). Nøgletal på Overblik (`key-figures.ts`, `plan-figures.ts`): opsparingsrate, faste udgifter, buffer, nettoformue mod pejlemærker. Løn = kategorien "Løn" (eller indtastet).
 - Hver ekstra bruger skal have sin egen gratis Enable Banking-app (vilkår); invitation → mail → vælg adgangskode.
 
 ## Status

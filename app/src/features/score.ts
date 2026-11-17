@@ -1,5 +1,6 @@
 /** Økonomisk sundhedsscore for en måned (bruges af Overblik og månedsrapporten). */
-import type { Category, FixedExpenseItem, HealthScoreResult, IsoDate, Transaction, YearMonth } from "@/types/finance";
+import type { Asset, Category, FixedExpenseItem, HealthScoreResult, IsoDate, Transaction, YearMonth } from "@/types/finance";
+import { planFigures } from "./plan-figures";
 import { avg, elapsedFraction, healthScore, monthBudget, monthOf, recurringKey, sumOut, totals, upcomingFixed, type Classifier } from "@/lib/finance-engine";
 
 export interface ScoreCtx {
@@ -9,6 +10,8 @@ export interface ScoreCtx {
   budgetSpent?: (cat: Category, m: YearMonth) => number;
   /** Kontanter/opsparing (Planlæg) – giver bufferpoint, hvis kendt. */
   cash?: number | null;
+  /** Konti, investeringer og gæld fra Planlæg – giver buffer-, gælds- og formuepoint. Tom/ukendt → udelades. */
+  assets?: readonly Asset[] | null;
 }
 
 export function scoreFor(m: YearMonth, x: ScoreCtx): HealthScoreResult & { budgetsOk: number; budgetsTotal: number } {
@@ -25,9 +28,13 @@ export function scoreFor(m: YearMonth, x: ScoreCtx): HealthScoreResult & { budge
   const budgeted = x.categories.filter((k) => k.kind === "expense" && k.monthly_budget > 0);
   const spent = (cat: Category) => (x.budgetSpent ? x.budgetSpent(cat, m) : sumOut(tx.filter((t) => String(c.effCat(t)) === cat.id), c));
   const budgetsOk = budgeted.filter((cat) => spent(cat) <= monthBudget(cat, m) * Math.min(1, f * 1.1)).length;
+  const pf = planFigures(x.assets), cash = x.cash ?? pf?.cash ?? null;
+  const avgInc = avg(prev.map((q) => totals(x.monthTxs(q), c).inc)) || expInc;
   const sc = healthScore({
     savingsRate: expInc ? (expInc - outProj) / expInc : 0, budgetsOk, budgetsTotal: budgeted.length,
-    spendRatio: avgOut ? outProj / avgOut : null, bufferMonths: x.cash && avgOut ? x.cash / avgOut : null,
+    spendRatio: avgOut ? outProj / avgOut : null, bufferMonths: cash != null && avgOut ? cash / avgOut : null,
+    expensiveDebtMonths: pf && avgInc ? pf.expensiveDebt / avgInc : null,
+    netWorthMonths: pf && avgOut ? pf.netWorth / avgOut : null,
   });
   return { ...sc, budgetsOk: budgeted.filter((cat) => spent(cat) <= monthBudget(cat, m)).length, budgetsTotal: budgeted.length };
 }

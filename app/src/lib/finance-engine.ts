@@ -354,9 +354,13 @@ export interface ScoreInput {
   spendRatio?: number | null;
   /** Likvide midler i måneders udgifter. Udelades, hvis ukendt. */
   bufferMonths?: number | null;
+  /** Dyr forbrugsgæld (kreditkort, forbrugslån) i måneders indkomst. Udelades, hvis ukendt (ingen gæld/formue registreret). */
+  expensiveDebtMonths?: number | null;
+  /** Nettoformue i måneders udgifter. Udelades, hvis ukendt. */
+  netWorthMonths?: number | null;
 }
-/** Vægte: opsparingsrate 40, budgetoverholdelse 30, forbrugsstabilitet 30 – plus buffer 20, når den kendes. */
-export const SCORE_WEIGHTS = { savings: 40, budget: 30, spend: 30, buffer: 20 } as const;
+/** Vægte: opsparingsrate 40, budgetoverholdelse 30, forbrugsstabilitet 30 – plus buffer 20, dyr gæld 20 og formue 10, når de kendes. */
+export const SCORE_WEIGHTS = { savings: 40, budget: 30, spend: 30, buffer: 20, debt: 20, wealth: 10 } as const;
 /**
  * Score 0–100. Dele, der ikke kan beregnes (ingen budgetter, ingen historik, ingen buffer), udelades,
  * og scoren normaliseres over de resterende dele.
@@ -375,6 +379,12 @@ export function healthScore(i: ScoreInput): HealthScoreResult {
   }
   if (i.bufferMonths != null) parts.push({ name: "Buffer", max: W.buffer, pts: clamp(i.bufferMonths / 3) * W.buffer,
     txt: `${i.bufferMonths.toFixed(1).replace(".", ",")} mdr. · mål 3`, tip: "Byg en buffer op svarende til 3 måneders udgifter." });
+  const mdr = (v: number) => `${v.toFixed(1).replace(".", ",")} mdr.`;
+  if (i.expensiveDebtMonths != null) parts.push({ name: "Dyr gæld", max: W.debt, pts: clamp(1 - i.expensiveDebtMonths / 3) * W.debt,
+    txt: i.expensiveDebtMonths > 0 ? `${mdr(i.expensiveDebtMonths)} indkomst · mål 0` : "Ingen dyr gæld",
+    tip: "Afdrag kreditkort og forbrugslån først – renten er typisk højere end et realistisk afkast." });
+  if (i.netWorthMonths != null) parts.push({ name: "Formue", max: W.wealth, pts: clamp(i.netWorthMonths / 12) * W.wealth,
+    txt: `${mdr(i.netWorthMonths)} udgifter · mål 12`, tip: "Nettoformue (aktiver minus gæld) svarende til et års udgifter giver robusthed." });
   const max = sum(parts.map((p) => p.max));
   const score = max ? Math.round((sum(parts.map((p) => p.pts)) / max) * 100) : 0;
   const [word, tone] = score >= 85 ? (["Fremragende", "good"] as const) : score >= 70 ? (["God", "good"] as const)

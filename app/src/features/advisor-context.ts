@@ -7,12 +7,16 @@ import { DEBT_KINDS } from "@/types/finance";
 import type { PlanData } from "@/types/plan";
 import { daysInMonth, goalSaved, monthBudget, monthOf, shiftMonth, totals } from "@/lib/finance-engine";
 import type { FinanceDerived } from "./finance-selectors";
+import { keyFigures } from "./key-figures";
+import { planFigures } from "./plan-figures";
+import { scoreFor } from "./score";
 
 export function buildAdvisorContext(d: FinanceDerived, categories: readonly Category[], plan: PlanData | null, today: IsoDate) {
   const c = d.classifier, now = monthOf(today);
   const name = (id: string | null) => (id == null ? "Uden kategori" : c.catById(id)?.name ?? "?");
   const months = Array.from({ length: 7 }, (_, i) => shiftMonth(now, -6 + i)).filter((m) => d.monthTxs(m).length);
   const r = Math.round;
+  const assets = plan?.assets ?? null, sc = assets?.length ? scoreFor(now, { ...d.scoreCtx, assets }) : d.score;
   return {
     i_dag: today,
     måneder: months.map((m) => {
@@ -29,7 +33,8 @@ export function buildAdvisorContext(d: FinanceDerived, categories: readonly Cate
     aktiver: (plan?.assets ?? []).filter((a) => !DEBT_KINDS.has(a.kind)).map((a) => ({ navn: a.name, type: a.kind, værdi: a.value, afkast_pct: a.rate, indskudt: a.invested })),
     gæld: (plan?.assets ?? []).filter((a) => DEBT_KINDS.has(a.kind)).map((a) => ({ navn: a.name, type: a.kind, restgæld: a.value, rente_pct: a.rate, ydelse: a.monthly_payment })),
     spareudfordringer: (plan?.challenges ?? []).filter((x) => x.month === now).map((x) => ({ titel: x.title, loft: x.limit_amount })),
-    score: { point: d.score.score, vurdering: d.score.word },
+    score: { point: sc.score, vurdering: sc.word, dele: sc.parts.map((p) => ({ navn: p.name, point: r(p.pts), max: p.max, tal: p.txt })) },
+    nøgletal_snit_3_mdr: keyFigures(d.scoreCtx, planFigures(assets)).map((k) => ({ navn: k.label, værdi: k.value == null ? null : k.unit === "pct" ? r(k.value * 100) + " %" : k.unit === "months" ? k.value.toFixed(1) + " mdr." : r(k.value) + " kr.", vurdering: k.tone, pejlemærke: k.target })),
     bemærk: "Indbetalinger med en udgiftskategori (fx fremleje under Bolig) er modregnet i kategorien og tæller ikke som indtægt.",
     prognose_næste_måned: d.forecast && {
       forventet_til_overs: r(d.forecast.expected), svag_måned: r(d.forecast.low), god_måned: r(d.forecast.high),

@@ -231,6 +231,13 @@ describe("økonomisk sundhedsscore", () => {
     expect(s.tone).toBe("bad");
     expect(s.word).toBe("Opmærksomhed");
   });
+  it("dyr gæld og formue tæller med, når de kendes", () => {
+    const s = healthScore({ savingsRate: 0.2, expensiveDebtMonths: 1.5, netWorthMonths: 6 });
+    expect(s.parts.find((p) => p.name === "Dyr gæld")!.pts).toBe(10);
+    expect(s.parts.find((p) => p.name === "Formue")!.pts).toBe(5);
+    expect(healthScore({ savingsRate: 0.2, expensiveDebtMonths: 0 }).parts[1]).toMatchObject({ pts: 20, txt: "Ingen dyr gæld" });
+    expect(healthScore({ savingsRate: 0.2 }).parts.map((p) => p.name)).toEqual(["Opsparingsrate"]);   // ukendt → udeladt, ikke 0
+  });
 });
 
 describe("forløb og prognose", () => {

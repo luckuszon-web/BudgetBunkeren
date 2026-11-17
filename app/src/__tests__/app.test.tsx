@@ -33,6 +33,10 @@ describe("Ny app", () => {
     expect(screen.getAllByText(/Restaurant er .* over budget/).length).toBe(2);   // advarsel øverst + indsigt
     expect(screen.getByRole("region", { name: "Advarsler" })).toBeTruthy();
     expect(screen.getByText("Prognose for december")).toBeTruthy();
+    // Nøgletal + score med gæld/formue fra Planlæg (falske data: konto 20.000, billån 5.000 til 5 % = ikke dyr gæld)
+    expect(await screen.findByText("Ingen dyr gæld")).toBeTruthy();
+    expect(screen.getByText("Nøgletal")).toBeTruthy();
+    expect(screen.getByTestId("kpi-networth").textContent).toMatch(/15\.000/);
   });
 
   it("Budget: viser bjælker og gemmer et nyt budget", async () => {
