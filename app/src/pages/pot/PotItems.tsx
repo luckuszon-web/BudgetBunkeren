@@ -34,37 +34,37 @@ export function PotItems({ data, me, onChanged }: { data: PotData; me: string; o
 
   return (
     <Card title="Udgifter" action={months.length > 1 ? (
-      <select value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Måned" className="rounded-lg border border-line bg-card px-2 py-1 text-sm capitalize">
+      <select value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Måned" className="rounded-lg border border-border bg-card px-2 py-1 text-sm capitalize">
         {months.map((m) => <option key={m} value={m}>{monthName(m)}</option>)}
       </select>) : undefined}>
       <div className="mb-3 flex flex-wrap gap-2 text-sm">
-        {data.members.map((m) => <span key={m.user_id} className="rounded-full bg-bg px-3 py-1">{name(m.user_id)} betalte <Money value={paid.get(m.user_id) ?? 0} /></span>)}
+        {data.members.map((m) => <span key={m.user_id} className="rounded-full bg-background px-3 py-1">{name(m.user_id)} betalte <Money value={paid.get(m.user_id) ?? 0} /></span>)}
       </div>
       {byCat.size > 0 && (
-        <p className="mb-3 text-xs text-muted">{[...byCat].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c} ${Math.round(v).toLocaleString("da-DK")} kr.`).join(" · ")}</p>
+        <p className="mb-3 text-xs text-muted-foreground">{[...byCat].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c} ${Math.round(v).toLocaleString("da-DK")} kr.`).join(" · ")}</p>
       )}
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-border">
         {inMonth.map((i) => (
           <li key={i.id} className="flex items-center gap-3 py-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm">{i.kind === "settle" ? "↔ " : ""}{i.description}</p>
-              <p className="text-xs text-muted">{i.item_date} · {name(i.user_id)}{i.category ? ` · ${i.category}` : ""}</p>
+              <p className="text-xs text-muted-foreground">{i.item_date} · {name(i.user_id)}{i.category ? ` · ${i.category}` : ""}</p>
             </div>
             <Money value={i.amount} className="text-sm" />
             {i.user_id === me && (
-              <button type="button" aria-label={`Fjern ${i.description}`} className="p-1 text-muted hover:text-bad"
+              <button type="button" aria-label={`Fjern ${i.description}`} className="p-1 text-muted-foreground hover:text-destructive"
                 onClick={async () => { if (confirm("Fjern linjen?") && (await act.run(async () => { await pots.deleteItem(i.id); return true; }))) onChanged(); }}><Trash2 size={14} /></button>
             )}
           </li>
         ))}
-        {!inMonth.length && <li className="py-3 text-sm text-muted">Ingen udgifter endnu. Læg køb ind fra en postering (tryk på teksten) eller tilføj her.</li>}
+        {!inMonth.length && <li className="py-3 text-sm text-muted-foreground">Ingen udgifter endnu. Læg køb ind fra en postering (tryk på teksten) eller tilføj her.</li>}
       </ul>
       <form className="mt-3 grid grid-cols-[1fr_7rem_auto] gap-2" onSubmit={(e) => { e.preventDefault(); void add(); }}>
         <Input value={text} maxLength={120} onChange={(e) => setText(e.target.value)} placeholder="Fx Netto" aria-label="Tekst" />
         <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="kr." aria-label="Beløb" />
         <Button type="submit" variant="soft" disabled={act.busy}>Tilføj</Button>
       </form>
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

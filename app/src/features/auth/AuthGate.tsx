@@ -30,7 +30,7 @@ export function AuthGate({ auth, boot, onRegister, children }: {
 
   const signOut = useCallback(() => { void auth.signOut().finally(() => setPhase("signedOut")); }, [auth]);
 
-  if (phase === "checking") return <div className="grid min-h-dvh place-items-center text-muted"><Loader2 className="animate-spin" aria-label="Indlæser" /></div>;
+  if (phase === "checking") return <div className="grid min-h-dvh place-items-center text-muted-foreground"><Loader2 className="animate-spin" aria-label="Indlæser" /></div>;
   if (phase === "setPassword") return <SetPasswordScreen kind={boot?.authType ?? "invite"} onSave={async (p) => { await auth.changePassword(p); setPhase("signedIn"); }} />;
   if (phase !== "signedIn") return (
     <LoginScreen mode={phase === "mfa" ? "mfa" : "password"} notice={boot?.authError} invite={boot?.invite}

@@ -26,15 +26,15 @@ export function PotPage() {
   return (
     <>
       <PageHeader title={d?.pot.name ?? "Fælles post"} subtitle={d ? d.members.map((m) => m.name).join(" og ") : "Del fælles udgifter med en anden"} />
-      {pot.loading && !d && !pot.error && <p className="text-sm text-muted">Henter …</p>}
-      {pot.error && <Card><p role="alert" className="text-sm text-bad">{pot.error}</p></Card>}
+      {pot.loading && !d && !pot.error && <p className="text-sm text-muted-foreground">Henter …</p>}
+      {pot.error && <Card><p role="alert" className="text-sm text-destructive">{pot.error}</p></Card>}
       {!pot.loading && !pot.error && !d && <CreatePotCard onCreated={reload} />}
       {d && (
         <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
           <div className="space-y-4">
             <BalanceCard data={d} me={me} onChanged={reload} />
             <Button variant="danger" disabled={act.busy} onClick={remove}>{d.pot.created_by === me ? "Slet fælles post" : "Forlad fælles post"}</Button>
-            {act.error && <p role="alert" className="text-sm text-bad">{act.error}</p>}
+            {act.error && <p role="alert" className="text-sm text-destructive">{act.error}</p>}
           </div>
           <PotItems data={d} me={me} onChanged={reload} />
         </div>

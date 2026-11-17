@@ -15,7 +15,7 @@ export function CategorySelect({ categories, value, onChange, emptyLabel = "Uden
 } & Omit<SelectHTMLAttributes<HTMLSelectElement>, "value" | "onChange">) {
   return (
     <select {...rest} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}
-      className={`min-w-0 rounded-lg border border-line bg-card px-2 py-1.5 text-sm text-ink outline-none focus:border-accent ${rest.className ?? ""}`}>
+      className={`min-w-0 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary ${rest.className ?? ""}`}>
       <option value="">{emptyLabel}</option>
       {GROUPS.map((g) => {
         const list = categories.filter((c) => c.kind === g.kind).sort((a, b) => a.name.localeCompare(b.name, "da"));

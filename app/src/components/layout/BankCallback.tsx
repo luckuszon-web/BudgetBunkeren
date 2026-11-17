@@ -22,10 +22,10 @@ export function BankCallback({ bank }: { bank: BootParams["bank"] }) {
   if (!msg) return null;
   const Icon = msg.tone === "busy" ? Loader2 : msg.tone === "ok" ? CheckCircle2 : TriangleAlert;
   return (
-    <div role={msg.tone === "bad" ? "alert" : "status"} className="mb-4 flex items-start gap-2 rounded-xl border border-line bg-card px-3 py-2.5 text-sm shadow-sm">
-      <Icon size={18} className={`mt-0.5 shrink-0 ${msg.tone === "busy" ? "animate-spin text-accent" : msg.tone === "ok" ? "text-good" : "text-bad"}`} />
+    <div role={msg.tone === "bad" ? "alert" : "status"} className="mb-4 flex items-start gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm shadow-sm">
+      <Icon size={18} className={`mt-0.5 shrink-0 ${msg.tone === "busy" ? "animate-spin text-primary" : msg.tone === "ok" ? "text-success" : "text-destructive"}`} />
       <span className="flex-1">{msg.text}</span>
-      {msg.tone !== "busy" && <button type="button" aria-label="Luk" onClick={() => setMsg(null)} className="text-muted"><X size={16} /></button>}
+      {msg.tone !== "busy" && <button type="button" aria-label="Luk" onClick={() => setMsg(null)} className="text-muted-foreground"><X size={16} /></button>}
     </div>
   );
 }

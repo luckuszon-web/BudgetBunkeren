@@ -35,7 +35,7 @@ export function CategoriesSection() {
 
   return (
     <>
-      <p className="mb-3 text-sm text-muted">Antal og beløb er for de seneste 12 måneder. Tryk på en kategori for at rette den.</p>
+      <p className="mb-3 text-sm text-muted-foreground">Antal og beløb er for de seneste 12 måneder. Tryk på en kategori for at rette den.</p>
       <div className="mb-3"><Button variant="primary" icon={<Plus size={16} />} onClick={() => setEdit({ c: null })}>Ny kategori</Button></div>
       <div className="grid gap-4 lg:grid-cols-2">
         {ORDER.map((kind) => {
@@ -43,17 +43,17 @@ export function CategoriesSection() {
           if (!list.length) return null;
           return (
             <Card key={kind} title={KIND_TEXT[kind]}>
-              {NOTE[kind] && <p className="mb-2 text-xs text-muted">{NOTE[kind]}</p>}
-              <ul className="divide-y divide-line">
+              {NOTE[kind] && <p className="mb-2 text-xs text-muted-foreground">{NOTE[kind]}</p>}
+              <ul className="divide-y divide-border">
                 {list.map((c) => {
                   const u = usage.get(c.id);
                   return (
                     <li key={c.id}>
-                      <button type="button" onClick={() => setEdit({ c })} className="flex w-full items-center gap-3 py-2 text-left hover:bg-bg">
+                      <button type="button" onClick={() => setEdit({ c })} className="flex w-full items-center gap-3 py-2 text-left hover:bg-accent">
                         <CategoryIcon category={c} />
                         <span className="min-w-0 flex-1"><span className="block truncate text-sm">{c.name}</span>
-                          <span className="text-xs text-muted">{u ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"}` : "ikke brugt"}{c.monthly_budget ? ` · budget ${c.monthly_budget.toLocaleString("da-DK")} kr.${c.budget_week ? "/uge" : ""}` : ""}</span></span>
-                        {u && <Money value={Math.abs(u.sum)} className="text-sm text-muted" />}
+                          <span className="text-xs text-muted-foreground">{u ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"}` : "ikke brugt"}{c.monthly_budget ? ` · budget ${c.monthly_budget.toLocaleString("da-DK")} kr.${c.budget_week ? "/uge" : ""}` : ""}</span></span>
+                        {u && <Money value={Math.abs(u.sum)} className="text-sm text-muted-foreground" />}
                       </button>
                     </li>
                   );

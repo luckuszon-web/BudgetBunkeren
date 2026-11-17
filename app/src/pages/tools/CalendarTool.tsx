@@ -30,33 +30,33 @@ export function CalendarTool() {
     <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <Card>
         <div className="mb-3 flex items-center justify-between">
-          <button type="button" aria-label="Forrige måned" onClick={() => setM(shiftMonth(m, -1))} className="rounded-xl border border-line p-2"><ChevronLeft size={18} /></button>
+          <button type="button" aria-label="Forrige måned" onClick={() => setM(shiftMonth(m, -1))} className="rounded-xl border border-border p-2"><ChevronLeft size={18} /></button>
           <p className="font-semibold capitalize">{monthName(m)}</p>
-          <button type="button" aria-label="Næste måned" disabled={m > cm} onClick={() => setM(shiftMonth(m, 1))} className="rounded-xl border border-line p-2 disabled:opacity-30"><ChevronRight size={18} /></button>
+          <button type="button" aria-label="Næste måned" disabled={m > cm} onClick={() => setM(shiftMonth(m, 1))} className="rounded-xl border border-border p-2 disabled:opacity-30"><ChevronRight size={18} /></button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs">
-          {["man", "tir", "ons", "tor", "fre", "lør", "søn"].map((d) => <div key={d} className="pb-1 text-muted">{d}</div>)}
+          {["man", "tir", "ons", "tor", "fre", "lør", "søn"].map((d) => <div key={d} className="pb-1 text-muted-foreground">{d}</div>)}
           {Array.from({ length: first }, (_, i) => <div key={`e${i}`} />)}
           {Array.from({ length: dim }, (_, i) => {
             const d = i + 1, r = res[i], past = r !== undefined, ev = evByDay.get(d);
             const a = past ? 0.14 + 0.46 * Math.min(1, Math.abs(r) / maxAbs) : 0;
-            const bg = past ? (r >= 0 ? `rgba(25,158,112,${a})` : `rgba(217,72,72,${a})`) : undefined;
+            const bg = past ? `color-mix(in oklch, var(${r >= 0 ? "--color-success" : "--color-destructive"}) ${Math.round(a * 100)}%, transparent)` : undefined;
             const isToday = `${m}-${String(d).padStart(2, "0")}` === today;
             return (
               <button key={d} type="button" onClick={() => setPick(pick === d ? null : d)} style={{ background: bg }}
                 aria-label={`${d}. ${past ? `${r >= 0 ? "overskud" : "underskud"} ${formatKr(Math.abs(r))}` : ""}`}
-                className={`flex min-h-12 flex-col items-center justify-start rounded-lg border p-0.5 ${isToday ? "border-accent" : "border-line/60"} ${pick === d ? "ring-2 ring-accent" : ""}`}>
+                className={`flex min-h-12 flex-col items-center justify-start rounded-lg border p-0.5 ${isToday ? "border-primary" : "border-border/60"} ${pick === d ? "ring-2 ring-ring" : ""}`}>
                 <span className="font-medium">{d}</span>
-                {past && <span className="tabular text-[10px]">{r >= 0 ? "+" : "−"}{short(r)}</span>}
-                {ev ? <span className="tabular text-[10px] text-warn">−{short(ev)}</span> : null}
+                {past && <span className="num text-[10px]">{r >= 0 ? "+" : "−"}{short(r)}</span>}
+                {ev ? <span className="num text-[10px] text-warning">−{short(ev)}</span> : null}
               </button>
             );
           })}
         </div>
         <p className="mt-3 text-sm">
           {salary > 0 ? <>Løn <Money value={salary} />{estimated ? " (forventet)" : ""} fordelt på {dim} dage = <b><Money value={salary / dim} /> pr. dag</b>
-            {res.length > 0 && <><br /><span className="text-good">{green} {green === 1 ? "dag" : "dage"} med overskud</span> · <span className="text-bad">{res.length - green} med underskud</span> · {m === cm ? "indtil nu" : "i alt"} <b className={total < 0 ? "text-bad" : "text-good"}><Money value={total} signed /></b></>}</>
-            : <span className="text-muted">Ingen løn fundet – giv lønnen kategorien Løn (eller tast den ind under Indstillinger → Indtastede beløb).</span>}
+            {res.length > 0 && <><br /><span className="text-success">{green} {green === 1 ? "dag" : "dage"} med overskud</span> · <span className="text-destructive">{res.length - green} med underskud</span> · {m === cm ? "indtil nu" : "i alt"} <b className={total < 0 ? "text-destructive" : "text-success"}><Money value={total} signed /></b></>}</>
+            : <span className="text-muted-foreground">Ingen løn fundet – giv lønnen kategorien Løn (eller tast den ind under Indstillinger → Indtastede beløb).</span>}
         </p>
       </Card>
       <div className="space-y-4">
@@ -64,12 +64,12 @@ export function CalendarTool() {
           <Card title={`${pick}. ${monthName(m, false)}`}>
             {res[pick - 1] !== undefined && <p className="mb-2 text-sm">Løn pr. dag <Money value={salary / dim} /> → <b><Money value={res[pick - 1]!} signed /></b></p>}
             <ul className="space-y-1 text-sm">{dayTx.map((t) => <li key={t.id} className="flex justify-between gap-2"><span className="truncate">{t.counterparty || t.text}</span><Money value={t.amount} signed /></li>)}</ul>
-            {!dayTx.length && <p className="text-sm text-muted">Ingen posteringer.</p>}
+            {!dayTx.length && <p className="text-sm text-muted-foreground">Ingen posteringer.</p>}
           </Card>
         )}
         {upcoming.length > 0 && (
           <Card title="På vej">
-            <ul className="space-y-1.5 text-sm">{upcoming.map((f) => <li key={f.key} className="flex justify-between gap-2"><span className="truncate">{f.name} <span className="text-xs text-muted">ca. {f.day}.</span></span><Money value={-f.amount} signed /></li>)}</ul>
+            <ul className="space-y-1.5 text-sm">{upcoming.map((f) => <li key={f.key} className="flex justify-between gap-2"><span className="truncate">{f.name} <span className="text-xs text-muted-foreground">ca. {f.day}.</span></span><Money value={-f.amount} signed /></li>)}</ul>
           </Card>
         )}
       </div>

@@ -17,14 +17,14 @@ export function Modal({ open, title, onClose, children, footer }: { open: boolea
       onCancel={(e) => { e.preventDefault(); onClose(); }}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
       aria-label={title}
-      className="m-auto w-[min(32rem,calc(100%-2rem))] rounded-2xl border border-line bg-card p-0 text-ink shadow-xl backdrop:bg-black/40"
+      className="m-auto w-[min(32rem,calc(100%-2rem))] rounded-2xl border border-border bg-card p-0 text-foreground shadow-xl backdrop:bg-black/40"
     >
-      <div className="flex items-center justify-between border-b border-line px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="font-semibold">{title}</h2>
-        <button type="button" onClick={onClose} aria-label="Luk" className="rounded-lg p-1.5 text-muted hover:bg-bg"><X size={18} /></button>
+        <button type="button" onClick={onClose} aria-label="Luk" className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent"><X size={18} /></button>
       </div>
       <div className="max-h-[70vh] overflow-y-auto px-4 py-3">{children}</div>
-      {footer && <div className="flex justify-end gap-2 border-t border-line px-4 py-3">{footer}</div>}
+      {footer && <div className="flex justify-end gap-2 border-t border-border px-4 py-3">{footer}</div>}
     </dialog>
   );
 }

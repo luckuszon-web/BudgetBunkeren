@@ -22,31 +22,31 @@ export function AnnuityCalculator() {
         <NumberField label="Ekstra afdrag pr. måned" value={extra} onChange={setExtra} suffix="kr." />
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl bg-accent-soft p-4">
-          <p className="text-sm text-muted">Ydelse pr. måned</p>
-          <p className="text-3xl font-semibold tabular text-accent"><Money value={base.payment} /></p>
-          <p className="mt-1 text-xs text-muted">Rente i alt <Money value={base.totalInterest} /> over {months} mdr.</p>
+        <div className="rounded-xl bg-accent p-4">
+          <p className="text-sm text-muted-foreground">Ydelse pr. måned</p>
+          <p className="text-3xl font-semibold num text-primary"><Money value={base.payment} /></p>
+          <p className="mt-1 text-xs text-muted-foreground">Rente i alt <Money value={base.totalInterest} /> over {months} mdr.</p>
         </div>
         {faster && (
-          <div className="rounded-xl border border-line p-4">
-            <p className="text-sm text-muted">Med <Money value={parseDa(extra)} /> ekstra</p>
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-sm text-muted-foreground">Med <Money value={parseDa(extra)} /> ekstra</p>
             <p className="text-xl font-semibold">Gældfri {base.rows.length - faster.rows.length} mdr. før</p>
-            <p className="mt-1 text-xs text-muted">Du sparer <Money value={base.totalInterest - faster.totalInterest} /> i rente.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Du sparer <Money value={base.totalInterest - faster.totalInterest} /> i rente.</p>
           </div>
         )}
       </div>
       {byYear.length > 0 && (
         <>
-          <button type="button" onClick={() => setShowPlan(!showPlan)} className="mt-3 text-sm font-medium text-accent">{showPlan ? "Skjul afdragsplan" : "Vis afdragsplan pr. år"}</button>
+          <button type="button" onClick={() => setShowPlan(!showPlan)} className="mt-3 text-sm font-medium text-primary">{showPlan ? "Skjul afdragsplan" : "Vis afdragsplan pr. år"}</button>
           {showPlan && (
             <div className="mt-2 overflow-x-auto">
-              <table className="w-full text-sm tabular">
-                <thead className="text-left text-xs text-muted"><tr><th className="py-1">År</th><th className="text-right">Rente</th><th className="text-right">Afdrag</th><th className="text-right">Restgæld</th></tr></thead>
+              <table className="w-full text-sm num">
+                <thead className="text-left text-xs text-muted-foreground"><tr><th className="py-1">År</th><th className="text-right">Rente</th><th className="text-right">Afdrag</th><th className="text-right">Restgæld</th></tr></thead>
                 <tbody>
                   {byYear.map((r) => {
                     const yr = base.rows.filter((x) => Math.ceil(x.month / 12) === Math.ceil(r.month / 12));
                     return (
-                      <tr key={r.month} className="border-t border-line">
+                      <tr key={r.month} className="border-t border-border">
                         <td className="py-1">{Math.ceil(r.month / 12)}</td>
                         <td className="text-right"><Money value={yr.reduce((s, x) => s + x.interest, 0)} /></td>
                         <td className="text-right"><Money value={yr.reduce((s, x) => s + x.principal, 0)} /></td>

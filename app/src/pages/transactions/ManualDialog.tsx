@@ -33,10 +33,10 @@ export function ManualDialog({ open, direction: initial = "out", onClose }: { op
     <Modal open={open} onClose={onClose} title={dir === "out" ? "Kontant udgift" : "Indtægt du selv taster"}
       footer={<><Button onClick={onClose}>Fortryd</Button><Button variant="primary" disabled={busy} onClick={save}>{busy ? "Gemmer …" : "Gem"}</Button></>}>
       <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); void save(); }}>
-        <div className="flex rounded-xl bg-line/60 p-1 text-sm" role="tablist" aria-label="Retning">
+        <div className="flex rounded-xl bg-muted/60 p-1 text-sm" role="tablist" aria-label="Retning">
           {(["out", "in"] as const).map((d) => (
             <button key={d} type="button" role="tab" aria-selected={dir === d} onClick={() => { setDir(d); setCat(d === "in" ? derived?.salaryCategoryId ?? null : null); }}
-              className={`flex-1 rounded-lg py-1.5 ${dir === d ? "bg-card font-medium shadow-sm" : "text-muted"}`}>{d === "out" ? "Udgift" : "Indtægt"}</button>
+              className={`flex-1 rounded-lg py-1.5 ${dir === d ? "bg-card font-medium shadow-sm" : "text-muted-foreground"}`}>{d === "out" ? "Udgift" : "Indtægt"}</button>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -45,8 +45,8 @@ export function ManualDialog({ open, direction: initial = "out", onClose }: { op
         </div>
         <Label text="Kategori"><CategorySelect categories={cats} value={cat} onChange={setCat} className="py-2" /></Label>
         <Label text="Tekst (valgfri)"><Input value={note} maxLength={120} onChange={(e) => setNote(e.target.value)} placeholder={dir === "out" ? "Fx Torvehallerne" : "Fx løn fra bijob"} /></Label>
-        {doubleSalary && <p className="text-sm text-warn">Banken har allerede en indbetaling med denne kategori i måneden – pas på, at lønnen ikke tæller dobbelt.</p>}
-        {err && <p role="alert" className="text-sm text-bad">{err}</p>}
+        {doubleSalary && <p className="text-sm text-warning">Banken har allerede en indbetaling med denne kategori i måneden – pas på, at lønnen ikke tæller dobbelt.</p>}
+        {err && <p role="alert" className="text-sm text-destructive">{err}</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

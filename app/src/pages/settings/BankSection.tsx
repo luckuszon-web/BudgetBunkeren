@@ -25,15 +25,15 @@ export function BankSection() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card title="Forbundne banker">
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-border">
           {(sessions.data ?? []).map((s) => {
             const days = Math.ceil((new Date(s.valid_until).getTime() - now) / 864e5);
-            const tone = days <= 0 ? "text-bad" : days <= 14 ? "text-warn" : "text-good";
+            const tone = days <= 0 ? "text-destructive" : days <= 14 ? "text-warning" : "text-success";
             return (
               <li key={s.id} className="flex flex-wrap items-center gap-2 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{s.bank} <span className={`text-xs ${tone}`}>{days <= 0 ? "Udløbet" : days <= 14 ? `Udløber om ${days} dage` : "Aktiv"}</span></p>
-                  <p className="text-xs text-muted">Adgang til {fmt(s.valid_until)}</p>
+                  <p className="text-xs text-muted-foreground">Adgang til {fmt(s.valid_until)}</p>
                 </div>
                 <Button className="min-h-8 px-2.5 text-xs" disabled={act.busy} onClick={() => connect(s.bank)}>Forny</Button>
                 <Button variant="danger" className="min-h-8 px-2.5 text-xs" disabled={act.busy} onClick={async () => {
@@ -43,7 +43,7 @@ export function BankSection() {
               </li>
             );
           })}
-          {sessions.data && !sessions.data.length && <li className="py-2 text-sm text-muted">Ingen bank er forbundet.</li>}
+          {sessions.data && !sessions.data.length && <li className="py-2 text-sm text-muted-foreground">Ingen bank er forbundet.</li>}
         </ul>
         <div className="mt-3 flex flex-wrap gap-2">
           <Select value={bank} onChange={(e) => setBank(e.target.value)} aria-label="Bank" className="w-auto flex-1">
@@ -51,11 +51,11 @@ export function BankSection() {
           </Select>
           <Button variant="primary" icon={<Plus size={16} />} disabled={act.busy} onClick={() => connect()}>Forbind bank</Button>
         </div>
-        <p className="mt-2 text-xs text-muted">Du logger ind med MitID hos banken og kommer tilbage til den nuværende app, som gør forbindelsen færdig.</p>
+        <p className="mt-2 text-xs text-muted-foreground">Du logger ind med MitID hos banken og kommer tilbage til den nuværende app, som gør forbindelsen færdig.</p>
         <Button className="mt-3" icon={<RefreshCw size={16} />} disabled={act.busy} onClick={async () => {
           if (await act.run(async () => { await server.syncNow(); return true; })) await actions.refresh();
         }}>{act.busy ? "Henter …" : "Hent nye posteringer nu"}</Button>
-        {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+        {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
       </Card>
       <AccountsCard />
       <OwnAppCard />

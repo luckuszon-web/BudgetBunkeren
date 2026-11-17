@@ -1,46 +1,174 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
 
-/* Rolige farver: neutral baggrund, én blå accent, grøn/rød/gul kun til status. Mørkt tema følger telefonens indstilling. */
-@theme {
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --color-bg: #f7f7f5;
-  --color-card: #ffffff;
-  --color-line: #e7e5e0;
-  --color-ink: #1c1f24;
-  --color-muted: #6b7280;
-  --color-accent: #2f6fd6;
-  --color-accent-soft: #e8f0fd;
-  --color-good: #15803d;
-  --color-warn: #b45309;
-  --color-bad: #c02626;
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
-/* Mørkt tema: følger telefonen, medmindre man har valgt Lyst/Mørkt under Indstillinger (data-theme på <html>). */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: #0f1115; --color-card: #181b22; --color-line: #2a2f3a; --color-ink: #e8eaee; --color-muted: #9aa1ad;
-    --color-accent: #6ea8fe; --color-accent-soft: #1e2a40; --color-good: #4ade80; --color-warn: #fbbf24; --color-bad: #f87171;
-    color-scheme: dark;
-  }
+
+@theme inline {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", "Manrope", ui-sans-serif, sans-serif;
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-surface: var(--surface);
 }
-:root[data-theme="dark"] {
-  --color-bg: #0f1115; --color-card: #181b22; --color-line: #2a2f3a; --color-ink: #e8eaee; --color-muted: #9aa1ad;
-  --color-accent: #6ea8fe; --color-accent-soft: #1e2a40; --color-good: #4ade80; --color-warn: #fbbf24; --color-bad: #f87171;
+
+:root {
+  --radius: 0.875rem;
+  --background: oklch(0.975 0.006 165);
+  --foreground: oklch(0.2 0.02 200);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 200);
+  --primary: oklch(0.52 0.12 165);
+  --primary-foreground: oklch(0.99 0.01 165);
+  --secondary: oklch(0.94 0.012 170);
+  --secondary-foreground: oklch(0.25 0.03 190);
+  --muted: oklch(0.95 0.008 170);
+  --muted-foreground: oklch(0.5 0.02 200);
+  --accent: oklch(0.93 0.03 165);
+  --accent-foreground: oklch(0.3 0.06 165);
+  --destructive: oklch(0.58 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.58 0.14 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.15 70);
+  --warning-foreground: oklch(0.25 0.05 60);
+  --surface: oklch(0.96 0.008 170);
+  --border: oklch(0.9 0.01 180);
+  --input: oklch(0.9 0.01 180);
+  --ring: oklch(0.52 0.12 165);
+  --chart-1: oklch(0.55 0.13 165);
+  --chart-2: oklch(0.7 0.14 75);
+  --chart-3: oklch(0.6 0.12 250);
+  --chart-4: oklch(0.62 0.17 20);
+  --chart-5: oklch(0.65 0.1 300);
+  --sidebar: oklch(0.99 0.004 165);
+  --sidebar-foreground: oklch(0.2 0.02 200);
+  --sidebar-primary: oklch(0.52 0.12 165);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.02 165);
+  --sidebar-accent-foreground: oklch(0.25 0.05 165);
+  --sidebar-border: oklch(0.9 0.01 180);
+  --sidebar-ring: oklch(0.52 0.12 165);
+}
+
+.dark {
+  --background: oklch(0.16 0.012 220);
+  --foreground: oklch(0.95 0.008 170);
+  --card: oklch(0.205 0.014 220);
+  --card-foreground: oklch(0.95 0.008 170);
+  --popover: oklch(0.22 0.014 220);
+  --popover-foreground: oklch(0.95 0.008 170);
+  --primary: oklch(0.78 0.13 165);
+  --primary-foreground: oklch(0.18 0.03 180);
+  --secondary: oklch(0.26 0.014 220);
+  --secondary-foreground: oklch(0.95 0.008 170);
+  --muted: oklch(0.25 0.012 220);
+  --muted-foreground: oklch(0.68 0.015 200);
+  --accent: oklch(0.3 0.04 170);
+  --accent-foreground: oklch(0.9 0.06 165);
+  --destructive: oklch(0.68 0.18 22);
+  --destructive-foreground: oklch(0.99 0 0);
+  --success: oklch(0.76 0.15 155);
+  --success-foreground: oklch(0.18 0.03 160);
+  --warning: oklch(0.8 0.14 75);
+  --warning-foreground: oklch(0.2 0.04 60);
+  --surface: oklch(0.185 0.013 220);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.78 0.13 165);
+  --chart-1: oklch(0.78 0.13 165);
+  --chart-2: oklch(0.8 0.14 75);
+  --chart-3: oklch(0.7 0.12 250);
+  --chart-4: oklch(0.7 0.16 20);
+  --chart-5: oklch(0.72 0.1 300);
+  --sidebar: oklch(0.18 0.013 220);
+  --sidebar-foreground: oklch(0.95 0.008 170);
+  --sidebar-primary: oklch(0.78 0.13 165);
+  --sidebar-primary-foreground: oklch(0.18 0.03 180);
+  --sidebar-accent: oklch(0.25 0.02 190);
+  --sidebar-accent-foreground: oklch(0.95 0.008 170);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.78 0.13 165);
   color-scheme: dark;
 }
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- BudgetBunkeren-tilføjelser (ikke en del af designsystemet) ---------- */
+html { -webkit-text-size-adjust: 100%; }
+/* Gitter- og flex-elementer må krympe under deres indhold – ellers kan et langt navn gøre hele siden bredere end skærmen */
+.grid > *, .flex > .flex-1 { min-width: 0; }
+/* iPhone zoomer ind i felter med tekst under 16 px */
+@media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
+/* Safe-area: indhold går fri af notch og hjem-indikator */
+.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
+.pt-safe { padding-top: env(safe-area-inset-top); }
 /* Udskrift (årsoversigt som PDF): kun det, der skal printes */
 @media print {
   body.printing #root > * { display: none !important; }
   body.printing #print-root { display: block !important; }
 }
-
-html { -webkit-text-size-adjust: 100%; }
-/* Gitter- og flex-elementer må krympe under deres indhold – ellers kan et langt navn gøre hele siden bredere end skærmen */
-.grid > *, .flex > .flex-1 { min-width: 0; }
-body { background: var(--color-bg); color: var(--color-ink); }
-/* Tal står pænt under hinanden */
-.tabular { font-variant-numeric: tabular-nums; }
-/* iPhone zoomer ind i felter med tekst under 16 px */
-@media (max-width: 767px) { input, select, textarea { font-size: 16px !important; } }
-/* Safe-area: bundmenu og indhold går fri af hjem-indikatoren og notch'en */
-.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
-.pt-safe { padding-top: env(safe-area-inset-top); }

@@ -26,13 +26,13 @@ export function BalanceCard({ data, me, onChanged }: { data: PotData; me: string
 
   return (
     <Card title="Balance">
-      <p className="text-sm text-muted">{mine > 0.5 ? `${other?.name ?? "Den anden"} skylder dig` : mine < -0.5 ? `Du skylder ${other?.name ?? "den anden"}` : "I er kvit"}</p>
-      <p className={`text-3xl font-semibold tabular ${mine < -0.5 ? "text-bad" : mine > 0.5 ? "text-good" : ""}`}><Money value={Math.abs(mine)} /></p>
-      <p className="mt-1 text-xs text-muted">
+      <p className="text-sm text-muted-foreground">{mine > 0.5 ? `${other?.name ?? "Den anden"} skylder dig` : mine < -0.5 ? `Du skylder ${other?.name ?? "den anden"}` : "I er kvit"}</p>
+      <p className={`text-3xl font-semibold num ${mine < -0.5 ? "text-destructive" : mine > 0.5 ? "text-success" : ""}`}><Money value={Math.abs(mine)} /></p>
+      <p className="mt-1 text-xs text-muted-foreground">
         Fælles udgifter i alt <Money value={total} /> · din andel {Math.round(potShare(data.pot, me) * 100)} %, {other?.name ?? "partner"} {Math.round((1 - potShare(data.pot, me)) * 100)} %
       </p>
       {mine < -0.5 && <Button variant="primary" className="mt-3" disabled={act.busy} onClick={settle}>Jeg har betalt – afregn</Button>}
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

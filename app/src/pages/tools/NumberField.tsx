@@ -8,7 +8,7 @@ export function NumberField({ label, value, onChange, suffix }: { label: string;
     <Label text={label}>
       <div className="relative">
         <Input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} className={suffix ? "pr-12" : ""} />
-        {suffix && <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-muted">{suffix}</span>}
+        {suffix && <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-muted-foreground">{suffix}</span>}
       </div>
     </Label>
   );

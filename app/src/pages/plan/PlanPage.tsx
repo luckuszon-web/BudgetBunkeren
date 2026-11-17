@@ -25,12 +25,12 @@ export function PlanPage() {
     <>
       <PageHeader title="Planlæg" subtitle="Formue, mål og gæld" />
       <nav className="mb-4 flex flex-wrap gap-2 md:hidden" aria-label="Genveje">
-        <Link to="/faelles" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><Users size={14} /> Fælles post</Link>
-        <Link to="/vaerktoejer" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><Calculator size={14} /> Værktøjer</Link>
-        <Link to="/raadgiver" className="flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm"><MessageCircle size={14} /> Rådgiver</Link>
+        <Link to="/faelles" className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm"><Users size={14} /> Fælles post</Link>
+        <Link to="/vaerktoejer" className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm"><Calculator size={14} /> Værktøjer</Link>
+        <Link to="/raadgiver" className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm"><MessageCircle size={14} /> Rådgiver</Link>
       </nav>
-      {plan.error && !d && <Card><p role="alert" className="text-sm text-bad">{plan.error}</p></Card>}
-      {!d && !plan.error && <p className="text-sm text-muted">Henter …</p>}
+      {plan.error && !d && <Card><p role="alert" className="text-sm text-destructive">{plan.error}</p></Card>}
+      {!d && !plan.error && <p className="text-sm text-muted-foreground">Henter …</p>}
       {d && (
         <div className="grid gap-4 lg:grid-cols-2">
           <NetWorthCard assets={d.assets} history={d.history} onEdit={(a) => setAsset({ a })} onAdd={() => setAsset({ a: null })} />

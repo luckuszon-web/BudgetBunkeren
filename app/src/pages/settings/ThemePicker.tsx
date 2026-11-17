@@ -1,23 +1,18 @@
-import { useState } from "react";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { isDark, setTheme } from "@/lib/theme";
 
-type Theme = "system" | "light" | "dark";
-const read = (): Theme => { try { const t = localStorage.getItem("theme"); return t === "light" || t === "dark" ? t : "system"; } catch { return "system"; } };
-
-/** Lyst/mørkt/system – gemmes på enheden (samme indstilling som den klassiske app). */
+/** Lyst/mørkt tema (mørkt er standard) – gemmes på enheden. */
 export function ThemePicker() {
-  const [t, setT] = useState<Theme>(read);
-  const pick = (v: Theme) => {
-    setT(v);
-    try { if (v === "system") localStorage.removeItem("theme"); else localStorage.setItem("theme", v); } catch { /* ok */ }
-    if (v === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
-  };
-  const opts: [Theme, string, typeof Sun][] = [["system", "System", Monitor], ["light", "Lyst", Sun], ["dark", "Mørkt", Moon]];
+  const [dark, setDark] = useState(true);
+  useEffect(() => setDark(isDark()), []);
+  const pick = (d: boolean) => { setDark(d); setTheme(d); };
+  const opts: [boolean, string, typeof Sun][] = [[true, "Mørkt", Moon], [false, "Lyst", Sun]];
   return (
-    <div role="radiogroup" aria-label="Tema" className="flex rounded-xl bg-line/60 p-1 text-sm">
-      {opts.map(([v, label, Icon]) => (
-        <button key={v} type="button" role="radio" aria-checked={t === v} onClick={() => pick(v)}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 ${t === v ? "bg-card font-medium shadow-sm" : "text-muted"}`}><Icon size={14} />{label}</button>
+    <div role="radiogroup" aria-label="Tema" className="flex rounded-lg bg-muted p-1 text-sm">
+      {opts.map(([d, label, Icon]) => (
+        <button key={label} type="button" role="radio" aria-checked={dark === d} onClick={() => pick(d)}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 transition-colors ${dark === d ? "bg-card font-medium text-foreground shadow-sm" : "text-muted-foreground"}`}><Icon size={14} />{label}</button>
       ))}
     </div>
   );

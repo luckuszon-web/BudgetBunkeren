@@ -30,7 +30,7 @@ export function GoalsCard({ goals, onEdit, onAdd, onChanged }: { goals: SavingsG
 
   return (
     <Card title="Opsparingsmål" action={<Button variant="soft" icon={<Plus size={16} />} onClick={onAdd}>Nyt mål</Button>}>
-      {!goals.length ? <p className="text-sm text-muted">Sæt et mål – fx en buffer på 3 måneders udgifter eller en rejse.</p> : (
+      {!goals.length ? <p className="text-sm text-muted-foreground">Sæt et mål – fx en buffer på 3 måneders udgifter eller en rejse.</p> : (
         <ul className="space-y-4">
           {goals.map((g) => {
             const saved = goalSaved(g, derived.calcTxs, derived.classifier), left = Math.max(0, g.target_amount - saved), ratio = saved / g.target_amount;
@@ -39,16 +39,16 @@ export function GoalsCard({ goals, onEdit, onAdd, onChanged }: { goals: SavingsG
               <li key={g.id}>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="min-w-0 truncate font-medium">{g.icon ? `${g.icon} ` : ""}{g.name}</span>
-                  <span className="text-sm text-muted tabular">{Math.round(ratio * 100)} %</span>
+                  <span className="text-sm text-muted-foreground num">{Math.round(ratio * 100)} %</span>
                 </div>
                 <div className="mt-1.5"><ProgressBar ratio={ratio} tone="ok" label={`${g.name}: ${Math.round(ratio * 100)} % sparet`} /></div>
-                <p className="mt-1 text-xs text-muted">
+                <p className="mt-1 text-xs text-muted-foreground">
                   <Money value={saved} /> af <Money value={g.target_amount} />
                   {left <= 0 ? " · målet er nået 🎉" : m ? ` · nås om ${monthsText(m)}` : " · sæt et månedligt beløb for at se, hvornår målet nås"}
                   {g.target_date && left > 0 ? ` · senest ${new Date(g.target_date).toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric" })}` : ""}
                   {g.linked_category_id ? " · fyldes automatisk" : ""}
                 </p>
-                {faster > 0 && <p className="text-xs text-accent">Med 500 kr. mere om måneden nås målet {monthsText(faster)} før.</p>}
+                {faster > 0 && <p className="text-xs text-primary">Med 500 kr. mere om måneden nås målet {monthsText(faster)} før.</p>}
                 {depositFor === g.id ? (
                   <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); void deposit(g); }}>
                     <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Beløb" aria-label={`Indbetal til ${g.name}`} autoFocus />
@@ -66,7 +66,7 @@ export function GoalsCard({ goals, onEdit, onAdd, onChanged }: { goals: SavingsG
           })}
         </ul>
       )}
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

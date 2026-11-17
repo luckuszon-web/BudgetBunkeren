@@ -17,20 +17,20 @@ export function DebtCard({ assets, onEdit, onAdd }: { assets: Asset[]; onEdit: (
   const debts = assets.filter((a) => isDebt(a.kind));
   return (
     <Card title="Gæld – afbetaling" action={<Button variant="soft" icon={<Plus size={16} />} onClick={onAdd}>Tilføj gæld</Button>}>
-      {!debts.length ? <p className="text-sm text-muted">Ingen gæld registreret. Har du fx lån i bilen eller boligen, så tilføj restgæld, rente og ydelse – så kan du se, hvornår du er gældfri.</p> : (
-        <ul className="divide-y divide-line">
+      {!debts.length ? <p className="text-sm text-muted-foreground">Ingen gæld registreret. Har du fx lån i bilen eller boligen, så tilføj restgæld, rente og ydelse – så kan du se, hvornår du er gældfri.</p> : (
+        <ul className="divide-y divide-border">
           {debts.map((d) => {
             const n = monthsToPayoff(d.value, d.rate, d.monthly_payment), faster = monthsToPayoff(d.value, d.rate, (d.monthly_payment ?? 0) + 500);
             return (
               <li key={d.id}>
                 <button type="button" onClick={() => onEdit(d)} className="w-full py-2 text-left">
-                  <div className="flex justify-between gap-2"><span className="truncate font-medium">{d.name}</span><Money value={d.value} className="text-bad" /></div>
-                  <p className="text-xs text-muted">
+                  <div className="flex justify-between gap-2"><span className="truncate font-medium">{d.name}</span><Money value={d.value} className="text-destructive" /></div>
+                  <p className="text-xs text-muted-foreground">
                     {d.rate != null ? `${String(d.rate).replace(".", ",")} % rente · ` : ""}
                     {d.monthly_payment ? <><Money value={d.monthly_payment} />/md. · {when(n)}</> : "Skriv ydelsen for at se, hvornår gælden er betalt"}
                   </p>
                   {Number.isFinite(n) && Number.isFinite(faster) && n - faster > 0 && (
-                    <p className="text-xs text-accent">Med 500 kr. ekstra om måneden: {n - faster} mdr. hurtigere.</p>
+                    <p className="text-xs text-primary">Med 500 kr. ekstra om måneden: {n - faster} mdr. hurtigere.</p>
                   )}
                 </button>
               </li>
@@ -48,17 +48,17 @@ export function InvestCard({ assets, onEdit }: { assets: Asset[]; onEdit: (a: As
   const total = inv.reduce((s, a) => s + a.value, 0);
   return (
     <Card title="Investeringer og pension">
-      {!inv.length ? <p className="text-sm text-muted">Tilføj investeringer eller pension under Nettoformue.</p> : (
+      {!inv.length ? <p className="text-sm text-muted-foreground">Tilføj investeringer eller pension under Nettoformue.</p> : (
         <>
-          <p className="text-2xl font-semibold tabular"><Money value={total} /></p>
-          <ul className="mt-2 divide-y divide-line">
+          <p className="text-2xl font-semibold num"><Money value={total} /></p>
+          <ul className="mt-2 divide-y divide-border">
             {inv.map((a) => {
               const gain = a.invested ? a.value - a.invested : null;
               return (
                 <li key={a.id}>
                   <button type="button" onClick={() => onEdit(a)} className="flex w-full items-center justify-between gap-2 py-2 text-left">
                     <span className="min-w-0"><span className="block truncate text-sm">{a.name}</span>
-                      {a.rate != null && <span className="text-xs text-muted">forventet {String(a.rate).replace(".", ",")} % om året</span>}</span>
+                      {a.rate != null && <span className="text-xs text-muted-foreground">forventet {String(a.rate).replace(".", ",")} % om året</span>}</span>
                     <span className="text-right"><Money value={a.value} className="block text-sm" />
                       {gain != null && <Money value={gain} signed tone className="text-xs" />}</span>
                   </button>

@@ -23,7 +23,7 @@ export function PinLock({ onSignOut, children }: { onSignOut: () => void; childr
           if (await checkPin(code)) { fails.current = 0; setLocked(false); return null; }
           if (++fails.current >= 5) { clearPin(); onSignOut(); return "Forkert kode for mange gange."; }
           return "Forkert kode – prøv igen.";
-        }} footer={<button type="button" onClick={forgot} className="text-sm text-accent">Glemt koden?</button>} />
+        }} footer={<button type="button" onClick={forgot} className="text-sm text-primary">Glemt koden?</button>} />
       )}
     </>
   );

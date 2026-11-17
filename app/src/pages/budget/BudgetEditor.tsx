@@ -41,10 +41,10 @@ export function BudgetEditor({ open, category, onClose }: { open: boolean; categ
           <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
         </Label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={week} onChange={(e) => setWeek(e.target.checked)} className="h-4 w-4 accent-[var(--color-accent)]" />
+          <input type="checkbox" checked={week} onChange={(e) => setWeek(e.target.checked)} className="h-4 w-4 accent-[var(--color-primary)]" />
           Budget pr. uge (godt til fx dagligvarer)
         </label>
-        {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

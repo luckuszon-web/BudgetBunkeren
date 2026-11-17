@@ -45,24 +45,24 @@ export function AdvisorPage() {
     <>
       <PageHeader title="Rådgiver" subtitle="Spørg om din økonomi" action={msgs.length ? <Button onClick={() => setMsgs([])}>Ny samtale</Button> : undefined} />
       <Card>
-        <p className="mb-3 text-xs text-muted">Rådgiveren ser et sammendrag af dine tal (pr. måned og kategori, faste udgifter, budgetter, mål og formue) – ikke de enkelte posteringer. Svarene er vejledende og kan indeholde fejl.</p>
+        <p className="mb-3 text-xs text-muted-foreground">Rådgiveren ser et sammendrag af dine tal (pr. måned og kategori, faste udgifter, budgetter, mål og formue) – ikke de enkelte posteringer. Svarene er vejledende og kan indeholde fejl.</p>
         <div className="grid gap-2.5" aria-live="polite">
           {msgs.map((m, i) => (
-            <div key={i} className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "justify-self-end rounded-br-md bg-accent-soft" : `justify-self-start rounded-bl-md border ${m.error ? "border-bad/40 text-bad" : "border-line bg-bg"}`}`}>
+            <div key={i} className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === "user" ? "justify-self-end rounded-br-md bg-accent" : `justify-self-start rounded-bl-md border ${m.error ? "border-destructive/40 text-destructive" : "border-border bg-background"}`}`}>
               {m.role === "user" ? m.content : <Formatted text={m.content} />}
             </div>
           ))}
-          {busy && <div className="justify-self-start rounded-2xl border border-line px-3.5 py-2.5 text-sm text-muted">Tænker over dine tal …</div>}
-          {!msgs.length && !busy && <p className="text-sm text-muted">Stil et spørgsmål, eller vælg et af forslagene herunder.</p>}
+          {busy && <div className="justify-self-start rounded-2xl border border-border px-3.5 py-2.5 text-sm text-muted-foreground">Tænker over dine tal …</div>}
+          {!msgs.length && !busy && <p className="text-sm text-muted-foreground">Stil et spørgsmål, eller vælg et af forslagene herunder.</p>}
           <div ref={end} />
         </div>
         {msgs.length <= 1 && !busy && (
-          <div className="mt-3 flex flex-wrap gap-2">{SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => void ask(s)} className="rounded-full border border-line px-3 py-1 text-left text-sm hover:bg-bg">{s}</button>)}</div>
+          <div className="mt-3 flex flex-wrap gap-2">{SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => void ask(s)} className="rounded-full border border-border px-3 py-1 text-left text-sm hover:bg-accent">{s}</button>)}</div>
         )}
         <form className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2" onSubmit={(e) => { e.preventDefault(); void ask(input); }}>
           <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={2} maxLength={2000} placeholder="Skriv et spørgsmål …" aria-label="Dit spørgsmål"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void ask(input); } }}
-            className="w-full resize-y rounded-xl border border-line bg-card px-3 py-2 text-sm outline-none focus:border-accent" />
+            className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary" />
           <Button type="submit" variant="primary" disabled={busy || !input.trim()} icon={<Send size={16} />}>Send</Button>
         </form>
       </Card>

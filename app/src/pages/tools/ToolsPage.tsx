@@ -26,11 +26,11 @@ export function ToolsPage() {
   const pick = (id: string) => { setTool(id); try { localStorage.setItem("tool", id); } catch { /* ok */ } };
   return (
     <>
-      <PageHeader title="Værktøjer" action={<Link to="/raadgiver" className="flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-2 text-sm"><MessageCircle size={16} /> Rådgiver</Link>} />
+      <PageHeader title="Værktøjer" action={<Link to="/raadgiver" className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-sm"><MessageCircle size={16} /> Rådgiver</Link>} />
       <div role="tablist" aria-label="Værktøj" className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {TOOLS.map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tool === t.id} onClick={() => pick(t.id)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${tool === t.id ? "border-accent bg-accent-soft text-accent" : "border-line bg-card"}`}>{t.label}</button>
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm ${tool === t.id ? "border-primary bg-accent text-accent-foreground" : "border-border bg-card"}`}>{t.label}</button>
         ))}
       </div>
       {TOOLS.find((t) => t.id === tool)?.el}

@@ -63,10 +63,13 @@ async function functional(page, db) {
   }
   // Den nye app (docs/ny – bygget fra app/): alle sider uden konsolfejl og uden vandret scroll
   if (fs.existsSync(path.join(__dirname, '..', 'docs', 'ny', 'index.html'))) {
-    for (const [name, w, hh, mob] of SIZES) {
-      console.log(`ny app · ${name}`);
+    for (const [name, w, hh, mob] of SIZES) for (const theme of ['dark', 'light']) {
+      console.log(`ny app · ${name} · ${theme === 'dark' ? 'mørkt' : 'lyst'} tema`);
       const { browser, page, errors, log } = await h.open({ mobile: mob, dpr: 1, url: h.SITE + 'ny/' });
       await page.setViewportSize({ width: w, height: hh });
+      await page.evaluate((t) => localStorage.setItem('bb-theme', t), theme);
+      await page.reload(); await page.waitForTimeout(800);
+      if ((await page.evaluate(() => document.documentElement.classList.contains('dark'))) !== (theme === 'dark')) fail(`ny app: temaet ${theme} blev ikke sat`);
       for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer'],
         ['planlaeg', 'Planlæg'], ['faelles', 'Fælles post'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
         ['indstillinger/kategorier', 'Kategorier'], ['indstillinger/regler', 'Regler'], ['indstillinger/indtastet', 'Indtastede beløb'],
@@ -77,7 +80,7 @@ async function functional(page, db) {
         if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);
         if (r.over > 0) fail(`ny app /${route}: ${r.over}px for bred på ${name}`);
       }
-      if (name === 'computer') {
+      if (name === 'computer' && theme === 'dark') {
         // Forsiden sender videre til den nye app og tager ?… med (bank-login, invitation)
         await page.goto(h.SITE + '?code=abc&state=11111111-2222-4333-8444-555555555555'); await page.waitForTimeout(1500);
         if (!/\/ny\/$|\/ny\/#\/?$/.test(page.url())) fail(`forsiden sendte ikke videre korrekt: ${page.url()}`);

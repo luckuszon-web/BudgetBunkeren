@@ -19,8 +19,8 @@ export function RuleSuggestions() {
       {sug.map((g) => {
         const name = state.data!.categories.find((c) => c.id === g.categoryId)?.name ?? "?";
         return (
-          <div key={g.keyword} className="flex flex-wrap items-center gap-2 rounded-2xl border border-accent/30 bg-accent-soft p-3 text-sm">
-            <Wand2 size={16} className="shrink-0 text-accent" />
+          <div key={g.keyword} className="flex flex-wrap items-center gap-2 rounded-2xl border border-primary/30 bg-accent p-3 text-sm">
+            <Wand2 size={16} className="shrink-0 text-primary" />
             <span className="min-w-0 flex-1">Du har {g.count} gange givet <b>"{g.keyword}"</b> kategorien <b>{name}</b>. Skal appen gøre det selv fremover?</span>
             <Button variant="primary" className="min-h-8 px-2.5 text-xs" onClick={() => void actions.createRule(g.keyword, g.categoryId)}>Lav regel</Button>
             <Button className="min-h-8 px-2.5 text-xs" onClick={() => dismiss(`${g.keyword}|${g.categoryId}`)}>Nej tak</Button>

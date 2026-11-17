@@ -74,7 +74,7 @@ export function CategoryDialog({ open, category, onClose }: { open: boolean; cat
           <button type="submit" hidden />
         </form>
       )}
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Modal>
   );
 }

@@ -19,16 +19,16 @@ export function AlertBar() {
   const items = buildAlerts(derived.budgets, subs, fresh, today);
   if (!items.length) return null;
   return (
-    <div className="mb-4 flex items-start gap-2 rounded-2xl border border-warn/40 bg-card p-3 shadow-sm" role="region" aria-label="Advarsler">
+    <div className="mb-4 flex items-start gap-2 rounded-2xl border border-warning/40 bg-card p-3 shadow-sm" role="region" aria-label="Advarsler">
       <ul className="min-w-0 flex-1 space-y-1.5">
         {items.slice(0, 3).map((a) => (
           <li key={a.id}><Link to={a.to} className="flex items-start gap-2 text-sm hover:underline">
-            <AlertTriangle size={16} className={`mt-0.5 shrink-0 ${a.tone === "bad" ? "text-bad" : "text-warn"}`} />{a.text}
+            <AlertTriangle size={16} className={`mt-0.5 shrink-0 ${a.tone === "bad" ? "text-destructive" : "text-warning"}`} />{a.text}
           </Link></li>
         ))}
-        {items.length > 3 && <li className="text-xs text-muted">+{items.length - 3} mere</li>}
+        {items.length > 3 && <li className="text-xs text-muted-foreground">+{items.length - 3} mere</li>}
       </ul>
-      <button type="button" aria-label="Luk advarsler for i dag" className="p-1 text-muted"
+      <button type="button" aria-label="Luk advarsler for i dag" className="p-1 text-muted-foreground"
         onClick={() => { try { localStorage.setItem(KEY, today); } catch { /* ok */ } setClosed(true); }}><X size={16} /></button>
     </div>
   );

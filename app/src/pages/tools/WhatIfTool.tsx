@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { LineChart } from "@/components/charts/LineChart";
+import { SERIES } from "@/components/charts/palette";
 import { useFinance } from "@/features/finance-store";
 import { useResource } from "@/features/services-context";
 import { annuityPayment } from "@/lib/finance-engine";
@@ -46,10 +47,10 @@ export function WhatIfTool() {
         <div className="mb-3 flex flex-wrap gap-2">
           {Object.entries(PRESETS).map(([k, p]) => (
             <button key={k} type="button" aria-pressed={preset === k} onClick={() => { setPreset(k); setF(p.f); }}
-              className={`rounded-full border px-3 py-1 text-sm ${preset === k ? "border-accent bg-accent-soft text-accent" : "border-line"}`}>{p.label}</button>
+              className={`rounded-full border px-3 py-1 text-sm ${preset === k ? "border-primary bg-accent text-accent-foreground" : "border-border"}`}>{p.label}</button>
           ))}
         </div>
-        <p className="mb-3 text-xs text-muted">{PRESETS[preset]?.note ?? "Dine egne tal."}</p>
+        <p className="mb-3 text-xs text-muted-foreground">{PRESETS[preset]?.note ?? "Dine egne tal."}</p>
         <div className="grid grid-cols-2 gap-3">
           <NumberField label="Engangsbeløb" value={f.upfront} onChange={set("upfront")} suffix="kr." />
           <NumberField label="Lån" value={f.loan} onChange={set("loan")} suffix="kr." />
@@ -64,24 +65,24 @@ export function WhatIfTool() {
       <Card title="Resultat">
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between"><dt>Til overs pr. måned i dag (snit af {sim.base.n} mdr.)</dt><dd><Money value={sim.surplus} /></dd></div>
-          {sim.pay > 0 && <div className="flex justify-between text-muted"><dt>Ydelse på lånet</dt><dd><Money value={-sim.pay} signed /></dd></div>}
-          {n.extra !== 0 && <div className="flex justify-between text-muted"><dt>Ekstra faste udgifter</dt><dd><Money value={-n.extra} signed /></dd></div>}
-          {n.income !== 0 && <div className="flex justify-between text-muted"><dt>Ændring i indkomst</dt><dd><Money value={n.income} signed /></dd></div>}
-          <div className="flex justify-between font-semibold"><dt>Til overs pr. måned bagefter</dt><dd className={sim.after < 0 ? "text-bad" : "text-good"}><Money value={sim.after} /></dd></div>
-          {sim.pay > 0 && <div className="flex justify-between text-xs text-muted"><dt>Renter i alt</dt><dd><Money value={sim.interest} /></dd></div>}
+          {sim.pay > 0 && <div className="flex justify-between text-muted-foreground"><dt>Ydelse på lånet</dt><dd><Money value={-sim.pay} signed /></dd></div>}
+          {n.extra !== 0 && <div className="flex justify-between text-muted-foreground"><dt>Ekstra faste udgifter</dt><dd><Money value={-n.extra} signed /></dd></div>}
+          {n.income !== 0 && <div className="flex justify-between text-muted-foreground"><dt>Ændring i indkomst</dt><dd><Money value={n.income} signed /></dd></div>}
+          <div className="flex justify-between font-semibold"><dt>Til overs pr. måned bagefter</dt><dd className={sim.after < 0 ? "text-destructive" : "text-success"}><Money value={sim.after} /></dd></div>
+          {sim.pay > 0 && <div className="flex justify-between text-xs text-muted-foreground"><dt>Renter i alt</dt><dd><Money value={sim.interest} /></dd></div>}
         </dl>
-        <table className="mt-3 w-full text-sm tabular">
-          <thead className="text-xs text-muted"><tr><th /><th className="text-right">12 mdr.</th><th className="text-right">24 mdr.</th><th className="text-right">36 mdr.</th></tr></thead>
+        <table className="mt-3 w-full text-sm num">
+          <thead className="text-xs text-muted-foreground"><tr><th /><th className="text-right">12 mdr.</th><th className="text-right">24 mdr.</th><th className="text-right">36 mdr.</th></tr></thead>
           <tbody>
             {([["Forskel i opsparing", (i: number) => sim.withS[i]! - sim.without[i]!], ["Forskel i formue", (i: number) => sim.net[i]!]] as const).map(([k, fn]) => (
-              <tr key={k} className="border-t border-line"><td className="py-1">{k}</td>{[12, 24, 36].map((i) => <td key={i} className={`text-right ${fn(i) < 0 ? "text-bad" : "text-good"}`}><Money value={fn(i)} signed /></td>)}</tr>
+              <tr key={k} className="border-t border-border"><td className="py-1">{k}</td>{[12, 24, 36].map((i) => <td key={i} className={`text-right ${fn(i) < 0 ? "text-destructive" : "text-success"}`}><Money value={fn(i)} signed /></td>)}</tr>
             ))}
           </tbody>
         </table>
         <div className="mt-3"><LineChart labels={sim.without.map((_, i) => (i ? `${i} mdr.` : "Nu"))} zeroBased={false}
-          series={[{ name: "Med", color: "#3987e5", values: sim.withS }, { name: "Uden", color: "#8b93a1", values: sim.without, dashed: true }]} /></div>
-        {sim.after < 0 && <p className="mt-2 text-sm text-bad">Du vil bruge mere, end du tjener, hver måned.</p>}
-        <p className="mt-2 text-xs text-muted">{cash ? <>Starter fra dine konti under Planlæg (<Money value={cash} />).</> : "Tip: Tilføj dine konti under Planlæg, så kurverne starter fra din rigtige opsparing."}</p>
+          series={[{ name: "Med", color: SERIES.main, values: sim.withS }, { name: "Uden", color: SERIES.normal, values: sim.without, dashed: true }]} /></div>
+        {sim.after < 0 && <p className="mt-2 text-sm text-destructive">Du vil bruge mere, end du tjener, hver måned.</p>}
+        <p className="mt-2 text-xs text-muted-foreground">{cash ? <>Starter fra dine konti under Planlæg (<Money value={cash} />).</> : "Tip: Tilføj dine konti under Planlæg, så kurverne starter fra din rigtige opsparing."}</p>
       </Card>
     </div>
   );

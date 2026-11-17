@@ -31,10 +31,10 @@ export function DataSection() {
             if (r) { await actions.refresh(); setMsg(`Kategoriseret igen${r.result?.updated != null ? ` – ${r.result.updated} ændret` : ""}.`); }
           }}>Kategorisér igen</Button>
         </div>
-        <p className="mt-2 text-xs text-muted">"Kategorisér igen" bruger dine regler, standardreglerne og AI på posteringer, du ikke selv har valgt kategori til.</p>
-        {act.busy && <p className="mt-2 text-sm text-muted">Arbejder … det kan tage et minut.</p>}
-        {msg && <p className="mt-2 text-sm text-good">{msg}</p>}
-        {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+        <p className="mt-2 text-xs text-muted-foreground">"Kategorisér igen" bruger dine regler, standardreglerne og AI på posteringer, du ikke selv har valgt kategori til.</p>
+        {act.busy && <p className="mt-2 text-sm text-muted-foreground">Arbejder … det kan tage et minut.</p>}
+        {msg && <p className="mt-2 text-sm text-success">{msg}</p>}
+        {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
       </Card>
       <Card title="Eksport">
         <div className="grid gap-2">
@@ -55,12 +55,12 @@ export function DataSection() {
             Faste betalinger som kalenderfil (.ics)
           </Button>
         </div>
-        <p className="mt-2 text-xs text-muted">CSV åbner i Excel/Numbers (semikolon og decimalkomma). Kalenderfilen kan åbnes i telefonens kalender.</p>
+        <p className="mt-2 text-xs text-muted-foreground">CSV åbner i Excel/Numbers (semikolon og decimalkomma). Kalenderfilen kan åbnes i telefonens kalender.</p>
       </Card>
       <Card title="Database">
-        <p className="text-sm text-muted">Har appen fået nye funktioner, skal databasen måske opdateres.</p>
-        <a href="../opdater.html" className="mt-2 inline-block text-sm font-medium text-accent underline">Åbn databaseopdatering</a>
-        <p className="mt-3 text-xs text-muted">{state.data?.transactions.length ?? 0} posteringer hentet{state.data?.rejected ? ` · ${state.data.rejected} ugyldige rækker sprunget over` : ""}.</p>
+        <p className="text-sm text-muted-foreground">Har appen fået nye funktioner, skal databasen måske opdateres.</p>
+        <a href="../opdater.html" className="mt-2 inline-block text-sm font-medium text-primary underline">Åbn databaseopdatering</a>
+        <p className="mt-3 text-xs text-muted-foreground">{state.data?.transactions.length ?? 0} posteringer hentet{state.data?.rejected ? ` · ${state.data.rejected} ugyldige rækker sprunget over` : ""}.</p>
       </Card>
     </div>
   );

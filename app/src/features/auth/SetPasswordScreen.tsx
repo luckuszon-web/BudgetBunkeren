@@ -14,17 +14,17 @@ export function SetPasswordScreen({ kind, onSave }: { kind: string; onSave: (pas
   }
   return (
     <div className="pt-safe pb-safe grid min-h-dvh place-items-center px-4">
-      <form onSubmit={submit} className="grid w-full max-w-sm gap-3 rounded-2xl border border-line bg-card p-6 shadow-sm">
+      <form onSubmit={submit} className="grid w-full max-w-sm gap-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="mb-2 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-white"><KeyRound size={18} /></div>
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground"><KeyRound size={18} /></div>
           <div>
             <h1 className="text-lg font-semibold">{kind === "recovery" ? "Vælg en ny adgangskode" : "Vælg din adgangskode"}</h1>
-            <p className="text-sm text-muted">{kind === "recovery" ? "Skriv din nye adgangskode to gange." : "Du er inviteret til BudgetBunkeren."}</p>
+            <p className="text-sm text-muted-foreground">{kind === "recovery" ? "Skriv din nye adgangskode to gange." : "Du er inviteret til BudgetBunkeren."}</p>
           </div>
         </div>
         <Label text="Adgangskode (mindst 10 tegn)"><Input type="password" autoComplete="new-password" value={a} onChange={(e) => setA(e.target.value)} required autoFocus /></Label>
         <Label text="Gentag"><Input type="password" autoComplete="new-password" value={b} onChange={(e) => setB(e.target.value)} required /></Label>
-        {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <Button type="submit" variant="primary" disabled={busy}>{busy ? "Gemmer …" : "Gem og fortsæt"}</Button>
       </form>
     </div>

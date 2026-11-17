@@ -27,14 +27,14 @@ export function AccountsCard() {
 
   return (
     <Card title="Konti og kort">
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-border">
         {accounts.map((a) => (
           <li key={a.key} className={`flex flex-wrap items-center gap-2 py-2.5 ${a.hidden ? "opacity-60" : ""}`}>
             <div className="min-w-0 flex-1">
               <input defaultValue={a.name} aria-label={`Navn på ${a.name}`} maxLength={60}
                 onBlur={async (e) => { const v = e.target.value.trim(); if (v !== a.name) await done(await act.run(async () => { await settings.renameAccount(a.key, v); return true; })); }}
-                className="w-full rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium hover:border-line focus:border-accent focus:outline-none" />
-              <p className="px-1 text-xs text-muted">
+                className="w-full rounded-lg border border-transparent bg-transparent px-1 py-0.5 font-medium hover:border-border focus:border-primary focus:outline-none" />
+              <p className="px-1 text-xs text-muted-foreground">
                 {a.last4 ? `•••• ${a.last4} · ` : ""}{a.hidden ? "skjult" : `${count.get(a.key) ?? 0} posteringer`} · {a.connected ? `hentet ${fmtDT(a.lastSyncedAt)}` : "ingen aktiv forbindelse"}
               </p>
             </div>
@@ -49,7 +49,7 @@ export function AccountsCard() {
             )}
           </li>
         ))}
-        {!accounts.length && <li className="py-2 text-sm text-muted">Ingen konti endnu. Forbind din bank.</li>}
+        {!accounts.length && <li className="py-2 text-sm text-muted-foreground">Ingen konti endnu. Forbind din bank.</li>}
       </ul>
       {accounts.length > 0 && (
         <Button variant="danger" className="mt-3" disabled={act.busy} onClick={async () => {
@@ -58,7 +58,7 @@ export function AccountsCard() {
           await done(await act.run(() => server.deleteAccounts("all")));
         }}>Start forfra (slet alle konti)</Button>
       )}
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

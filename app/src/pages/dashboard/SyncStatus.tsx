@@ -14,6 +14,6 @@ export function SyncStatus() {
   const when = day === today ? (d.getHours() < 6 ? `i nat kl. ${time}` : `i dag kl. ${time}`) : day === yesterday ? `i går kl. ${time}` : `${d.toLocaleDateString("da-DK", { day: "numeric", month: "short" })} kl. ${time}`;
   const days = Math.min(...active.map((s) => Math.ceil((Date.parse(s.valid_until) - Date.now()) / 864e5)));
   return hrs > 30
-    ? <span className="text-warn">Sidst hentet {when} – den natlige hentning ser ud til at fejle.</span>
-    : <span>Hentet fra banken {when}{days <= 14 && <span className="text-warn"> · adgangen udløber om {days} {days === 1 ? "dag" : "dage"}</span>}</span>;
+    ? <span className="text-warning">Sidst hentet {when} – den natlige hentning ser ud til at fejle.</span>
+    : <span>Hentet fra banken {when}{days <= 14 && <span className="text-warning"> · adgangen udløber om {days} {days === 1 ? "dag" : "dage"}</span>}</span>;
 }

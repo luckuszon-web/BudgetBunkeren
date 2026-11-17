@@ -14,16 +14,16 @@ export function BudgetRow({ b, elapsed, onEdit }: { b: BudgetStatus; elapsed: nu
         <CategoryIcon category={b.category} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate font-medium">{b.category.name}{b.category.budget_week && <span className="ml-1 text-xs text-muted">(pr. uge)</span>}</span>
-            <span className={`tabular text-sm ${tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : "text-muted"}`}>{Math.round(b.ratio * 100)} %</span>
+            <span className="truncate font-medium">{b.category.name}{b.category.budget_week && <span className="ml-1 text-xs text-muted-foreground">(pr. uge)</span>}</span>
+            <span className={`num text-sm ${tone === "bad" ? "text-destructive" : tone === "warn" ? "text-warning" : "text-muted-foreground"}`}>{Math.round(b.ratio * 100)} %</span>
           </div>
           <div className="mt-1.5"><ProgressBar ratio={b.ratio} tone={tone} marker={elapsed < 1 ? elapsed : undefined} label={`${b.category.name}: ${Math.round(b.ratio * 100)} % brugt`} /></div>
-          <div className="mt-1 flex flex-wrap justify-between gap-x-2 text-xs text-muted">
+          <div className="mt-1 flex flex-wrap justify-between gap-x-2 text-xs text-muted-foreground">
             <span><Money value={b.spent} /> af <Money value={b.budget} /></span>
-            <span className={left < 0 ? "text-bad" : ""}>{left < 0 ? <>Over med <Money value={-left} /></> : <><Money value={left} /> tilbage</>}</span>
+            <span className={left < 0 ? "text-destructive" : ""}>{left < 0 ? <>Over med <Money value={-left} /></> : <><Money value={left} /> tilbage</>}</span>
           </div>
         </div>
-        <button type="button" onClick={onEdit} aria-label={`Ret budget for ${b.category.name}`} className="rounded-lg p-2 text-muted hover:bg-bg"><Pencil size={16} /></button>
+        <button type="button" onClick={onEdit} aria-label={`Ret budget for ${b.category.name}`} className="rounded-lg p-2 text-muted-foreground hover:bg-accent"><Pencil size={16} /></button>
       </div>
     </li>
   );

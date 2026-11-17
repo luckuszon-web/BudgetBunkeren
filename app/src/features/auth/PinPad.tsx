@@ -19,16 +19,16 @@ export function PinPad({ title, onCode, footer }: { title: string; onCode: (code
     return () => document.removeEventListener("keydown", k);
   });
   return (
-    <div role="dialog" aria-modal="true" aria-label={title} className="pt-safe pb-safe fixed inset-0 z-[60] grid place-items-center bg-bg px-4">
+    <div role="dialog" aria-modal="true" aria-label={title} className="pt-safe pb-safe fixed inset-0 z-[60] grid place-items-center bg-background px-4">
       <div className="grid w-full max-w-xs justify-items-center gap-5">
-        <Lock className="text-accent" />
+        <Lock className="text-primary" />
         <p className="text-lg font-semibold">{title}</p>
-        <div className="flex gap-3" aria-label={`${code.length} af 4 cifre`}>{[0, 1, 2, 3].map((i) => <i key={i} className={`h-3.5 w-3.5 rounded-full border-2 border-accent ${i < code.length ? "bg-accent" : ""}`} />)}</div>
-        <p role="alert" className="min-h-5 text-sm text-bad">{msg}</p>
+        <div className="flex gap-3" aria-label={`${code.length} af 4 cifre`}>{[0, 1, 2, 3].map((i) => <i key={i} className={`h-3.5 w-3.5 rounded-full border-2 border-primary ${i < code.length ? "bg-primary" : ""}`} />)}</div>
+        <p role="alert" className="min-h-5 text-sm text-destructive">{msg}</p>
         <div className="grid w-full grid-cols-3 gap-3">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"].map((d, i) => d === "" ? <span key={i} /> : (
             <button key={i} type="button" onClick={() => press(d)} aria-label={d === "del" ? "Slet" : d}
-              className="grid h-16 place-items-center rounded-2xl bg-card text-xl font-medium shadow-sm active:bg-line">{d === "del" ? <Delete size={20} /> : d}</button>
+              className="grid h-16 place-items-center rounded-2xl bg-card text-xl font-medium shadow-sm active:bg-muted">{d === "del" ? <Delete size={20} /> : d}</button>
           ))}
         </div>
         {footer}

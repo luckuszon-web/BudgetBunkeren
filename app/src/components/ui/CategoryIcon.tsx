@@ -10,7 +10,7 @@ export function CategoryIcon({ category }: { category: Pick<Category, "id" | "ic
   const color = useMemo(() => (derived ? categoryColors(derived.calcTxs, derived.classifier, todayIso()) : null), [derived]);
   return (
     <span className="grid w-6 shrink-0 place-items-center text-lg" aria-hidden>
-      {category.icon ? category.icon : <i className="block h-2.5 w-2.5 rounded-full" style={{ background: color?.(category.id) ?? "var(--color-muted)" }} />}
+      {category.icon ? category.icon : <i className="block h-2.5 w-2.5 rounded-full" style={{ background: color?.(category.id) ?? "var(--color-muted-foreground)" }} />}
     </span>
   );
 }

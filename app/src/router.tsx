@@ -15,7 +15,7 @@ export interface RouterContext { signOut: () => void; bank: BootParams["bank"] }
 
 const root = createRootRouteWithContext<RouterContext>()({
   component: function Root() { const ctx = root.useRouteContext(); return <AppShell onSignOut={ctx.signOut} bank={ctx.bank} />; },
-  notFoundComponent: () => <p className="text-muted">Siden findes ikke.</p>,
+  notFoundComponent: () => <p className="text-muted-foreground">Siden findes ikke.</p>,
 });
 const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: DashboardPage }),

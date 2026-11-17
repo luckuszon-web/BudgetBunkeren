@@ -64,12 +64,12 @@ export function AssetDialog({ open, asset, kind = "cash", name = "", onClose, on
         {inv && <Label text="Indskudt i alt (kr.)"><Input inputMode="decimal" value={f.invested} onChange={set("invested")} /></Label>}
         {asset && onAddLoan && (asset.kind === "vehicle" || asset.kind === "property") && (
           <button type="button" onClick={() => onAddLoan(asset.name)}
-            className="rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-sm text-accent hover:bg-bg">
+            className="rounded-xl border border-dashed border-border px-3 py-2.5 text-left text-sm text-primary hover:bg-accent">
             + Lån i {asset.name}? Tilføj restgæld, rente og ydelse
           </button>
         )}
-        {!asset && <p className="text-xs text-muted">Gæld (lån, billån, boliglån, kreditkort) vælger du under <b>Type</b>. Den trækkes fra din nettoformue.</p>}
-        {act.error && <p role="alert" className="text-sm text-bad">{act.error}</p>}
+        {!asset && <p className="text-xs text-muted-foreground">Gæld (lån, billån, boliglån, kreditkort) vælger du under <b>Type</b>. Den trækkes fra din nettoformue.</p>}
+        {act.error && <p role="alert" className="text-sm text-destructive">{act.error}</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

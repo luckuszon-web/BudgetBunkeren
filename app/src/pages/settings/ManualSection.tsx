@@ -19,20 +19,20 @@ export function ManualSection() {
         <Button variant="soft" icon={<Plus size={16} />} onClick={() => setDir("in")}>Indtægt</Button>
         <Button icon={<Plus size={16} />} onClick={() => setDir("out")}>Udgift</Button>
       </div>}>
-      <p className="mb-3 text-sm text-muted">Bruges fx til løn på en konto, der ikke er forbundet, eller kontantkøb. Beløbene tæller med i alle tal.</p>
-      <ul className="divide-y divide-line">
+      <p className="mb-3 text-sm text-muted-foreground">Bruges fx til løn på en konto, der ikke er forbundet, eller kontantkøb. Beløbene tæller med i alle tal.</p>
+      <ul className="divide-y divide-border">
         {list.map((m) => (
           <li key={m.id} className="flex items-center gap-3 py-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm">{m.note || (m.direction === "out" ? "Kontant udgift" : "Løn (indtastet)")}</p>
-              <p className="text-xs text-muted">{m.pay_date} · {cats.find((c) => c.id === m.category_id)?.name ?? (m.direction === "in" ? "Løn" : "Uden kategori")}</p>
+              <p className="text-xs text-muted-foreground">{m.pay_date} · {cats.find((c) => c.id === m.category_id)?.name ?? (m.direction === "in" ? "Løn" : "Uden kategori")}</p>
             </div>
             <Money value={m.direction === "out" ? -m.amount : m.amount} signed tone className="text-sm" />
-            <button type="button" aria-label={`Slet ${m.note || m.pay_date}`} className="p-1 text-muted hover:text-bad"
+            <button type="button" aria-label={`Slet ${m.note || m.pay_date}`} className="p-1 text-muted-foreground hover:text-destructive"
               onClick={() => { if (confirm("Slet beløbet?")) void actions.deleteManual(m.id); }}><Trash2 size={14} /></button>
           </li>
         ))}
-        {!list.length && <li className="py-2 text-sm text-muted">Ingen indtastede beløb.</li>}
+        {!list.length && <li className="py-2 text-sm text-muted-foreground">Ingen indtastede beløb.</li>}
       </ul>
       <ManualDialog open={!!dir} direction={dir ?? "in"} onClose={() => setDir(null)} />
     </Card>

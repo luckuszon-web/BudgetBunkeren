@@ -37,15 +37,15 @@ export function HealthSection() {
     !d ? wait("Totrinsbekræftelse") : { name: "Totrinsbekræftelse", tone: d.mfa ? "ok" : "info", text: d.mfa ? "Slået til." : "Ikke slået til (anbefales).", fix: "sikkerhed" },
   ];
   const ICON = { ok: CheckCircle2, warn: CircleAlert, info: Info, wait: Loader2 };
-  const COLOR = { ok: "text-good", warn: "text-warn", info: "text-accent", wait: "animate-spin text-muted" };
+  const COLOR = { ok: "text-success", warn: "text-warning", info: "text-primary", wait: "animate-spin text-muted-foreground" };
   return (
     <Card>
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-border">
         {rows.map((x) => { const Icon = ICON[x.tone]; return (
           <li key={x.name} className="flex items-start gap-3 py-2.5">
             <Icon size={18} className={`mt-0.5 shrink-0 ${COLOR[x.tone]}`} />
-            <div className="min-w-0 flex-1"><p className="text-sm font-medium">{x.name}</p><p className="text-sm text-muted">{x.text}</p></div>
-            {x.fix && x.tone === "warn" && <Link to="/indstillinger/$section" params={{ section: x.fix }} className="text-sm text-accent">Ret</Link>}
+            <div className="min-w-0 flex-1"><p className="text-sm font-medium">{x.name}</p><p className="text-sm text-muted-foreground">{x.text}</p></div>
+            {x.fix && x.tone === "warn" && <Link to="/indstillinger/$section" params={{ section: x.fix }} className="text-sm text-primary">Ret</Link>}
           </li>
         ); })}
       </ul>

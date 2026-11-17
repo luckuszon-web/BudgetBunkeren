@@ -52,9 +52,12 @@ describe("Ny app – det, der før kun var i den klassiske", () => {
     expect(await screen.findByText("Natlig hentning")).toBeTruthy();
     cleanup();
     setup("/indstillinger");
-    fireEvent.click(await screen.findByRole("radio", { name: "Mørkt" }));
-    expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(localStorage.getItem("theme")).toBe("dark");
+    fireEvent.click(await screen.findByRole("radio", { name: "Lyst" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    expect(localStorage.getItem("bb-theme")).toBe("light");
+    fireEvent.click(screen.getByRole("radio", { name: "Mørkt" }));
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(localStorage.getItem("bb-theme")).toBe("dark");
   });
 });
 

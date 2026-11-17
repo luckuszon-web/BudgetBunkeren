@@ -14,11 +14,11 @@ export function RegisterForm({ initialCode, onRegister }: { initialCode: string;
     finally { setBusy(false); }
   }
   return (
-    <form onSubmit={submit} className="mt-4 grid gap-3 border-t border-line pt-4">
+    <form onSubmit={submit} className="mt-4 grid gap-3 border-t border-border pt-4">
       <p className="text-sm font-medium">Opret bruger</p>
       <Label text="Din e-mail"><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></Label>
       <Label text="Invitationskode"><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} autoComplete="off" required /></Label>
-      {msg && <p role={msg.ok ? "status" : "alert"} className={`text-sm ${msg.ok ? "text-good" : "text-bad"}`}>{msg.text}</p>}
+      {msg && <p role={msg.ok ? "status" : "alert"} className={`text-sm ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.text}</p>}
       <Button type="submit" variant="soft" disabled={busy || msg?.ok}>{busy ? "Opretter …" : "Opret bruger"}</Button>
     </form>
   );

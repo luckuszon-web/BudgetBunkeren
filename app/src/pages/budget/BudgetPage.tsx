@@ -43,27 +43,27 @@ export function BudgetPage() {
           <Card title="Samlet" action={<Button variant="soft" icon={<Plus size={16} />} onClick={() => setEdit({ category: null })}>Ny kategori</Button>}>
             {derived.budgets.length ? (
               <>
-                <p className="text-2xl font-semibold tabular"><Money value={total.spent} /> <span className="text-base font-normal text-muted">af <Money value={total.budget} /></span></p>
+                <p className="text-2xl font-semibold num"><Money value={total.spent} /> <span className="text-base font-normal text-muted-foreground">af <Money value={total.budget} /></span></p>
                 <div className="mt-2"><ProgressBar ratio={ratio} tone={budgetTone(ratio, elapsed)} marker={elapsed} label="Samlet forbrug mod budget" /></div>
-                <p className="mt-2 text-xs text-muted">Stregen viser, hvor langt vi er i perioden. {derived.overBudget.length ? `${derived.overBudget.length} over budget.` : "Ingen over budget."}</p>
+                <p className="mt-2 text-xs text-muted-foreground">Stregen viser, hvor langt vi er i perioden. {derived.overBudget.length ? `${derived.overBudget.length} over budget.` : "Ingen over budget."}</p>
               </>
-            ) : <p className="text-sm text-muted">Du har ingen budgetter endnu. Sæt et budget på en kategori nedenfor.</p>}
+            ) : <p className="text-sm text-muted-foreground">Du har ingen budgetter endnu. Sæt et budget på en kategori nedenfor.</p>}
           </Card>
           {derived.budgets.length > 0 && (
             <Card title="Kategorier med budget">
-              <ul className="divide-y divide-line">
+              <ul className="divide-y divide-border">
                 {derived.budgets.map((b) => <BudgetRow key={b.category.id} b={b} elapsed={elapsed} onEdit={() => setEdit({ category: b.category })} />)}
               </ul>
             </Card>
           )}
         </div>
         <Card title="Uden budget">
-          {!without.length ? <p className="text-sm text-muted">Alle udgiftskategorier har et budget.</p> : (
-            <ul className="divide-y divide-line">
+          {!without.length ? <p className="text-sm text-muted-foreground">Alle udgiftskategorier har et budget.</p> : (
+            <ul className="divide-y divide-border">
               {without.map(({ c, spent }) => (
                 <li key={c.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
                   <CategoryIcon category={c} />
-                  <span className="min-w-0 flex-1 truncate text-sm">{c.name}<span className="block text-xs text-muted"><Money value={spent} /> brugt</span></span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{c.name}<span className="block text-xs text-muted-foreground"><Money value={spent} /> brugt</span></span>
                   <Button variant="ghost" className="min-h-8 px-2.5 text-xs" onClick={() => setEdit({ category: c })}>Sæt budget</Button>
                 </li>
               ))}

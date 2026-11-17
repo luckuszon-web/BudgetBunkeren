@@ -11,9 +11,9 @@ export function ScoreCard({ score }: { score: HealthScoreResult }) {
         <ul className="min-w-48 flex-1 space-y-2 text-sm">
           {score.parts.map((p) => (
             <li key={p.name} title={p.tip}>
-              <div className="flex justify-between gap-2"><span className="truncate">{p.name}</span><span className="tabular text-muted">{Math.round(p.pts)}/{p.max}</span></div>
-              <div className="mt-1 h-1.5 rounded-full bg-line"><div className="h-full rounded-full bg-accent" style={{ width: `${p.max ? (p.pts / p.max) * 100 : 0}%` }} /></div>
-              <p className="mt-0.5 text-xs text-muted">{p.txt}</p>
+              <div className="flex justify-between gap-2"><span className="truncate">{p.name}</span><span className="num text-muted-foreground">{Math.round(p.pts)}/{p.max}</span></div>
+              <div className="mt-1 h-1.5 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${p.max ? (p.pts / p.max) * 100 : 0}%` }} /></div>
+              <p className="mt-0.5 text-xs text-muted-foreground">{p.txt}</p>
             </li>
           ))}
         </ul>

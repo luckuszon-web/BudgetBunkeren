@@ -23,7 +23,7 @@ export function UpdateBar({ url = "../version.json" }: { url?: string }) {
   if (!newer) return null;
   return (
     <button type="button" onClick={() => location.reload()}
-      className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2.5 text-sm font-medium text-white">
+      className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground">
       <RefreshCw size={16} /> Ny version – tryk for at opdatere
     </button>
   );

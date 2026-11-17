@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/Card";
 import { LineChart } from "@/components/charts/LineChart";
+import { SERIES } from "@/components/charts/palette";
 import { useFinance } from "@/features/finance-store";
 import { periodRange } from "@/features/finance-state";
 import { addDays, avg, cumulative, daysInMonth, formatKr, monthBudget, recurringKey, shiftMonth, sumOut } from "@/lib/finance-engine";
@@ -36,13 +37,13 @@ export function PaceCard() {
   const diff = data.avgNow ? Math.round(((data.now - data.avgNow) / data.avgNow) * 100) : null;
   return (
     <Card title="Forbrug gennem perioden">
-      <p className="text-sm text-muted">Variabelt forbrug (uden faste regninger): <b className="text-ink tabular">{formatKr(data.now)}</b>
-        {diff != null && <span className={diff > 0 ? "text-bad" : "text-good"}> · {diff > 0 ? "+" : ""}{diff} % mod {data.prevLabel}</span>}</p>
+      <p className="text-sm text-muted-foreground">Variabelt forbrug (uden faste regninger): <b className="text-foreground num">{formatKr(data.now)}</b>
+        {diff != null && <span className={diff > 0 ? "text-destructive" : "text-success"}> · {diff > 0 ? "+" : ""}{diff} % mod {data.prevLabel}</span>}</p>
       <div className="mt-2">
         <LineChart labels={data.labels} series={[
-          { name: "Denne periode", color: "#3987e5", values: data.cur, fill: true },
-          ...(data.average ? [{ name: `Normalt (${data.prevLabel})`, color: "#8b93a1", values: data.average, dashed: true }] : []),
-        ]} refLines={data.budget > 0 ? [{ value: data.budget, label: `Budget ${formatKr(data.budget)}`, color: "#c98500" }] : []} />
+          { name: "Denne periode", color: SERIES.main, values: data.cur, fill: true },
+          ...(data.average ? [{ name: `Normalt (${data.prevLabel})`, color: SERIES.normal, values: data.average, dashed: true }] : []),
+        ]} refLines={data.budget > 0 ? [{ value: data.budget, label: `Budget ${formatKr(data.budget)}`, color: SERIES.budget }] : []} />
       </div>
     </Card>
   );

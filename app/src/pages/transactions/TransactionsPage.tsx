@@ -63,7 +63,7 @@ export function TransactionsPage() {
       <Card className="mb-4"><TransactionFilters /></Card>
       <Card>
         <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-          <p className="flex flex-wrap gap-x-4 text-sm text-muted">
+          <p className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
             <span>{list.length} {list.length === 1 ? "postering" : "posteringer"} {scope}</span>
             <span>Ind <Money value={sumIn} /></span><span>Ud <Money value={sumOut} /></span>
           </p>
@@ -72,8 +72,8 @@ export function TransactionsPage() {
             <Button icon={<Plus size={16} />} onClick={() => setManual(true)}>Kontant</Button>
           </div>
         </div>
-        {!list.length ? <p className="py-6 text-center text-sm text-muted">Ingen posteringer matcher.</p> : (
-          <ul className="divide-y divide-line">
+        {!list.length ? <p className="py-6 text-center text-sm text-muted-foreground">Ingen posteringer matcher.</p> : (
+          <ul className="divide-y divide-border">
             {list.slice(0, limit).map((t) => (
               <TransactionRow key={t.id} t={t} categories={state.data!.categories} classifier={derived.classifier} h={h}
                 splitCount={splitCount.get(t.id) ?? 0} saving={state.saving.includes(t.id)} selectMode={selectMode} selected={sel.has(t.id)} />
@@ -81,7 +81,7 @@ export function TransactionsPage() {
           </ul>
         )}
         {list.length > limit && (
-          <button type="button" onClick={() => setLimit(limit + PAGE)} className="mt-3 w-full rounded-xl border border-line py-2 text-sm text-accent">
+          <button type="button" onClick={() => setLimit(limit + PAGE)} className="mt-3 w-full rounded-xl border border-border py-2 text-sm text-primary">
             Vis flere ({list.length - limit} tilbage)
           </button>
         )}

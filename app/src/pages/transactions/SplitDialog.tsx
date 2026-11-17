@@ -45,24 +45,24 @@ export function SplitDialog({ tx, onClose }: { tx: Transaction | null; onClose: 
         <Button onClick={onClose}>Fortryd</Button>
         <Button variant="primary" disabled={busy || !!error || !valid.length} onClick={() => save()}>{busy ? "Gemmer …" : "Gem"}</Button>
       </>}>
-      <div className="mb-3 rounded-xl bg-bg p-3 text-sm">
+      <div className="mb-3 rounded-xl bg-background p-3 text-sm">
         <p className="truncate font-medium">{tx.text}</p>
-        <p className="text-muted">{tx.date} · <Money value={tx.amount} signed /></p>
+        <p className="text-muted-foreground">{tx.date} · <Money value={tx.amount} signed /></p>
       </div>
       <ul className="space-y-2">
         {parts.map((p, i) => (
           <li key={i} className="flex items-center gap-2">
             <CategorySelect categories={cats} value={p.category_id} onChange={(id) => update(i, { category_id: id })} emptyLabel="Vælg kategori" aria-label={`Kategori for del ${i + 1}`} className="flex-1 py-2" />
             <Input inputMode="decimal" value={p.amount} onChange={(e) => update(i, { amount: e.target.value })} placeholder="kr." aria-label={`Beløb for del ${i + 1}`} className="w-28 text-right" />
-            <button type="button" aria-label={`Fjern del ${i + 1}`} onClick={() => setParts(parts.filter((_, j) => j !== i))} className="p-1.5 text-muted"><Trash2 size={16} /></button>
+            <button type="button" aria-label={`Fjern del ${i + 1}`} onClick={() => setParts(parts.filter((_, j) => j !== i))} className="p-1.5 text-muted-foreground"><Trash2 size={16} /></button>
           </li>
         ))}
       </ul>
       <Button variant="soft" className="mt-2" icon={<Plus size={16} />} onClick={() => setParts([...parts, { category_id: null, amount: rest > 0 ? String(Math.round(rest * 100) / 100).replace(".", ",") : "" }])}>Tilføj del</Button>
-      <p className={`mt-3 text-sm ${rest < -0.005 ? "text-bad" : "text-muted"}`}>
-        Resten <b className="tabular"><Money value={Math.max(0, rest)} /></b> bliver på {restCat}.
+      <p className={`mt-3 text-sm ${rest < -0.005 ? "text-destructive" : "text-muted-foreground"}`}>
+        Resten <b className="num"><Money value={Math.max(0, rest)} /></b> bliver på {restCat}.
       </p>
-      {error && <p role="alert" className="mt-1 text-sm text-bad">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-destructive">{error}</p>}
     </Modal>
   );
 }

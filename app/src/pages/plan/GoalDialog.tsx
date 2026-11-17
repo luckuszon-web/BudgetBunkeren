@@ -59,8 +59,8 @@ export function GoalDialog({ open, goal, onClose, onSaved }: { open: boolean; go
           <CategorySelect categories={(state.data?.categories ?? []).filter((c) => c.kind === "transfer" || c.kind === "expense")} value={f.linked}
             onChange={(id) => setF({ ...f, linked: id })} emptyLabel="Ingen – jeg indbetaler selv" className="py-2" />
         </Label>
-        {f.linked && <p className="text-xs text-muted">Udbetalinger i kategorien lægges til målet fra {goal?.linked_category_id === f.linked && goal?.linked_since ? goal.linked_since : "i dag"}.</p>}
-        {act.error && <p role="alert" className="text-sm text-bad">{act.error}</p>}
+        {f.linked && <p className="text-xs text-muted-foreground">Udbetalinger i kategorien lægges til målet fra {goal?.linked_category_id === f.linked && goal?.linked_since ? goal.linked_since : "i dag"}.</p>}
+        {act.error && <p role="alert" className="text-sm text-destructive">{act.error}</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

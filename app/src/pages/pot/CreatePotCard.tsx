@@ -16,7 +16,7 @@ export function CreatePotCard({ onCreated }: { onCreated: () => void }) {
   }
   return (
     <Card title="Opret fælles post">
-      <p className="mb-3 text-sm text-muted">
+      <p className="mb-3 text-sm text-muted-foreground">
         En fælles post er et sted, hvor I begge lægger fælles indkøb ind. I kan se, hvem der har betalt hvad, og hvem der skylder hvem.
         Jeres egne konti forbliver private.
       </p>
@@ -26,7 +26,7 @@ export function CreatePotCard({ onCreated }: { onCreated: () => void }) {
         <Label text="Din andel af udgifterne (%)"><Input inputMode="numeric" value={pct} onChange={(e) => setPct(e.target.value)} /></Label>
         <div className="flex items-end"><Button type="submit" variant="primary" disabled={act.busy} className="w-full">{act.busy ? "Opretter …" : "Opret"}</Button></div>
       </form>
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

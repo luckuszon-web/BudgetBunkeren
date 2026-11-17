@@ -10,20 +10,20 @@ export function PeriodPicker() {
   const cm = currentMonth(), cur = gran === "year" ? cm.slice(0, 4) : cm;
   return (
     <div className="flex w-full items-center gap-1.5 sm:w-auto sm:gap-2">
-      <div className="flex rounded-xl bg-line/60 p-1 text-sm" role="tablist" aria-label="Periode">
+      <div className="flex rounded-xl bg-muted/60 p-1 text-sm" role="tablist" aria-label="Periode">
         {(["month", "year"] as const).map((g) => (
           <button key={g} type="button" role="tab" aria-selected={gran === g}
             onClick={() => actions.setPeriod({ gran: g, key: g === "year" ? key.slice(0, 4) : (key.length === 4 ? (key === cm.slice(0, 4) ? cm : `${key}-12`) : key) })}
-            className={`rounded-lg px-2.5 py-1 ${gran === g ? "bg-card font-medium shadow-sm" : "text-muted"}`}>
+            className={`rounded-lg px-2.5 py-1 ${gran === g ? "bg-card font-medium shadow-sm" : "text-muted-foreground"}`}>
             {g === "month" ? "Måned" : "År"}
           </button>
         ))}
       </div>
-      <button type="button" aria-label="Forrige periode" onClick={() => actions.stepPeriod(-1)} className="rounded-xl border border-line bg-card p-2"><ChevronLeft size={18} /></button>
+      <button type="button" aria-label="Forrige periode" onClick={() => actions.stepPeriod(-1)} className="rounded-xl border border-border bg-card p-2"><ChevronLeft size={18} /></button>
       <span className="min-w-0 flex-1 truncate text-center text-sm font-medium capitalize sm:min-w-32 sm:flex-none">{gran === "year" ? key : <>
         <span className="sm:hidden">{new Date(`${key}-01T00:00:00Z`).toLocaleDateString("da-DK", { month: "short", year: "numeric", timeZone: "UTC" })}</span>
         <span className="hidden sm:inline">{monthName(key)}</span></>}</span>
-      <button type="button" aria-label="Næste periode" disabled={key >= cur} onClick={() => actions.stepPeriod(1)} className="rounded-xl border border-line bg-card p-2 disabled:opacity-30"><ChevronRight size={18} /></button>
+      <button type="button" aria-label="Næste periode" disabled={key >= cur} onClick={() => actions.stepPeriod(1)} className="rounded-xl border border-border bg-card p-2 disabled:opacity-30"><ChevronRight size={18} /></button>
     </div>
   );
 }

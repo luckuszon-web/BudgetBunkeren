@@ -20,9 +20,9 @@ export function LineChart({ labels, series, refLines = [], height = 180, zeroBas
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full touch-none" role="img" aria-label={series.map((s) => s.name).join(", ")}
         onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover(Math.max(0, Math.min(labels.length - 1, Math.round(((e.clientX - r.left) / r.width * W - P.l) / ((W - P.l - P.r) / Math.max(1, labels.length - 1)))))); }}
         onPointerLeave={() => setHover(null)}>
-        <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={series[0]?.color} stopOpacity=".25" /><stop offset="1" stopColor={series[0]?.color} stopOpacity="0" /></linearGradient></defs>
+        <defs><linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop offset="0" style={{ stopColor: series[0]?.color, stopOpacity: 0.25 }} /><stop offset="1" style={{ stopColor: series[0]?.color, stopOpacity: 0 }} /></linearGradient></defs>
         {refLines.map((r) => (
-          <g key={r.label}><line x1={P.l} x2={W - P.r} y1={y(r.value)} y2={y(r.value)} stroke={r.color} strokeDasharray="4 4" strokeWidth="1.5" />
+          <g key={r.label}><line x1={P.l} x2={W - P.r} y1={y(r.value)} y2={y(r.value)} style={{ stroke: r.color }} strokeDasharray="4 4" strokeWidth="1.5" />
             <text x={W - P.r} y={y(r.value) - 4} textAnchor="end" fontSize="11" style={{ fill: r.color }}>{r.label}</text></g>
         ))}
         {series.map((s, i) => {
@@ -30,20 +30,20 @@ export function LineChart({ labels, series, refLines = [], height = 180, zeroBas
           return (
             <g key={s.name}>
               {s.fill && last > 0 && <path d={`${d}L${x(last)},${y(Math.max(min, 0))}L${x(0)},${y(Math.max(min, 0))}Z`} fill={`url(#${id})`} />}
-              <path d={d} fill="none" stroke={s.color} strokeWidth={i === 0 ? 2.5 : 2} strokeDasharray={s.dashed ? "5 5" : undefined} strokeLinejoin="round" strokeLinecap="round" />
+              <path d={d} fill="none" style={{ stroke: s.color }} strokeWidth={i === 0 ? 2.5 : 2} strokeDasharray={s.dashed ? "5 5" : undefined} strokeLinejoin="round" strokeLinecap="round" />
             </g>
           );
         })}
-        {hover != null && <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} style={{ stroke: "var(--color-line)" }} />}
-        {[0, labels.length - 1].map((i) => labels[i] && <text key={i} x={x(i)} y={H - 6} textAnchor={i ? "end" : "start"} fontSize="11" style={{ fill: "var(--color-muted)" }}>{labels[i]}</text>)}
+        {hover != null && <line x1={x(hover)} x2={x(hover)} y1={P.t} y2={H - P.b} style={{ stroke: "var(--color-border)" }} />}
+        {[0, labels.length - 1].map((i) => labels[i] && <text key={i} x={x(i)} y={H - 6} textAnchor={i ? "end" : "start"} fontSize="11" style={{ fill: "var(--color-muted-foreground)" }}>{labels[i]}</text>)}
       </svg>
       {hover != null && (
-        <div className="pointer-events-none absolute top-0 rounded-lg border border-line bg-card px-2 py-1 text-xs shadow" style={{ left: `${(x(hover) / W) * 100}%`, transform: `translateX(${hover > labels.length / 2 ? "-105%" : "5%"})` }}>
+        <div className="pointer-events-none absolute top-0 rounded-lg border border-border bg-card px-2 py-1 text-xs shadow" style={{ left: `${(x(hover) / W) * 100}%`, transform: `translateX(${hover > labels.length / 2 ? "-105%" : "5%"})` }}>
           <b>{labels[hover]}</b>
           {series.map((s) => s.values[hover] != null && <div key={s.name} className="flex items-center gap-1"><i className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />{s.name}: {fmt(s.values[hover]!)}</div>)}
         </div>
       )}
-      <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted">
+      <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
         {series.map((s) => <span key={s.name} className="flex items-center gap-1"><i className="inline-block h-0.5 w-3" style={{ background: s.color }} />{s.name}</span>)}
       </div>
     </div>

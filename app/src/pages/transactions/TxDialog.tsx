@@ -33,9 +33,9 @@ export function TxDialog({ tx, onClose, onSplit }: { tx: Transaction | null; onC
   return (
     <Modal open onClose={onClose} title="Postering"
       footer={<Button variant="primary" onClick={async () => { if (note !== (live.notes ?? "")) await actions.setNote(live.id, note); onClose(); }}>Færdig</Button>}>
-      <div className="mb-4 rounded-xl bg-bg p-3">
+      <div className="mb-4 rounded-xl bg-background p-3">
         <p className="font-medium break-words">{live.text}</p>
-        <p className="text-sm text-muted">{live.date} · <Money value={live.amount} signed /> · {catName ?? "uden kategori"}</p>
+        <p className="text-sm text-muted-foreground">{live.date} · <Money value={live.amount} signed /> · {catName ?? "uden kategori"}</p>
       </div>
       <div className="grid gap-4">
         <Label text="Note"><Input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="Fx gave til mor" /></Label>
@@ -46,9 +46,9 @@ export function TxDialog({ tx, onClose, onSplit }: { tx: Transaction | null; onC
         {live.amount < 0 && !live.manual && <BillCadenceField tx={live} />}
         <Button icon={<Scissors size={16} />} onClick={() => onSplit(live)}>Del op i flere kategorier</Button>
 
-        <fieldset className="rounded-xl border border-line p-3">
+        <fieldset className="rounded-xl border border-border p-3">
           <legend className="flex items-center gap-1 px-1 text-sm font-medium"><Wand2 size={14} /> Lav en regel</legend>
-          <p className="mb-2 text-xs text-muted">Alle posteringer med ordet får kategorien – nu og fremover. Dine egne valg røres ikke.</p>
+          <p className="mb-2 text-xs text-muted-foreground">Alle posteringer med ordet får kategorien – nu og fremover. Dine egne valg røres ikke.</p>
           <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} aria-label="Søgeord til reglen" />
             <CategorySelect categories={state.data?.categories ?? []} value={ruleCat} onChange={setRuleCat} emptyLabel="Vælg kategori" aria-label="Kategori til reglen" className="py-2" />
@@ -76,7 +76,7 @@ function PotButton({ potName, done, busy, error, onAdd }: { potName: string; don
   return (
     <div>
       <Button icon={<Users size={16} />} disabled={done || busy} onClick={onAdd} className="w-full">{done ? `Ligger i ${potName}` : `Læg i ${potName}`}</Button>
-      {error && <p role="alert" className="mt-1 text-sm text-bad">{error}</p>}
+      {error && <p role="alert" className="mt-1 text-sm text-destructive">{error}</p>}
     </div>
   );
 }

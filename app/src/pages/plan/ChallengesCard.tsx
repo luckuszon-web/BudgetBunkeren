@@ -41,10 +41,10 @@ export function ChallengesCard({ challenges, onChanged }: { challenges: Challeng
               <div className="flex items-center justify-between gap-2">
                 <span className="min-w-0 truncate text-sm font-medium">{c.title}</span>
                 <button type="button" aria-label={`Slet ${c.title}`} onClick={async () => { if (await act.run(async () => { await plan.deleteChallenge(c.id); return true; })) onChanged(); }}
-                  className="p-1 text-muted hover:text-bad"><Trash2 size={14} /></button>
+                  className="p-1 text-muted-foreground hover:text-destructive"><Trash2 size={14} /></button>
               </div>
               <div className="mt-1"><ProgressBar ratio={r} tone={budgetTone(r, done ? 1 : elapsedFraction(c.month, todayIso()))} label={c.title} /></div>
-              <p className="mt-0.5 text-xs text-muted"><Money value={s} /> af <Money value={c.limit_amount} /> · {monthName(c.month)}
+              <p className="mt-0.5 text-xs text-muted-foreground"><Money value={s} /> af <Money value={c.limit_amount} /> · {monthName(c.month)}
                 {done ? (s <= c.limit_amount ? " · klaret! 🎉" : " · ikke klaret") : ""}</p>
             </li>
           );
@@ -55,7 +55,7 @@ export function ChallengesCard({ challenges, onChanged }: { challenges: Challeng
         <Input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="Højst kr." aria-label="Højst beløb" />
         <Button type="submit" variant="soft" disabled={act.busy}>Start i {monthName(cm, false)}</Button>
       </form>
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }

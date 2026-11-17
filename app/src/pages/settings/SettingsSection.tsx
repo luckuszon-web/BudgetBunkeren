@@ -21,9 +21,9 @@ export function SettingsSection() {
   const meta = SECTIONS.find((s) => s.id === section), View = VIEW[section];
   return (
     <>
-      <Link to="/indstillinger" className="mb-2 inline-flex items-center gap-1 text-sm text-accent"><ChevronLeft size={16} /> Indstillinger</Link>
+      <Link to="/indstillinger" className="mb-2 inline-flex items-center gap-1 text-sm text-primary"><ChevronLeft size={16} /> Indstillinger</Link>
       <PageHeader title={meta?.title ?? "Findes ikke"} />
-      {View ? <View /> : <p className="text-muted">Den side findes ikke.</p>}
+      {View ? <View /> : <p className="text-muted-foreground">Den side findes ikke.</p>}
     </>
   );
 }

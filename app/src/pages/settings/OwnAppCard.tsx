@@ -24,7 +24,7 @@ export function OwnAppCard() {
 
   return (
     <Card title="Egen Enable Banking-app">
-      {status.error && <p className="text-sm text-warn">Kunne ikke hente status: {status.error}</p>}
+      {status.error && <p className="text-sm text-warning">Kunne ikke hente status: {status.error}</p>}
       {st?.own ? (
         <>
           <p className="text-sm">Du bruger din egen app <span className="font-mono text-xs">{st.app_id}</span>.</p>
@@ -34,22 +34,22 @@ export function OwnAppCard() {
         </>
       ) : (
         <>
-          <p className="mb-3 text-sm text-muted">
+          <p className="mb-3 text-sm text-muted-foreground">
             {st && !st.owner ? "Du skal bruge din egen gratis Enable Banking-app for at forbinde din bank. " : ""}
             Opret en app hos Enable Banking, og indsæt Application ID og den .pem-fil, du fik.
           </p>
           <form className="grid gap-3" onSubmit={(e) => { e.preventDefault(); void save(); }}>
             <Label text="Application ID"><Input value={appId} onChange={(e) => setAppId(e.target.value)} autoComplete="off" placeholder="1a2b3c4d-…" required /></Label>
-            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line px-3 py-2.5 text-sm hover:bg-bg">
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm hover:bg-accent">
               <input type="file" accept=".pem,application/x-pem-file,text/plain" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="sr-only" aria-label=".pem-fil" />
-              <span className="rounded-lg bg-accent-soft px-2.5 py-1 font-medium text-accent">Vælg .pem-fil</span>
-              <span className="min-w-0 truncate text-muted">{file?.name ?? "Ingen fil valgt"}</span>
+              <span className="rounded-lg bg-accent px-2.5 py-1 font-medium text-primary">Vælg .pem-fil</span>
+              <span className="min-w-0 truncate text-muted-foreground">{file?.name ?? "Ingen fil valgt"}</span>
             </label>
             <Button type="submit" variant="primary" disabled={act.busy}>{act.busy ? "Tjekker hos Enable Banking …" : "Gem"}</Button>
           </form>
         </>
       )}
-      {act.error && <p role="alert" className="mt-2 text-sm text-bad">{act.error}</p>}
+      {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );
 }
