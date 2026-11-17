@@ -1,3 +1,5 @@
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { monthsToPayoff } from "@/lib/finance-engine";
@@ -11,11 +13,11 @@ const when = (n: number) => {
 };
 
 /** Gæld: hvornår den er betalt, og hvad 500 kr. ekstra om måneden betyder. */
-export function DebtCard({ assets, onEdit }: { assets: Asset[]; onEdit: (a: Asset) => void }) {
+export function DebtCard({ assets, onEdit, onAdd }: { assets: Asset[]; onEdit: (a: Asset) => void; onAdd: () => void }) {
   const debts = assets.filter((a) => isDebt(a.kind));
   return (
-    <Card title="Gæld – afbetaling">
-      {!debts.length ? <p className="text-sm text-muted">Ingen gæld registreret. Tilføj lån eller kreditkort under Nettoformue.</p> : (
+    <Card title="Gæld – afbetaling" action={<Button variant="soft" icon={<Plus size={16} />} onClick={onAdd}>Tilføj gæld</Button>}>
+      {!debts.length ? <p className="text-sm text-muted">Ingen gæld registreret. Har du fx lån i bilen eller boligen, så tilføj restgæld, rente og ydelse – så kan du se, hvornår du er gældfri.</p> : (
         <ul className="divide-y divide-line">
           {debts.map((d) => {
             const n = monthsToPayoff(d.value, d.rate, d.monthly_payment), faster = monthsToPayoff(d.value, d.rate, (d.monthly_payment ?? 0) + 500);

@@ -75,3 +75,17 @@ describe("Ny app – resten", () => {
     for (const n of ["Planlæg", "Fælles post", "Værktøjer", "Indstillinger"]) expect(screen.getAllByRole("link", { name: n }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Gæld", () => {
+  it("kan tilføjes direkte fra kortet Gæld – afbetaling", async () => {
+    const { plan } = setup("/planlaeg");
+    fireEvent.click(await screen.findByRole("button", { name: "Tilføj gæld" }));
+    const dlg = screen.getByRole("dialog", { name: "Ny gæld" });
+    fireEvent.change(within(dlg).getByLabelText("Navn"), { target: { value: "Billån" } });
+    fireEvent.change(within(dlg).getByLabelText("Restgæld (kr.)"), { target: { value: "180.000" } });
+    fireEvent.change(within(dlg).getByLabelText("Rente (% pr. år)"), { target: { value: "4,9" } });
+    fireEvent.change(within(dlg).getByLabelText("Ydelse pr. måned (kr.)"), { target: { value: "3.200" } });
+    await act(async () => { fireEvent.click(within(dlg).getByRole("button", { name: "Gem" })); });
+    expect(plan.saveAsset).toHaveBeenCalledWith(expect.objectContaining({ name: "Billån", kind: "loan", value: 180000, rate: 4.9, monthly_payment: 3200 }), undefined);
+  });
+});

@@ -16,7 +16,7 @@ import { NetWorthCard } from "./NetWorthCard";
 export function PlanPage() {
   const { user } = useFinance();
   const plan = useResource((s) => s.plan.fetchPlan(user?.id ?? ""), [user?.id]);
-  const [asset, setAsset] = useState<{ a: Asset | null; kind?: AssetKind } | null>(null);
+  const [asset, setAsset] = useState<{ a: Asset | null; kind?: AssetKind; name?: string } | null>(null);
   const [goal, setGoal] = useState<{ g: SavingsGoal | null } | null>(null);
   const reload = () => void plan.reload();
   const d = plan.data;
@@ -35,12 +35,13 @@ export function PlanPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <NetWorthCard assets={d.assets} history={d.history} onEdit={(a) => setAsset({ a })} onAdd={() => setAsset({ a: null })} />
           <GoalsCard goals={d.goals} onEdit={(g) => setGoal({ g })} onAdd={() => setGoal({ g: null })} onChanged={reload} />
-          <DebtCard assets={d.assets} onEdit={(a) => setAsset({ a })} />
+          <DebtCard assets={d.assets} onEdit={(a) => setAsset({ a })} onAdd={() => setAsset({ a: null, kind: "loan" })} />
           <InvestCard assets={d.assets} onEdit={(a) => setAsset({ a })} />
           <div className="lg:col-span-2"><ChallengesCard challenges={d.challenges} onChanged={reload} /></div>
         </div>
       )}
-      <AssetDialog open={!!asset} asset={asset?.a ?? null} kind={asset?.kind} onClose={() => setAsset(null)} onSaved={reload} />
+      <AssetDialog open={!!asset} asset={asset?.a ?? null} kind={asset?.kind} name={asset?.name} onClose={() => setAsset(null)} onSaved={reload}
+        onAddLoan={(n) => setAsset({ a: null, kind: "loan", name: `Lån i ${n}` })} />
       <GoalDialog open={!!goal} goal={goal?.g ?? null} onClose={() => setGoal(null)} onSaved={reload} />
     </>
   );
