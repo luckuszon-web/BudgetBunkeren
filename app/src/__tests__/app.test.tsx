@@ -1,36 +1,9 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { createMemoryHistory } from "@tanstack/react-router";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { App } from "@/App";
-import { RepositoryError } from "@/services";
-import { sampleData } from "@/features/__tests__/fixtures";
+import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { setup } from "./app-setup";
 
 afterEach(cleanup);
-window.scrollTo = (() => {}) as typeof window.scrollTo;
-
-function setup(path = "/", { signedIn = true, mfa = false } = {}) {
-  let user = signedIn ? { id: "me", email: "me@example.com" } : null;
-  const auth = {
-    currentUser: vi.fn(async () => user),
-    signIn: vi.fn(async (e: string, p: string) => { if (p !== "rigtig") throw new RepositoryError("Forkert e-mail eller adgangskode.", "permission"); user = { id: "me", email: e }; return user; }),
-    signOut: vi.fn(async () => { user = null; }),
-    needsMfa: vi.fn(async () => mfa),
-    verifyMfa: vi.fn(async (c: string) => { if (c !== "123456") throw new RepositoryError("Forkert kode – prøv igen.", "permission"); mfa = false; }),
-    onChange: vi.fn(() => () => {}),
-  };
-  const repo = {
-    fetchAllUserData: vi.fn(async () => sampleData()),
-    loadCached: vi.fn(async () => null),
-    saveTransaction: vi.fn(async () => {}),
-    saveSplits: vi.fn(async (id: string, parts: { category_id: string; amount: number }[]) => parts.map((p, i) => ({ id: `s${i}`, transaction_id: id, ...p }))),
-    saveCategory: vi.fn(async (d: { id?: string; name: string; kind: "expense"; monthly_budget?: number }) => ({ id: d.id ?? "77", name: d.name, kind: d.kind, monthly_budget: d.monthly_budget ?? 0 })),
-    createRuleAndReclassify: vi.fn(),
-  };
-  const history = createMemoryHistory({ initialEntries: [path] });
-  render(<App services={{ auth, repo } as never} history={history} today={() => "2026-11-16"} />);
-  return { auth, repo };
-}
 
 describe("Ny app", () => {
   it("log ind: forkert adgangskode giver besked, rigtig viser Overblik", async () => {

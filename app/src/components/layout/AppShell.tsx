@@ -1,13 +1,18 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { Calculator, LayoutDashboard, ListChecks, LogOut, PieChart, type LucideIcon } from "lucide-react";
+import { Calculator, LayoutDashboard, ListChecks, LogOut, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
 import { Toasts } from "@/components/ui/Toasts";
 import { LoadState } from "./LoadState";
 
-const NAV: { to: "/" | "/posteringer" | "/budget" | "/vaerktoejer"; label: string; icon: LucideIcon }[] = [
-  { to: "/", label: "Overblik", icon: LayoutDashboard },
-  { to: "/posteringer", label: "Posteringer", icon: ListChecks },
-  { to: "/budget", label: "Budget", icon: PieChart },
-  { to: "/vaerktoejer", label: "Værktøjer", icon: Calculator },
+type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/indstillinger";
+/** `mobile`: står i bundmenuen (5 faner); de andre nås fra Planlæg på mobil. */
+const NAV: { to: To; label: string; icon: LucideIcon; mobile: boolean }[] = [
+  { to: "/", label: "Overblik", icon: LayoutDashboard, mobile: true },
+  { to: "/posteringer", label: "Posteringer", icon: ListChecks, mobile: true },
+  { to: "/budget", label: "Budget", icon: PieChart, mobile: true },
+  { to: "/planlaeg", label: "Planlæg", icon: Target, mobile: true },
+  { to: "/faelles", label: "Fælles post", icon: Users, mobile: false },
+  { to: "/vaerktoejer", label: "Værktøjer", icon: Calculator, mobile: false },
+  { to: "/indstillinger", label: "Indstillinger", icon: Settings, mobile: true },
 ];
 
 function Logo() {
@@ -48,10 +53,10 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
         <div className="mx-auto max-w-6xl"><LoadState><Outlet /></LoadState></div>
       </main>
 
-      <nav aria-label="Hovedmenu" className="pb-safe fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-line bg-card/95 backdrop-blur md:hidden">
-        {NAV.map(({ to, label, icon: Icon }) => (
+      <nav aria-label="Hovedmenu" className="pb-safe fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-card/95 backdrop-blur md:hidden">
+        {NAV.filter((n) => n.mobile).map(({ to, label, icon: Icon }) => (
           <Link key={to} to={to} activeOptions={{ exact: to === "/" }}
-            className="flex flex-col items-center gap-1 pt-2.5 text-[11px] text-muted"
+            className="flex min-w-0 flex-col items-center gap-1 pt-2.5 text-[10.5px] text-muted"
             activeProps={{ className: "!text-accent font-medium" }}>
             <Icon size={22} />{label}
           </Link>

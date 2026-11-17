@@ -117,6 +117,19 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
       must(await sb.from("transactions").update(row).eq("id", p.id).select("id").single());
     }),
 
+    /** Samme ændring på mange bankposteringer (Vælg flere) – i bidder á 100. Kun kategori og engangskøb. */
+    saveTransactionsBulk: (ids: string[], patch: { category_id?: string | null; one_off?: boolean }): Promise<number> => run(async () => {
+      const bank = ids.filter((x) => !isManualId(x));
+      if (bank.length > 5000) throw new RepositoryError("For mange posteringer på én gang.", "validation");
+      const p = TransactionPatchInput.parse({ id: "bulk", ...patch });
+      const row: Record<string, unknown> = {};
+      if (p.category_id !== undefined) { row.category_id = p.category_id == null ? null : Number(p.category_id); row.category_source = p.category_id == null ? null : "manual"; }
+      if (p.one_off !== undefined) row.one_off = p.one_off;
+      if (!Object.keys(row).length || !bank.length) return 0;
+      for (let i = 0; i < bank.length; i += 100) must(await sb.from("transactions").update(row).in("id", bank.slice(i, i + 100)));
+      return bank.length;
+    }),
+
     /** Opretter et indtastet beløb (løn eller kontantkøb). */
     saveManualEntry: (input: unknown): Promise<ManualEntry> => run(async () => {
       const e = ManualEntryInput.parse(input);

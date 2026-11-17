@@ -47,6 +47,39 @@ export function createAuthService(sb: SupabaseClient, onSignedOut: () => Promise
         if (r.error) throw new RepositoryError("Forkert kode – prøv igen.", "permission", r.error);
       } catch (e) { throw toRepositoryError(e); }
     },
+    /** E-mail og seneste login (til Login og sikkerhed). */
+    async userInfo(): Promise<{ email: string | null; lastSignIn: string | null }> {
+      const { data } = await sb.auth.getUser();
+      return { email: data.user?.email ?? null, lastSignIn: data.user?.last_sign_in_at ?? null };
+    },
+    /** Er totrinsbekræftelse (TOTP) slået til? */
+    async mfaEnabled(): Promise<boolean> {
+      const { data } = await sb.auth.mfa.listFactors();
+      return !!data?.totp?.some((f) => f.status === "verified");
+    },
+    /** Start opsætning: giver en QR-kode (SVG som data-URL) og en hemmelighed til at taste manuelt. */
+    async mfaEnroll(): Promise<{ factorId: string; qr: string; secret: string }> {
+      try {
+        const old = await sb.auth.mfa.listFactors();   // ryd halvfærdige forsøg
+        for (const f of old.data?.all ?? []) if (f.status !== "verified") await sb.auth.mfa.unenroll({ factorId: f.id });
+        const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: `BudgetBunkeren ${Date.now()}` });
+        if (error) throw error;
+        return { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret };
+      } catch (e) { throw toRepositoryError(e); }
+    },
+    async mfaConfirm(factorId: string, code: string): Promise<void> {
+      try {
+        const c = z.string().trim().regex(/^\d{6}$/, "Koden er 6 cifre").parse(code);
+        const r = await sb.auth.mfa.challengeAndVerify({ factorId, code: c });
+        if (r.error) throw new RepositoryError("Forkert kode – prøv igen.", "permission", r.error);
+      } catch (e) { throw toRepositoryError(e); }
+    },
+    async mfaDisable(): Promise<void> {
+      try {
+        const { data } = await sb.auth.mfa.listFactors();
+        for (const f of data?.totp ?? []) { const r = await sb.auth.mfa.unenroll({ factorId: f.id }); if (r.error) throw r.error; }
+      } catch (e) { throw toRepositoryError(e); }
+    },
     async changePassword(password: string): Promise<void> {
       try {
         const { error } = await sb.auth.updateUser({ password: NewPassword.parse(password) });

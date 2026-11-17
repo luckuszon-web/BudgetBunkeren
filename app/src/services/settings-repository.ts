@@ -1,0 +1,56 @@
+/**
+ * Indstillinger: bankforbindelser, konti (omdøb/skjul), kategorier (slet med flyt), regler og indtastede beløb.
+ * Databasen tillader kun at ændre display_name/hidden på konti og category_id/category_source på posteringer.
+ */
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { BankSession } from "@/types/plan";
+import { RepositoryError, toRepositoryError } from "./finance-repository";
+import { parseRows } from "./schemas";
+import { AccountNameInput, SessionRow } from "./schemas-plan";
+
+const isId = (s: string | null) => s === null || /^\d{1,18}$/.test(s);
+
+export function createSettingsRepository(sb: SupabaseClient) {
+  const run = async <T>(fn: () => Promise<T>): Promise<T> => { try { return await fn(); } catch (e) { throw toRepositoryError(e); } };
+  const ok = (r: { error: unknown }) => { if (r.error) throw r.error; };
+
+  return {
+    sessions: (userId: string): Promise<BankSession[]> => run(async () => {
+      const r = await sb.from("bank_sessions").select("id, aspsp_name, valid_until").eq("user_id", userId).order("valid_until", { ascending: false });
+      ok(r);
+      return parseRows(SessionRow, r.data as unknown[]).items;
+    }),
+    /** Omdøb en konto – gælder alle udgaver af kontoen (samme account_key efter fornyelser). */
+    renameAccount: (key: string, name: string) => run(async () => {
+      const v = AccountNameInput.parse(name);
+      ok(await sb.from("accounts").update({ display_name: v || null }).eq("account_key", key));
+    }),
+    setAccountHidden: (key: string, hidden: boolean) => run(async () => { ok(await sb.from("accounts").update({ hidden }).eq("account_key", key)); }),
+
+    /**
+     * Slet en kategori. Posteringer, regler og indtastede beløb flyttes først til `moveTo` (eller bliver uden kategori),
+     * så intet forsvinder. Posteringer flyttes i bidder á 100.
+     */
+    deleteCategory: (userId: string, id: string, moveTo: string | null) => run(async () => {
+      if (!isId(id) || !isId(moveTo) || id === moveTo) throw new RepositoryError("Ugyldig kategori.", "validation");
+      const target = moveTo ? Number(moveTo) : null;
+      const r = await sb.from("transactions").select("id").eq("user_id", userId).eq("category_id", Number(id));
+      ok(r);
+      const ids = (r.data as { id: string }[]).map((x) => x.id);
+      for (let i = 0; i < ids.length; i += 100) {
+        ok(await sb.from("transactions").update({ category_id: target, category_source: target ? "manual" : null }).in("id", ids.slice(i, i + 100)));
+      }
+      if (target) ok(await sb.from("rules").update({ category_id: target }).eq("category_id", Number(id)));
+      else ok(await sb.from("rules").delete().eq("category_id", Number(id)));
+      const m = await sb.from("manual_income").update({ category_id: target }).eq("category_id", Number(id));
+      if (m.error && toRepositoryError(m.error).code !== "missing_migration") throw m.error;
+      ok(await sb.from("categories").delete().eq("id", Number(id)));
+      return ids.length;
+    }),
+    deleteRule: (id: string) => run(async () => {
+      if (!isId(id)) throw new RepositoryError("Ugyldig regel.", "validation");
+      ok(await sb.from("rules").delete().eq("id", Number(id)));
+    }),
+  };
+}
+export type SettingsRepository = ReturnType<typeof createSettingsRepository>;

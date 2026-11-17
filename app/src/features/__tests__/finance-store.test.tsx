@@ -21,6 +21,9 @@ function setup(overrides: Partial<FinanceServices["repo"]> = {}, cached: UserDat
     saveSplits: vi.fn(async (_id: string, parts: { category_id: string; amount: number }[]) => parts.map((p, i) => ({ id: `db-${i}`, transaction_id: _id, category_id: p.category_id, amount: p.amount }))),
     saveCategory: vi.fn(async (d) => ({ id: d.id ?? "77", name: d.name, kind: d.kind, monthly_budget: d.monthly_budget ?? 0 })),
     createRuleAndReclassify: vi.fn(async (_u, kw, cat) => ({ rule: { id: "r-db", pattern: kw, category_id: cat, priority: 200 }, updated: 1 })),
+    saveTransactionsBulk: vi.fn(async (ids: string[]) => ids.length),
+    saveManualEntry: vi.fn(async (e) => ({ id: "m9", ...e, direction: e.direction, category_id: e.category_id ?? null, note: e.note ?? null } as never)),
+    deleteTransaction: vi.fn(async () => {}),
     ...overrides,
   };
   const services: FinanceServices = { repo, auth: { currentUser: async () => ({ id: "me", email: "me@example.com" }) } };
@@ -114,6 +117,27 @@ describe("FinanceStore", () => {
     expect(result.current.derived!.overBudget).toEqual([]);   // 600 af 800
     await act(async () => { await result.current.actions.saveCategory({ name: "Kæledyr", kind: "expense" }); });
     expect(result.current.state.data!.categories.some((c) => c.id === "77" && c.name === "Kæledyr")).toBe(true);
+  });
+
+  it("vælg flere: alle får kategorien – og tilbage ved fejl", async () => {
+    const { result, repo } = setup();
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    await act(async () => { await result.current.actions.patchMany(["nov-wolt2", "nov-netto"], { category_id: "2" }); });
+    expect(repo.saveTransactionsBulk).toHaveBeenCalledWith(expect.arrayContaining(["nov-wolt2", "nov-netto"]), { category_id: "2" });
+    expect(txOf(result, "nov-netto")).toMatchObject({ category_id: "2", category_source: "manual" });
+    const f = setup({ saveTransactionsBulk: vi.fn(async () => { throw new RepositoryError("Ingen forbindelse", "network"); }) });
+    await waitFor(() => expect(f.result.current.state.status).toBe("ready"));
+    await act(async () => { await f.result.current.actions.patchMany(["nov-netto"], { one_off: true }); });
+    expect(txOf(f.result, "nov-netto").one_off).toBe(false);
+  });
+
+  it("indtastede beløb tilføjes og fjernes", async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    await act(async () => { await result.current.actions.addManual({ pay_date: "2026-11-10", amount: 250, direction: "out" }); });
+    expect(result.current.derived!.listTxs.some((t) => t.id === "manual-m9" && t.amount === -250)).toBe(true);
+    await act(async () => { await result.current.actions.deleteManual("m9"); });
+    expect(result.current.state.data!.manualEntries.some((m) => m.id === "m9")).toBe(false);
   });
 
   it("periode og filtre ændrer de beregnede værdier", async () => {

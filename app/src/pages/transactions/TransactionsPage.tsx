@@ -1,45 +1,67 @@
 import { useMemo, useState } from "react";
+import { ListChecks, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodPicker } from "@/components/layout/PeriodPicker";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { useFinance } from "@/features/finance-store";
 import type { Transaction } from "@/types/finance";
+import { ManualDialog } from "./ManualDialog";
+import { SelectionBar } from "./SelectionBar";
 import { SplitDialog } from "./SplitDialog";
 import { TransactionFilters } from "./TransactionFilters";
-import { TransactionRow } from "./TransactionRow";
+import { TransactionRow, type RowHandlers } from "./TransactionRow";
+import { TxDialog } from "./TxDialog";
 
 const PAGE = 150;
 
 export function TransactionsPage() {
   const { state, derived, actions } = useFinance();
-  const [limit, setLimit] = useState(PAGE), [splitTx, setSplitTx] = useState<Transaction | null>(null);
+  const [limit, setLimit] = useState(PAGE), [splitTx, setSplitTx] = useState<Transaction | null>(null), [openTx, setOpenTx] = useState<Transaction | null>(null);
+  const [manual, setManual] = useState(false), [selectMode, setSelectMode] = useState(false), [sel, setSel] = useState<Set<string>>(new Set());
   const splitCount = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of state.data?.splits ?? []) m.set(s.transaction_id, (m.get(s.transaction_id) ?? 0) + 1);
     return m;
   }, [state.data?.splits]);
+  const h: RowHandlers = useMemo(() => ({
+    onCategory: (t, id) => void actions.setCategory(t.id, id),
+    onSplit: (t) => { setOpenTx(null); setSplitTx(t); },
+    onOpen: setOpenTx,
+    onToggle: (t) => setSel((s) => { const n = new Set(s); if (n.has(t.id)) n.delete(t.id); else n.add(t.id); return n; }),
+    onDeleteManual: (t) => { if (confirm(`Slet "${t.text}"?`)) void actions.deleteManual(t.id.replace(/^manual-/, "")); },
+  }), [actions]);
   if (!derived || !state.data) return null;
 
   const list = derived.listTxs, f = state.filters;
+  const selectable = list.filter((t) => !t.manual);
   const sumIn = list.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0), sumOut = list.filter((t) => t.amount < 0).reduce((s, t) => s - t.amount, 0);
   const scope = f.dateFrom || f.dateTo ? "i datointervallet" : f.search.trim() ? "i alle måneder" : "i perioden";
+  const closeSel = () => { setSelectMode(false); setSel(new Set()); };
+  const bulk = async (patch: { category_id?: string | null; one_off?: boolean }) => { if (await actions.patchMany([...sel], patch)) closeSel(); };
+
   return (
     <>
       <PageHeader title="Posteringer" action={!f.dateFrom && !f.dateTo && !f.search.trim() ? <PeriodPicker /> : undefined}
         subtitle={derived.uncategorizedCount ? `${derived.uncategorizedCount} uden kategori i perioden` : undefined} />
       <Card className="mb-4"><TransactionFilters /></Card>
       <Card>
-        <p className="mb-2 flex flex-wrap gap-x-4 text-sm text-muted">
-          <span>{list.length} {list.length === 1 ? "postering" : "posteringer"} {scope}</span>
-          <span>Ind <Money value={sumIn} /></span><span>Ud <Money value={sumOut} /></span>
-        </p>
+        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="flex flex-wrap gap-x-4 text-sm text-muted">
+            <span>{list.length} {list.length === 1 ? "postering" : "posteringer"} {scope}</span>
+            <span>Ind <Money value={sumIn} /></span><span>Ud <Money value={sumOut} /></span>
+          </p>
+          <div className="ml-auto flex gap-2">
+            <Button variant={selectMode ? "soft" : "ghost"} icon={<ListChecks size={16} />} onClick={() => (selectMode ? closeSel() : setSelectMode(true))}>Vælg</Button>
+            <Button icon={<Plus size={16} />} onClick={() => setManual(true)}>Kontant</Button>
+          </div>
+        </div>
         {!list.length ? <p className="py-6 text-center text-sm text-muted">Ingen posteringer matcher.</p> : (
           <ul className="divide-y divide-line">
             {list.slice(0, limit).map((t) => (
-              <TransactionRow key={t.id} t={t} categories={state.data!.categories} classifier={derived.classifier}
-                splitCount={splitCount.get(t.id) ?? 0} saving={state.saving.includes(t.id)}
-                onCategory={(id) => void actions.setCategory(t.id, id)} onSplit={() => setSplitTx(t)} />
+              <TransactionRow key={t.id} t={t} categories={state.data!.categories} classifier={derived.classifier} h={h}
+                splitCount={splitCount.get(t.id) ?? 0} saving={state.saving.includes(t.id)} selectMode={selectMode} selected={sel.has(t.id)} />
             ))}
           </ul>
         )}
@@ -49,7 +71,15 @@ export function TransactionsPage() {
           </button>
         )}
       </Card>
+      {selectMode && <div className="h-28" />}
+      {selectMode && (
+        <SelectionBar count={sel.size} total={selectable.length} categories={state.data.categories}
+          onAll={() => setSel(sel.size === selectable.length ? new Set() : new Set(selectable.map((t) => t.id)))}
+          onCategory={(id) => void bulk({ category_id: id })} onOneOff={(v) => void bulk({ one_off: v })} onClose={closeSel} />
+      )}
+      <TxDialog tx={openTx} onClose={() => setOpenTx(null)} onSplit={h.onSplit} />
       <SplitDialog tx={splitTx} onClose={() => setSplitTx(null)} />
+      <ManualDialog open={manual} onClose={() => setManual(false)} />
     </>
   );
 }

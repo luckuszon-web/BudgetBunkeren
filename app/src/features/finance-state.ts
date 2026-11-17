@@ -4,7 +4,7 @@
  * Optimistiske opdateringer: UI ændres med det samme (`txPatched`, `splitsReplaced`, `categoryUpserted`, `ruleApplied`),
  * og hvis gemningen fejler, rulles præcis den ændring tilbage med de gamle værdier, handlingen havde med.
  */
-import type { Category, CategoryRule, Transaction, TxSplit, YearMonth } from "@/types/finance";
+import type { Category, CategoryRule, ManualEntry, Transaction, TxSplit, YearMonth } from "@/types/finance";
 import type { UserData } from "@/services";
 
 export type Granularity = "month" | "year";
@@ -56,6 +56,8 @@ export type FinanceAction =
   | { type: "categoryRemoved"; id: string }
   | { type: "ruleApplied"; rule: CategoryRule; changes: { id: string; previous: Partial<TxEditable> }[]; categoryId: string }
   | { type: "ruleReverted"; ruleId: string; changes: { id: string; previous: Partial<TxEditable> }[] }
+  | { type: "manualAdded"; entry: ManualEntry }
+  | { type: "manualRemoved"; id: string }
   | { type: "savingStarted"; id: string }
   | { type: "savingDone"; id: string }
   | { type: "toastAdded"; toast: Toast }
@@ -110,6 +112,10 @@ export function financeReducer(s: FinanceState, a: FinanceAction): FinanceState 
       const next = mapTx(s, (t) => (prev.has(t.id) ? { ...t, ...prev.get(t.id) } : t));
       return { ...next, data: { ...next.data!, rules: next.data!.rules.filter((r) => r.id !== a.ruleId) } };
     }
+    case "manualAdded":
+      return s.data ? { ...s, data: { ...s.data, manualEntries: [...s.data.manualEntries.filter((m) => m.id !== a.entry.id), a.entry] } } : s;
+    case "manualRemoved":
+      return s.data ? { ...s, data: { ...s.data, manualEntries: s.data.manualEntries.filter((m) => m.id !== a.id) } } : s;
     case "savingStarted":
       return { ...s, saving: [...s.saving, a.id] };
     case "savingDone": {

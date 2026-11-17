@@ -13,16 +13,16 @@ import { z } from "zod";
 import type { Category, CategoryRule, ManualEntry, Transaction, TxSplit } from "@/types/finance";
 
 // ---------- Byggesten ----------
-const id = z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().min(1).max(200));
-const optId = z.union([z.string(), z.number()]).nullish().transform((v) => (v == null ? null : String(v)));
+export const id = z.union([z.string(), z.number()]).transform((v) => String(v)).pipe(z.string().min(1).max(200));
+export const optId = z.union([z.string(), z.number()]).nullish().transform((v) => (v == null ? null : String(v)));
 /** Postgres numeric kommer som tekst – omdan til et endeligt tal. */
-const money = z.union([z.number(), z.string()]).transform((v) => Number(v)).pipe(z.number().finite());
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Ugyldig dato").transform((s) => s.slice(0, 10));
-const yearMonth = z.string().regex(/^\d{4}-\d{2}$/, "Ugyldig måned");
+export const money = z.union([z.number(), z.string()]).transform((v) => Number(v)).pipe(z.number().finite());
+export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Ugyldig dato").transform((s) => s.slice(0, 10));
+export const yearMonth = z.string().regex(/^\d{4}-\d{2}$/, "Ugyldig måned");
 // eslint-disable-next-line no-control-regex
 const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 /** Tekst fra brugeren: trimmet, uden kontroltegn og med en maksimal længde. */
-const safeText = (max: number) => z.string().trim().max(max, `Højst ${max} tegn`).refine((s) => !CONTROL.test(s), "Teksten indeholder ugyldige tegn");
+export const safeText = (max: number) => z.string().trim().max(max, `Højst ${max} tegn`).refine((s) => !CONTROL.test(s), "Teksten indeholder ugyldige tegn");
 const CATEGORY_KINDS = ["expense", "income", "transfer", "oneoff", "ignore"] as const;
 
 // ---------- Rækker fra databasen → domæne ----------
@@ -74,7 +74,7 @@ export function parseRows<S extends z.ZodTypeAny>(schema: S, rows: unknown[] | n
 
 // ---------- Input (det appen skriver) ----------
 /** Database-id for en kategori (bigint) – kommer som streng i domænet. */
-const dbId = z.string().regex(/^\d{1,18}$/, "Ugyldigt id");
+export const dbId = z.string().regex(/^\d{1,18}$/, "Ugyldigt id");
 
 /** Det, browseren MÅ ændre på en bankpostering (resten kommer fra banken og er låst af databasen). */
 export const TransactionPatchInput = z.object({

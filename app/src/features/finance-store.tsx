@@ -4,40 +4,18 @@
  * - Ved start vises de sidst gemte data fra enheden med det samme; friske data hentes i baggrunden.
  * - Handlinger opdaterer UI'et øjeblikkeligt (optimistisk) og gemmer i baggrunden. Fejler gemningen,
  *   rulles netop den ændring tilbage, og der vises en venlig besked.
- * - Beregnede værdier (disponibelt, budgetter, score, prognose) beregnes med useMemo ud fra data, periode og filtre.
- *
- * Komponenter bruger kun `useFinance()` – aldrig repositoryet eller Supabase direkte.
+ * - Beregnede værdier beregnes med useMemo ud fra data, periode og filtre. Komponenter bruger kun `useFinance()` – aldrig repositoryet eller Supabase direkte.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
 import type { Category, CategoryRule, Transaction, TxSplit } from "@/types/finance";
 import { matchesRule, shiftMonth } from "@/lib/finance-engine";
-import { getServices, type AuthService, type AuthUser, type CategoryDraft, type FinanceRepository, RepositoryError } from "@/services";
+import { getServices, type AuthUser, RepositoryError } from "@/services";
 import { friendly } from "./friendly-error";
-import { deriveFinance, type FinanceDerived } from "./finance-selectors";
-import { financeReducer, initialState, type FinanceState, type Filters, type PeriodSelection, type Toast, type TxEditable } from "./finance-state";
-
-// ---------- Typer ----------
-export type FinanceServices = {
-  repo: Pick<FinanceRepository, "fetchAllUserData" | "loadCached" | "saveTransaction" | "saveSplits" | "saveCategory" | "createRuleAndReclassify">;
-  auth: Pick<AuthService, "currentUser">;
-};
-export interface FinanceActions {
-  refresh(): Promise<void>;
-  setPeriod(p: PeriodSelection): void;
-  stepPeriod(delta: number): void;
-  setFilters(f: Partial<Filters>): void;
-  setCategory(txId: string, categoryId: string | null): Promise<boolean>;
-  setOneOff(txId: string, oneOff: boolean): Promise<boolean>;
-  setNote(txId: string, note: string): Promise<boolean>;
-  splitTransaction(txId: string, parts: { category_id: string; amount: number }[]): Promise<boolean>;
-  saveCategory(draft: CategoryDraft): Promise<Category | null>;
-  createRule(keyword: string, categoryId: string): Promise<boolean>;
-  dismissToast(id: number): void;
-}
-export interface FinanceContextValue { state: FinanceState; derived: FinanceDerived | null; user: AuthUser | null; actions: FinanceActions }
-
+import { deriveFinance } from "./finance-selectors";
+import { financeReducer, initialState, type Toast, type TxEditable } from "./finance-state";
+import type { FinanceActions, FinanceContextValue, FinanceServices } from "./finance-types";
+export type { FinanceActions, FinanceContextValue, FinanceServices } from "./finance-types";
 const Ctx = createContext<FinanceContextValue | null>(null);
-
 const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export function FinanceProvider({ children, services, today = isoToday, historyMonths = 25, toastMs = 4000 }: {
@@ -172,6 +150,27 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
         toast("error", friendly(e));
         return false;
       }
+    },
+
+    async patchMany(ids, patch) {
+      const txs = (stateRef.current.data?.transactions ?? []).filter((t) => ids.includes(t.id) && !t.manual);
+      if (!txs.length) return false;
+      const full: Partial<TxEditable> = patch.category_id !== undefined ? { ...patch, category_source: patch.category_id ? "manual" : null } : { ...patch };
+      const prev = txs.map((t) => ({ id: t.id, previous: Object.fromEntries(Object.keys(full).map((k) => [k, t[k as keyof TxEditable] ?? null])) as Partial<TxEditable> }));
+      for (const t of txs) dispatch({ type: "txPatched", id: t.id, patch: full });
+      try { const n = await svc.repo.saveTransactionsBulk(txs.map((t) => t.id), patch); toast("success", `${n} ${n === 1 ? "postering" : "posteringer"} opdateret.`); return true; }
+      catch (e) { for (const p of prev) dispatch({ type: "txReverted", id: p.id, previous: p.previous }); toast("error", friendly(e)); return false; }
+    },
+    async addManual(entry) {
+      try { const saved = await svc.repo.saveManualEntry(entry); dispatch({ type: "manualAdded", entry: saved }); toast("success", "Beløbet er gemt."); return true; }
+      catch (e) { toast("error", friendly(e).replace(" Ændringen er fortrudt.", "")); return false; }
+    },
+    async deleteManual(id) {
+      const old = stateRef.current.data?.manualEntries.find((m) => m.id === id);
+      if (!old) return false;
+      dispatch({ type: "manualRemoved", id });
+      try { await svc.repo.deleteTransaction(`manual-${id}`); return true; }
+      catch (e) { dispatch({ type: "manualAdded", entry: old }); toast("error", friendly(e)); return false; }
     },
 
     dismissToast: (id) => dispatch({ type: "toastDismissed", id }),

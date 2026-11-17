@@ -66,7 +66,10 @@ async function functional(page, db) {
       console.log(`ny app · ${name}`);
       const { browser, page, errors } = await h.open({ mobile: mob, dpr: 1, url: h.SITE + 'ny/' });
       await page.setViewportSize({ width: w, height: hh });
-      for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer']]) {
+      for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer'],
+        ['planlaeg', 'Planlæg'], ['faelles', 'Fælles post'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
+        ['indstillinger/kategorier', 'Kategorier'], ['indstillinger/regler', 'Regler'], ['indstillinger/indtastet', 'Indtastede beløb'],
+        ['indstillinger/sikkerhed', 'Login og sikkerhed'], ['indstillinger/data', 'Data']]) {
         await page.goto(h.SITE + 'ny/#/' + route); await page.waitForTimeout(800);
         const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - innerWidth }));
         if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);

@@ -2,6 +2,10 @@ import { createHashHistory, createRootRouteWithContext, createRoute, createRoute
 import { AppShell } from "@/components/layout/AppShell";
 import { BudgetPage } from "@/pages/budget/BudgetPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
+import { PlanPage } from "@/pages/plan/PlanPage";
+import { PotPage } from "@/pages/pot/PotPage";
+import { SettingsPage } from "@/pages/settings/SettingsPage";
+import { SettingsSection } from "@/pages/settings/SettingsSection";
 import { ToolsPage } from "@/pages/tools/ToolsPage";
 import { TransactionsPage } from "@/pages/transactions/TransactionsPage";
 
@@ -16,6 +20,10 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/budget", component: BudgetPage }),
   createRoute({ getParentRoute: () => root, path: "/posteringer", component: TransactionsPage }),
   createRoute({ getParentRoute: () => root, path: "/vaerktoejer", component: ToolsPage }),
+  createRoute({ getParentRoute: () => root, path: "/planlaeg", component: PlanPage }),
+  createRoute({ getParentRoute: () => root, path: "/faelles", component: PotPage }),
+  createRoute({ getParentRoute: () => root, path: "/indstillinger", component: SettingsPage }),
+  createRoute({ getParentRoute: () => root, path: "/indstillinger/$section", component: SettingsSection }),
 ];
 
 /** Hash-routing (#/budget), så GitHub Pages ikke skal kende undersiderne. */
