@@ -1255,7 +1255,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261117153411";</script>
+<script>window.APP_VERSION = "20261117153653";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -1534,6 +1534,8 @@ async function load() {
     const last = state.accounts.map((a) => a.last_synced_at).filter(Boolean).sort().pop();
     $("footer").textContent = "";
   } catch (e) {
+    // Uden net (eller hvis serveren ikke svarer): behold de senest hentede tal i stedet for at tømme siden
+    if (state.allTxs.length) { toast(navigator.onLine ? "Kunne ikke hente nye tal – viser de senest hentede." : "Ingen forbindelse – du ser de senest hentede tal.", 5000); refresh(); return; }
     toast("Kunne ikke hente data: " + e.message, 8000);
   }
   await loadPlan();
@@ -4079,6 +4081,12 @@ $("pinBtn").onclick = () => {
 };
 $("pinChange").onclick = () => showLock("set1");
 
+// ---------- Offline ----------
+// Service worker gemmer appens filer, så den kan åbnes uden net (ikke under automatiske tests)
+if ("serviceWorker" in navigator && !navigator.webdriver && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+window.addEventListener("offline", () => toast("Ingen forbindelse – du ser de senest hentede tal.", 4000));
+window.addEventListener("online", () => { toast("Forbindelsen er tilbage – henter nye tal …", 2500); if (state.uid) load().catch(() => {}); });
+
 // ---------- Tema ----------
 const SUN = '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 2.8l2.1 2.1-1.4 1.4-2.1-2.1zm14.9 14.9 2.1 2.1-1.4 1.4-2.1-2.1zM2.8 19.8l2.1-2.1 1.4 1.4-2.1 2.1zM17.7 4.9l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg>';
 const MOON = '<svg viewBox="0 0 24 24"><path d="M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5z"/></svg>';
@@ -4110,7 +4118,7 @@ async function start() {
   if (loadCache()) {
     showTab(TABS[saved] ? saved : "app");
     $("syncBtn").classList.add("busy");
-    await load().catch((e) => console.error(e));
+    await load().catch((e) => { console.error(e); toast(navigator.onLine ? "Kunne ikke hente nye tal – viser de senest hentede." : "Ingen forbindelse – du ser de senest hentede tal.", 5000); });
     $("syncBtn").classList.remove("busy");
     return;
   }
