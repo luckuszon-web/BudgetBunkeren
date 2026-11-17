@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { financeReducer, initialState, periodRange } from "../finance-state";
+import { financeReducer, initialState, periodElapsed, periodLabel, periodOf, periodRange, stepKey } from "../finance-state";
 import { sampleData } from "./fixtures";
 
 const ready = () => financeReducer(initialState("2026-11-16"), { type: "loaded", data: sampleData(), source: "network" });
@@ -47,5 +47,18 @@ describe("finance-reducer", () => {
   it("periodens datoer", () => {
     expect(periodRange({ gran: "month", key: "2026-02" })).toMatchObject({ from: "2026-02-01", to: "2026-02-28" });
     expect(periodRange({ gran: "year", key: "2026" }).months.length).toBe(12);
+    expect(periodRange({ gran: "quarter", key: "2026-Q4" })).toEqual({ from: "2026-10-01", to: "2026-12-31", months: ["2026-10", "2026-11", "2026-12"] });
+    expect(periodRange({ gran: "half", key: "2026-H1" })).toMatchObject({ from: "2026-01-01", to: "2026-06-30" });
+  });
+  it("kvartal og halvår: skift over årsskifte, navne og hvor langt perioden er", () => {
+    expect(stepKey({ gran: "quarter", key: "2026-Q4" }, 1)).toBe("2027-Q1");
+    expect(stepKey({ gran: "quarter", key: "2026-Q1" }, -1)).toBe("2025-Q4");
+    expect(stepKey({ gran: "half", key: "2026-H1" }, -1)).toBe("2025-H2");
+    expect(periodOf("quarter", "2026-11")).toBe("2026-Q4");
+    expect(periodOf("half", "2026-06")).toBe("2026-H1");
+    expect(periodLabel({ gran: "quarter", key: "2026-Q3" })).toBe("3. kvt. 2026");
+    expect(periodLabel({ gran: "half", key: "2026-H2" }, true)).toBe("2. halvår 2026");
+    expect(periodElapsed({ gran: "quarter", key: "2026-Q3" }, "2026-11-16")).toBe(1);
+    expect(periodElapsed({ gran: "quarter", key: "2026-Q4" }, "2026-11-16")).toBeCloseTo((1 + 15.5 / 30) / 3);
   });
 });

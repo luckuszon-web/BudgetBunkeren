@@ -45,6 +45,13 @@ describe("Ny app", () => {
     expect(screen.getByRole("region", { name: "Om Opsparingsrate" }).textContent).toMatch(/Fuldt point ved 20 %/);
     expect(screen.getByText("Indtægter og udgifter")).toBeTruthy();
     expect(screen.getByText(/Median faste udgifter/)).toBeTruthy();
+    // Kvartal og halvår i periodevælgeren
+    fireEvent.click(screen.getByRole("tab", { name: "Kvartal" }));
+    expect(screen.getByText("4. kvt. 2026")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Forrige periode" }));
+    expect(screen.getByText("3. kvt. 2026")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Halvår" }));
+    expect(screen.getAllByText("2. halvår 2026").length).toBeGreaterThan(0);
   });
 
   it("Budget: viser bjælker og gemmer et nyt budget", async () => {

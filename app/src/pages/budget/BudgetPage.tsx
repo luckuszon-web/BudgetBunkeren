@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useFinance } from "@/features/finance-store";
-import { periodRange } from "@/features/finance-state";
+import { periodElapsed, periodRange } from "@/features/finance-state";
 import { budgetTone, elapsedFraction, spendByCategory } from "@/lib/finance-engine";
 import { todayIso } from "@/lib/today";
 import type { Category } from "@/types/finance";
@@ -21,7 +21,7 @@ export function BudgetPage() {
   const { state, derived } = useFinance();
   const [edit, setEdit] = useState<{ category: Category | null } | null>(null);
   const range = periodRange(state.period);
-  const elapsed = state.period.gran === "month" ? elapsedFraction(state.period.key, todayIso()) : Math.min(1, (+todayIso().slice(5, 7) - 1 + 0.5) / 12);
+  const elapsed = state.period.gran === "month" ? elapsedFraction(state.period.key, todayIso()) : periodElapsed(state.period, todayIso());
 
   // Udgiftskategorier uden budget, med periodens forbrug (størst først)
   const without = useMemo(() => {

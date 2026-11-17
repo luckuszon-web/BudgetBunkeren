@@ -7,8 +7,11 @@
 import type { BillCadence, Category, CategoryRule, ManualEntry, Transaction, TxSplit, YearMonth } from "@/types/finance";
 import type { UserData } from "@/services";
 
-export type Granularity = "month" | "year";
-export interface PeriodSelection { gran: Granularity; /** "YYYY-MM" eller "YYYY". */ key: string }
+export type Granularity = "month" | "quarter" | "half" | "year";
+/** key: "YYYY-MM" (måned), "YYYY-Q1".."Q4" (kvartal), "YYYY-H1"/"H2" (halvår) eller "YYYY" (år). */
+export interface PeriodSelection { gran: Granularity; key: string }
+/** Antal måneder pr. periode. */
+export const GRAN_MONTHS: Record<Granularity, number> = { month: 1, quarter: 3, half: 6, year: 12 };
 export type TxKindFilter = "all" | "expense" | "income" | "uncategorized" | "oneoff";
 export interface Filters {
   search: string; kind: TxKindFilter; categoryId: string | null;
@@ -67,10 +70,20 @@ export type FinanceAction =
   | { type: "toastAdded"; toast: Toast }
   | { type: "toastDismissed"; id: number };
 
-const stepKey = (p: PeriodSelection, delta: number): string => {
-  if (p.gran === "year") return String(+p.key + delta);
-  const d = new Date(Date.UTC(+p.key.slice(0, 4), +p.key.slice(5, 7) - 1 + delta, 1));
-  return d.toISOString().slice(0, 7);
+/** Første måned (1–12) i perioden. */
+const startMonth = (p: PeriodSelection): number =>
+  p.gran === "month" ? +p.key.slice(5, 7) : p.gran === "quarter" ? (+p.key.slice(6) - 1) * 3 + 1 : p.gran === "half" ? (+p.key.slice(6) - 1) * 6 + 1 : 1;
+/** Den periode af typen `gran`, som måneden `ym` ligger i. */
+export function periodOf(gran: Granularity, ym: YearMonth): string {
+  const y = ym.slice(0, 4), m = +ym.slice(5, 7);
+  return gran === "month" ? ym : gran === "quarter" ? `${y}-Q${Math.ceil(m / 3)}` : gran === "half" ? `${y}-H${m <= 6 ? 1 : 2}` : y;
+}
+/** Sidste måned i perioden (bruges, når man skifter til månedsvisning). */
+export const lastMonthOf = (p: PeriodSelection): YearMonth => periodRange(p).months.at(-1)!;
+export const stepKey = (p: PeriodSelection, delta: number): string => {
+  const n = GRAN_MONTHS[p.gran];
+  const d = new Date(Date.UTC(+p.key.slice(0, 4), startMonth(p) - 1 + delta * n, 1));
+  return periodOf(p.gran, d.toISOString().slice(0, 7));
 };
 const mapTx = (s: FinanceState, fn: (t: Transaction) => Transaction): FinanceState =>
   s.data ? { ...s, data: { ...s.data, transactions: s.data.transactions.map(fn) } } : s;
@@ -141,7 +154,24 @@ export function financeReducer(s: FinanceState, a: FinanceAction): FinanceState 
 
 /** Den valgte periodes første og sidste dag. */
 export function periodRange(p: PeriodSelection): { from: string; to: string; months: YearMonth[] } {
-  if (p.gran === "year") return { from: `${p.key}-01-01`, to: `${p.key}-12-31`, months: Array.from({ length: 12 }, (_, i) => `${p.key}-${String(i + 1).padStart(2, "0")}`) };
-  const last = new Date(Date.UTC(+p.key.slice(0, 4), +p.key.slice(5, 7), 0)).getUTCDate();
-  return { from: `${p.key}-01`, to: `${p.key}-${String(last).padStart(2, "0")}`, months: [p.key] };
+  const y = p.key.slice(0, 4), first = startMonth(p), n = GRAN_MONTHS[p.gran];
+  const months = Array.from({ length: n }, (_, i) => `${y}-${String(first + i).padStart(2, "0")}`);
+  const lm = months.at(-1)!, last = new Date(Date.UTC(+y, +lm.slice(5, 7), 0)).getUTCDate();
+  return { from: `${months[0]}-01`, to: `${lm}-${String(last).padStart(2, "0")}`, months };
+}
+/** Hvor stor en del af perioden der er gået (0–1). Afsluttede perioder = 1. */
+export function periodElapsed(p: PeriodSelection, today: string): number {
+  const { months } = periodRange(p), cur = today.slice(0, 7);
+  if (cur > months.at(-1)!) return 1;
+  if (cur < months[0]!) return 0;
+  const dim = new Date(Date.UTC(+cur.slice(0, 4), +cur.slice(5, 7), 0)).getUTCDate();
+  return (months.indexOf(cur) + (+today.slice(8, 10) - 0.5) / dim) / months.length;
+}
+/** Kort navn til periodevælgeren, fx "nov. 2026", "3. kvt. 2026", "2. halvår 2026", "2026". */
+export function periodLabel(p: PeriodSelection, long = false): string {
+  const y = p.key.slice(0, 4);
+  if (p.gran === "year") return y;
+  if (p.gran === "quarter") return `${p.key.slice(6)}. ${long ? "kvartal" : "kvt."} ${y}`;
+  if (p.gran === "half") return `${p.key.slice(6)}. halvår ${y}`;
+  return new Date(`${p.key}-01T00:00:00Z`).toLocaleDateString("da-DK", { month: long ? "long" : "short", year: "numeric", timeZone: "UTC" });
 }
