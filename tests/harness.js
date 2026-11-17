@@ -1,4 +1,4 @@
-// Testmiljø: kører docs/ lokalt i Chromium mod en falsk Supabase med opdigtede demodata (tests/fixtures/demo.json).
+// Testmiljø (standard: den klassiske app, klassisk.html): kører docs/ lokalt i Chromium mod en falsk Supabase med opdigtede demodata (tests/fixtures/demo.json).
 // Datoen låses til 16. nov. 2026, så resultaterne er de samme hver gang.
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -44,6 +44,7 @@ async function setup(page, db, log){
       if (b.action==='remove-credentials') { global.ownApp = null; return json({ ok: true }); }
       if (b.action==='pot-create') { const pot = { id: 77, name: b.name || 'Fælles husholdning', created_by: uid, owner_pct: b.my_pct ?? 50 }; db.shared_pots = [pot]; db.pot_members = [{ pot_id: 77, user_id: uid, name: 'Demo' }, { pot_id: 77, user_id: 'p-2', name: 'Partner' }]; return json({ ok: true, pot_id: 77 }); }
       if (b.action==='pot-delete') { db.shared_pots = []; db.pot_members = []; db.pot_items = []; return json({ ok: true }); }
+      if (b.action==='finish') { log.push('FINISH '+b.code); return json({ accounts: 2 }); }
       if (b.action==='banks') return json({ banks:['Danske Bank','Jyske Bank','Lunar','Nordea'] }); if (b.action==='delete-accounts') { const keys = b.account_keys||[]; const del = db.accounts.filter(a => b.all || keys.includes(a.account_key ?? a.uid)).map(a => a.uid); db.accounts = db.accounts.filter(a => !del.includes(a.uid)); db.transactions = db.transactions.filter(t => !del.includes(t.account_uid)); if (b.all) db.bank_sessions = []; log.push('DELETE '+del.join(',')); return json({ ok:true, deleted: del.length }); }
       if (b.action==='disconnect') { db.bank_sessions = []; for (const a of db.accounts) if (a.session_id===b.session_id) a.session_id=null; return json({ ok:true }); } return json({ url: 'https://example.com/auth' }); }
     if (u.pathname.startsWith('/functions/v1/')) return json({ ok:true, report:[] });
@@ -90,7 +91,7 @@ async function open(opts={}){
   await page.clock.install({ time: new Date(opts.now ?? '2026-11-16T12:00:00Z') });
   await setup(page, db, log);
   if (opts.noSession) await page.addInitScript(() => localStorage.clear());
-  await page.goto(opts.url ?? SITE); await page.waitForTimeout(2500);
+  await page.goto(opts.url ?? SITE + 'klassisk.html'); await page.waitForTimeout(2500);
   return { browser, page, log, errors, db };
 }
 module.exports = { open, SITE, uid };

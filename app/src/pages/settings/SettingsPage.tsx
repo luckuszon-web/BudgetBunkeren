@@ -29,7 +29,7 @@ export function SettingsPage() {
           ))}
         </ul>
       </Card>
-      <p className="mt-4 text-center text-xs text-muted">Den nye app (beta) · <a href="../" className="underline">Gå til den nuværende app</a></p>
+      <p className="mt-4 text-center text-xs text-muted"><a href="../klassisk.html" className="underline">Klassisk udgave</a> (rådgiver, kalender, abonnementer m.m.)</p>
     </>
   );
 }

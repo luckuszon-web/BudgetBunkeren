@@ -1,5 +1,6 @@
 import { createHashHistory, createRootRouteWithContext, createRoute, createRouter, type RouterHistory } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
+import type { BootParams } from "@/lib/boot-params";
 import { BudgetPage } from "@/pages/budget/BudgetPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { PlanPage } from "@/pages/plan/PlanPage";
@@ -9,10 +10,10 @@ import { SettingsSection } from "@/pages/settings/SettingsSection";
 import { ToolsPage } from "@/pages/tools/ToolsPage";
 import { TransactionsPage } from "@/pages/transactions/TransactionsPage";
 
-export interface RouterContext { signOut: () => void }
+export interface RouterContext { signOut: () => void; bank: BootParams["bank"] }
 
 const root = createRootRouteWithContext<RouterContext>()({
-  component: function Root() { return <AppShell onSignOut={root.useRouteContext().signOut} />; },
+  component: function Root() { const ctx = root.useRouteContext(); return <AppShell onSignOut={ctx.signOut} bank={ctx.bank} />; },
   notFoundComponent: () => <p className="text-muted">Siden findes ikke.</p>,
 });
 const routes = [
@@ -27,7 +28,7 @@ const routes = [
 ];
 
 /** Hash-routing (#/budget), så GitHub Pages ikke skal kende undersiderne. */
-export function makeRouter(signOut: () => void, history: RouterHistory = createHashHistory()) {
-  return createRouter({ routeTree: root.addChildren(routes), history, context: { signOut } });
+export function makeRouter(signOut: () => void, history: RouterHistory = createHashHistory(), bank: BootParams["bank"] = null) {
+  return createRouter({ routeTree: root.addChildren(routes), history, context: { signOut, bank } });
 }
 declare module "@tanstack/react-router" { interface Register { router: ReturnType<typeof makeRouter> } }

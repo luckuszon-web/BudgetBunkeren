@@ -1,7 +1,10 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { Calculator, LayoutDashboard, ListChecks, LogOut, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
 import { Toasts } from "@/components/ui/Toasts";
+import type { BootParams } from "@/lib/boot-params";
+import { BankCallback } from "./BankCallback";
 import { LoadState } from "./LoadState";
+import { UpdateBar } from "./UpdateBar";
 
 type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/indstillinger";
 /** `mobile`: står i bundmenuen (5 faner); de andre nås fra Planlæg på mobil. */
@@ -25,7 +28,7 @@ function Logo() {
 }
 
 /** Ramme: sidebar på computer, topbjælke + bundmenu på mobil (går fri af notch og hjem-indikator). */
-export function AppShell({ onSignOut }: { onSignOut: () => void }) {
+export function AppShell({ onSignOut, bank = null }: { onSignOut: () => void; bank?: BootParams["bank"] }) {
   return (
     <div className="min-h-dvh">
       <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-card p-4 md:flex">
@@ -50,7 +53,7 @@ export function AppShell({ onSignOut }: { onSignOut: () => void }) {
       </header>
 
       <main className="px-4 pt-5 pb-28 md:ml-60 md:px-8 md:pt-8 md:pb-10">
-        <div className="mx-auto max-w-6xl"><LoadState><Outlet /></LoadState></div>
+        <div className="mx-auto max-w-6xl"><UpdateBar /><BankCallback bank={bank} /><LoadState><Outlet /></LoadState></div>
       </main>
 
       <nav aria-label="Hovedmenu" className="pb-safe fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-card/95 backdrop-blur md:hidden">

@@ -64,7 +64,7 @@ async function functional(page, db) {
   if (fs.existsSync(path.join(__dirname, '..', 'docs', 'ny', 'index.html'))) {
     for (const [name, w, hh, mob] of SIZES) {
       console.log(`ny app · ${name}`);
-      const { browser, page, errors } = await h.open({ mobile: mob, dpr: 1, url: h.SITE + 'ny/' });
+      const { browser, page, errors, log } = await h.open({ mobile: mob, dpr: 1, url: h.SITE + 'ny/' });
       await page.setViewportSize({ width: w, height: hh });
       for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer'],
         ['planlaeg', 'Planlæg'], ['faelles', 'Fælles post'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
@@ -74,6 +74,13 @@ async function functional(page, db) {
         const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - innerWidth }));
         if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);
         if (r.over > 0) fail(`ny app /${route}: ${r.over}px for bred på ${name}`);
+      }
+      if (name === 'computer') {
+        // Forsiden sender videre til den nye app og tager ?… med (bank-login, invitation)
+        await page.goto(h.SITE + '?code=abc&state=11111111-2222-4333-8444-555555555555'); await page.waitForTimeout(1500);
+        if (!/\/ny\/$|\/ny\/#\/?$/.test(page.url())) fail(`forsiden sendte ikke videre korrekt: ${page.url()}`);
+        if (!(await page.getByText('Forbundet: 2 konti.').count())) fail('ny app: bank-login blev ikke afsluttet');
+        if (!log.some((l) => l === 'FINISH abc')) fail('ny app: finish blev ikke kaldt');
       }
       for (const e of errors) fail(`ny app konsolfejl: ${e}`);
       await browser.close();

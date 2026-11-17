@@ -35,6 +35,11 @@ export function createServerApi(sb: SupabaseClient) {
       if (!url || !/^https:\/\//.test(url)) throw new RepositoryError("Serveren gav ikke en gyldig adresse til bank-login.", "unknown");
       return url;
     },
+    /** Afslut bank-login: banken har sendt os tilbage med `code` og `state`. */
+    finishBank: async (code: string, state: string) =>
+      (await bank<{ accounts?: number }>("finish", { code: z.string().min(1).max(2000).parse(code), state: z.string().uuid("Ugyldigt bank-login").parse(state) })).accounts ?? 0,
+    /** Opret bruger med invitationskode (uden login). Serveren sender en mail med link til at vælge adgangskode. */
+    register: (email: string, code: string) => bank("register", { email: EmailInput.parse(email), code: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{4,40}$/, "Koden ser forkert ud").parse(code) }),
     disconnect: (sessionId: string) => bank("disconnect", { session_id: z.string().max(200).parse(sessionId) }),
     deleteAccounts: async (keys: string[] | "all") =>
       (await bank<{ deleted?: number }>("delete-accounts", keys === "all" ? { all: true } : { account_keys: z.array(z.string().max(200)).max(50).parse(keys) })).deleted ?? 0,

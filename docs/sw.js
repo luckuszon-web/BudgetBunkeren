@@ -2,8 +2,8 @@
 // - Appens egne filer: hent fra nettet først (så opdateringer altid kommer med), og brug den gemte kopi, hvis der ikke er net.
 // - Biblioteker fra esm.sh (låste versioner): brug den gemte kopi, hvis den findes.
 // - Data fra Supabase går aldrig gennem her – de sidst hentede tal ligger i appens egen cache (localStorage).
-const CACHE = "bb-app-v1";
-const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icon-192.png", "icon-180.png"];
+const CACHE = "bb-app-v2";
+const SHELL = ["./", "index.html", "klassisk.html", "config.js", "manifest.webmanifest", "icon-192.png", "icon-180.png", "ny/"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));

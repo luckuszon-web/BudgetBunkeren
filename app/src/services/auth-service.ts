@@ -80,6 +80,14 @@ export function createAuthService(sb: SupabaseClient, onSignedOut: () => Promise
         for (const f of data?.totp ?? []) { const r = await sb.auth.mfa.unenroll({ factorId: f.id }); if (r.error) throw r.error; }
       } catch (e) { throw toRepositoryError(e); }
     },
+    /** Mail med link til at vælge ny adgangskode (linket fører til appens forside). */
+    async resetPassword(email: string, redirectTo: string): Promise<void> {
+      try {
+        const e = Credentials.shape.email.parse(email);
+        const { error } = await sb.auth.resetPasswordForEmail(e, { redirectTo });
+        if (error) throw error;
+      } catch (e) { throw toRepositoryError(e); }
+    },
     async changePassword(password: string): Promise<void> {
       try {
         const { error } = await sb.auth.updateUser({ password: NewPassword.parse(password) });

@@ -105,5 +105,5 @@ $$);
 ## Luk det hele ned
 Træk adgangen tilbage (Indstillinger → Bank og konti → *Fjern*, eller i Enable Banking/banken), og slet Supabase-projektet. Så er alle data væk.
 
-## Ny app (beta): `/ny/`
-En ny udgave i React + TypeScript er under opbygning i `app/` og ligger på `https://luckuszon-web.github.io/BudgetBunkeren/ny/` – samme login som den nuværende app. Den har Overblik, Posteringer, Budget, Planlæg, Fælles post, Værktøjer og Indstillinger. Byg den med `sh scripts/build-ny.sh` (resultatet lander i `docs/ny/`).
+## Ny app (primær)
+Appen er skrevet i React + TypeScript i `app/` og bygges til `docs/ny/`. Forsiden `https://luckuszon-web.github.io/BudgetBunkeren/` sender videre dertil. Den klassiske udgave ligger på `klassisk.html` (rådgiver, kalender, abonnementer m.m. findes indtil videre kun der). Den har Overblik, Posteringer, Budget, Planlæg, Fælles post, Værktøjer og Indstillinger. Byg den med `sh scripts/build-ny.sh` (resultatet lander i `docs/ny/`).

@@ -46,7 +46,7 @@ export function getSupabase(): SupabaseClient {
   if (client) return client;
   const { url, key } = validateSupabaseConfig(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
   client = createClient(url, key, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
     global: { headers: { "x-client-info": "budgetbunkeren-app" } },
   });
   return client;

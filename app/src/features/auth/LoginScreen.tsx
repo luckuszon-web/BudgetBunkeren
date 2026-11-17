@@ -3,16 +3,24 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { RepositoryError } from "@/services";
+import { RegisterForm } from "./RegisterForm";
 
 /** Log ind med e-mail og adgangskode – og bagefter evt. 6-cifret kode (totrinsbekræftelse). */
-export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa }: {
+export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa, onForgot, onRegister, notice, invite }: {
   mode: "password" | "mfa";
+  onForgot: (email: string) => Promise<void>;
+  onRegister: (email: string, code: string) => Promise<void>;
+  /** Besked ved start (fx udløbet link). */
+  notice?: string | null;
+  /** Invitationskode fra adressen (?invite=). */
+  invite?: string | null;
   onSignIn: (email: string, password: string) => Promise<void>;
   onMfa: (code: string) => Promise<void>;
   onCancelMfa: () => void;
 }) {
   const [email, setEmail] = useState(""), [password, setPassword] = useState(""), [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(notice ?? null);
+  const [info, setInfo] = useState<string | null>(null), [register, setRegister] = useState(!!invite);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -24,7 +32,7 @@ export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa }: {
 
   return (
     <div className="pt-safe pb-safe grid min-h-dvh place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-line bg-card p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-card p-6 shadow-sm"><form onSubmit={submit}>
         <div className="mb-5 flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-white"><Lock size={18} /></div>
           <div><h1 className="text-lg font-semibold">BudgetBunkeren</h1><p className="text-sm text-muted">{mode === "mfa" ? "Skriv koden fra din godkendelses-app" : "Log ind for at se din økonomi"}</p></div>
@@ -39,11 +47,24 @@ export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa }: {
             <Label text="6-cifret kode"><Input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} autoFocus required /></Label>
           )}
           {error && <p role="alert" className="text-sm text-bad">{error}</p>}
+          {info && <p role="status" className="text-sm text-good">{info}</p>}
           <Button type="submit" variant="primary" disabled={busy}>{busy ? "Et øjeblik …" : mode === "mfa" ? "Bekræft" : "Log ind"}</Button>
           {mode === "mfa" && <Button onClick={onCancelMfa}>Log ud</Button>}
         </div>
-        <p className="mt-4 text-xs text-muted">Ny bruger eller glemt adgangskode? Brug <a className="text-accent underline" href="../">den nuværende app</a>.</p>
+        {mode === "password" && (
+          <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm">
+            <button type="button" className="text-accent" onClick={async () => {
+              if (!email.trim()) return setError("Skriv din e-mail i feltet ovenfor først.");
+              setError(null);
+              try { await onForgot(email); setInfo("Hvis adressen har en bruger, er der sendt en mail med et link til at vælge en ny adgangskode."); }
+              catch (err) { setError(err instanceof Error ? err.message : "Kunne ikke sende mail."); }
+            }}>Glemt adgangskode?</button>
+            <button type="button" className="text-accent" onClick={() => setRegister(!register)}>Opret bruger</button>
+          </div>
+        )}
       </form>
+        {mode === "password" && register && <RegisterForm initialCode={invite ?? ""} onRegister={onRegister} />}
+      </div>
     </div>
   );
 }

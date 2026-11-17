@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { createMemoryHistory } from "@tanstack/react-router";
 import { vi } from "vitest";
 import { App } from "@/App";
+import type { BootParams } from "@/lib/boot-params";
 import { RepositoryError } from "@/services";
 import { sampleData } from "@/features/__tests__/fixtures";
 
@@ -9,7 +10,7 @@ window.scrollTo = (() => {}) as typeof window.scrollTo;
 window.confirm = () => true;
 
 /** Hele appen med falske services (ingen Supabase) og en hukommelses-historik. */
-export function setup(path = "/", { signedIn = true, mfa = false } = {}) {
+export function setup(path = "/", { signedIn = true, mfa = false, boot }: { signedIn?: boolean; mfa?: boolean; boot?: BootParams } = {}) {
   let user = signedIn ? { id: "me", email: "me@example.com" } : null;
   const auth = {
     currentUser: vi.fn(async () => user),
@@ -47,13 +48,13 @@ export function setup(path = "/", { signedIn = true, mfa = false } = {}) {
     potDelete: vi.fn(), banks: vi.fn(async () => ["Nordea"]), startBank: vi.fn(), disconnect: vi.fn(), deleteAccounts: vi.fn(async () => 1),
     credentialsStatus: vi.fn(async () => ({ available: true, owner: true, own: false, app_id: null, since: null })), saveCredentials: vi.fn(),
     removeCredentials: vi.fn(), listInvites: vi.fn(async () => ({ owner: true, invites: [] })), createInvite: vi.fn(async () => "ABCDE-FGHJK"),
-    syncNow: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
+    syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
   };
   const settings = { sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn() };
   const history = createMemoryHistory({ initialEntries: [path] });
-  Object.assign(auth, { userInfo: vi.fn(async () => ({ email: "me@example.com", lastSignIn: null })), mfaEnabled: vi.fn(async () => false),
-    mfaEnroll: vi.fn(), mfaConfirm: vi.fn(), mfaDisable: vi.fn(), changePassword: vi.fn(async () => {}) });
-  render(<App services={{ auth, repo, plan, pots, server, settings } as never} history={history} today={() => "2026-11-16"} />);
-  return { auth, repo, plan, pots, server, settings };
+  const authAll = Object.assign(auth, { userInfo: vi.fn(async () => ({ email: "me@example.com", lastSignIn: null })), mfaEnabled: vi.fn(async () => false),
+    mfaEnroll: vi.fn(), mfaConfirm: vi.fn(), mfaDisable: vi.fn(), changePassword: vi.fn(async () => {}), resetPassword: vi.fn(async () => {}) });
+  render(<App services={{ auth, repo, plan, pots, server, settings } as never} history={history} today={() => "2026-11-16"} boot={boot} />);
+  return { auth: authAll, repo, plan, pots, server, settings };
 }
 
