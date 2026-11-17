@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodPicker } from "@/components/layout/PeriodPicker";
 import { Button } from "@/components/ui/Button";
@@ -61,7 +62,7 @@ export function BudgetPage() {
             <ul className="divide-y divide-line">
               {without.map(({ c, spent }) => (
                 <li key={c.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
-                  <span aria-hidden>{c.icon ?? "•"}</span>
+                  <CategoryIcon category={c} />
                   <span className="min-w-0 flex-1 truncate text-sm">{c.name}<span className="block text-xs text-muted"><Money value={spent} /> brugt</span></span>
                   <Button variant="ghost" className="min-h-8 px-2.5 text-xs" onClick={() => setEdit({ category: c })}>Sæt budget</Button>
                 </li>

@@ -518,7 +518,8 @@
   .sal .b > div { width: 100%; max-width: 30px; background: var(--good-soft); border-radius: 4px 4px 1px 1px; min-height: 2px; }
   .sal .b span { font-size: 10.5px; color: var(--muted); }
   .sal .avg { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
-  .pay { display: grid; grid-template-columns: 42px 1fr auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; align-items: center; }
+  .pay > * { min-width: 0; } .pay > :nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pay { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 2px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; align-items: center; }
   .pay:first-child { border-top: 0; }
   .pay .d { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .est { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin-top: 8px; align-items: center; }
@@ -1255,7 +1256,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261117203600";</script>
+<script>window.APP_VERSION = "20261117205108";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

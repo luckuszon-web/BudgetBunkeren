@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { Money } from "@/components/ui/Money";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { budgetTone } from "@/lib/finance-engine";
 import type { BudgetStatus } from "@/features/finance-selectors";
@@ -10,7 +11,7 @@ export function BudgetRow({ b, elapsed, onEdit }: { b: BudgetStatus; elapsed: nu
   return (
     <li className="py-3 first:pt-0 last:pb-0">
       <div className="flex items-center gap-3">
-        <span className="text-lg" aria-hidden>{b.category.icon ?? "•"}</span>
+        <CategoryIcon category={b.category} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate font-medium">{b.category.name}{b.category.budget_week && <span className="ml-1 text-xs text-muted">(pr. uge)</span>}</span>

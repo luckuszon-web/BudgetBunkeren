@@ -5,6 +5,7 @@
  */
 import type { BillCadence, Transaction, YearMonth } from "@/types/finance";
 import { monthOf, monthsBetween, recurringKey, type Classifier } from "@/lib/finance-engine";
+import { merchantName } from "@/lib/merchant-name";
 
 export const CADENCE_MONTHS: Record<BillCadence, number> = { quarterly: 3, halfyear: 6, annual: 12 };
 export const CADENCE_LABEL: Record<BillCadence, string> = { quarterly: "kvartal", halfyear: "halve år", annual: "år" };
@@ -48,7 +49,7 @@ export function spreadBills(txs: readonly Transaction[], c: Classifier, cadences
   const bills: SpreadBill[] = [...keys].map((k) => {
     const g = by.get(k), n = CADENCE_MONTHS[cadences[k]!];
     const lastMonth = g ? [...g.months.keys()].sort().pop() ?? null : null, lastAmount = lastMonth ? g!.months.get(lastMonth)! : 0;
-    return { key: k, name: g?.name ?? k, cadence: cadences[k]!, categoryId: g?.cat ?? null, lastAmount, lastMonth, monthly: lastAmount / n };
+    return { key: k, name: merchantName(g?.name ?? k), cadence: cadences[k]!, categoryId: g?.cat ?? null, lastAmount, lastMonth, monthly: lastAmount / n };
   }).sort((a, b) => b.monthly - a.monthly);
 
   return {

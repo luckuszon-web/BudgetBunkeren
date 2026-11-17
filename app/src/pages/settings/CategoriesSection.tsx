@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
@@ -49,7 +50,7 @@ export function CategoriesSection() {
                   return (
                     <li key={c.id}>
                       <button type="button" onClick={() => setEdit({ c })} className="flex w-full items-center gap-3 py-2 text-left hover:bg-bg">
-                        <span className="w-6 text-center" aria-hidden>{c.icon ?? "•"}</span>
+                        <CategoryIcon category={c} />
                         <span className="min-w-0 flex-1"><span className="block truncate text-sm">{c.name}</span>
                           <span className="text-xs text-muted">{u ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"}` : "ikke brugt"}{c.monthly_budget ? ` · budget ${c.monthly_budget.toLocaleString("da-DK")} kr.${c.budget_week ? "/uge" : ""}` : ""}</span></span>
                         {u && <Money value={Math.abs(u.sum)} className="text-sm text-muted" />}

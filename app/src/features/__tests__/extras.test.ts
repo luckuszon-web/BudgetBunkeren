@@ -14,10 +14,10 @@ describe("abonnementer", () => {
   it("finder Netflix (abonnementskategori), med næste træk og markering", () => {
     const data = sampleData(), d = derive(data);
     const subs = subscriptions(d.fixedExpenses, data.categories, { [d.fixedExpenses.find((f) => /netflix/i.test(f.name))!.key]: "cancel" }, TODAY, d.monthTxs("2026-11"));
-    expect(subs.map((s) => s.name)).toEqual(["NETFLIX.COM"]);
+    expect(subs.map((s) => s.name)).toEqual(["Netflix.com"]);
     expect(subs[0]).toMatchObject({ amount: 129, mark: "cancel", next: "2026-12-03" });
     // Advarsel kun når trækket er inden for 5 dage
-    expect(buildAlerts([], subs, [], "2026-11-29").some((a) => /opsige NETFLIX/.test(a.text))).toBe(true);
+    expect(buildAlerts([], subs, [], "2026-11-29").some((a) => /opsige Netflix/.test(a.text))).toBe(true);
     expect(buildAlerts([], subs, [], TODAY).some((a) => /opsige/.test(a.text))).toBe(false);
   });
   it("ny fast betaling efter prøveperiode", () => {

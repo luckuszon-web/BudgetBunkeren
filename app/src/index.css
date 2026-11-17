@@ -34,6 +34,8 @@
 }
 
 html { -webkit-text-size-adjust: 100%; }
+/* Gitter- og flex-elementer må krympe under deres indhold – ellers kan et langt navn gøre hele siden bredere end skærmen */
+.grid > *, .flex > .flex-1 { min-width: 0; }
 body { background: var(--color-bg); color: var(--color-ink); }
 /* Tal står pænt under hinanden */
 .tabular { font-variant-numeric: tabular-nums; }

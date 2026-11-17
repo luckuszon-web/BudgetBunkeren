@@ -13,7 +13,8 @@ const fail = (msg) => { failures++; console.log('  FEJL: ' + msg); };
 
 async function checkPage(page, label) {
   const r = await page.evaluate(() => {
-    const vw = document.documentElement.clientWidth;
+    // Skærmens bredde – ikke clientWidth: bliver siden for bred, zoomer mobilbrowseren ud, og så vokser clientWidth med
+    const vw = Math.min(document.documentElement.clientWidth, screen.width);
     // Elementer i vandret scrollende bånd (fx filter-chips og brede tabeller) må gerne være bredere
     const inScroller = (e) => { for (let p = e.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') return true; } return false; };
     const over = [...document.querySelectorAll('main *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width && b.right > vw + 1 && e.offsetParent !== null && !inScroller(e); })
@@ -72,7 +73,7 @@ async function functional(page, db) {
         ['indstillinger/sikkerhed', 'Login og sikkerhed'], ['indstillinger/data', 'Data'], ['indstillinger/sortering', 'Hurtig sortering'],
         ['indstillinger/tjek', 'Sundhedstjek'], ['raadgiver', 'Rådgiver']]) {
         await page.goto(h.SITE + 'ny/#/' + route); await page.waitForTimeout(800);
-        const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - innerWidth }));
+        const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - Math.min(innerWidth, screen.width) }));
         if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);
         if (r.over > 0) fail(`ny app /${route}: ${r.over}px for bred på ${name}`);
       }
