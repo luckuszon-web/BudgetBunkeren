@@ -12,6 +12,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import type { Category, CategoryRule, Transaction, TxSplit } from "@/types/finance";
 import { matchesRule, shiftMonth } from "@/lib/finance-engine";
 import { getServices, type AuthService, type AuthUser, type CategoryDraft, type FinanceRepository, RepositoryError } from "@/services";
+import { friendly } from "./friendly-error";
 import { deriveFinance, type FinanceDerived } from "./finance-selectors";
 import { financeReducer, initialState, type FinanceState, type Filters, type PeriodSelection, type Toast, type TxEditable } from "./finance-state";
 
@@ -36,17 +37,6 @@ export interface FinanceActions {
 export interface FinanceContextValue { state: FinanceState; derived: FinanceDerived | null; user: AuthUser | null; actions: FinanceActions }
 
 const Ctx = createContext<FinanceContextValue | null>(null);
-
-/** Venlig tekst til en fejl ved gemning. */
-function friendly(e: unknown): string {
-  if (e instanceof RepositoryError) {
-    if (e.code === "network") return "Ingen forbindelse – ændringen blev ikke gemt og er fortrudt. Prøv igen, når du er online.";
-    if (e.code === "missing_migration") return "Databasen mangler en opdatering – kør opdater.html. Ændringen er fortrudt.";
-    if (e.code === "permission") return "Det har du ikke adgang til. Ændringen er fortrudt.";
-    return `${e.message} Ændringen er fortrudt.`;
-  }
-  return "Noget gik galt – ændringen er fortrudt.";
-}
 
 const isoToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 

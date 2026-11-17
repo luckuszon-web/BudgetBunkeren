@@ -324,3 +324,27 @@ describe("dansk skat", () => {
 describe("hjælpefunktioner", () => {
   it("udgifter netto i en liste", () => expect(sumOut([tx("2026-11-01", -100, "a", 2), tx("2026-11-02", 30, "b", 2), tx("2026-11-02", 500, "løn", 10)], C)).toBe(70));
 });
+
+import { amortization, annuityPayment } from "./finance-engine";
+describe("annuitetslån", () => {
+  it("beregner ydelsen (kendt eksempel: 100.000 kr. over 10 år til 5 %)", () => {
+    expect(annuityPayment(100000, 5, 120)).toBeCloseTo(1060.66, 2);
+    expect(annuityPayment(12000, 0, 12)).toBe(1000);
+    expect(annuityPayment(0, 5, 12)).toBe(0);
+  });
+  it("afdragsplanen ender i 0 og summerer renterne", () => {
+    const a = amortization(100000, 5, 120);
+    expect(a.rows.length).toBe(120);
+    expect(a.rows.at(-1)!.balance).toBe(0);
+    expect(a.totalInterest).toBeCloseTo(120 * 1060.66 - 100000, -1);
+    expect(a.rows[0]).toMatchObject({ interest: 416.67 });
+  });
+  it("ekstra afdrag forkorter lånet og sparer renter", () => {
+    const base = amortization(100000, 5, 120), extra = amortization(100000, 5, 120, base.payment + 500);
+    expect(extra.rows.length).toBeLessThan(base.rows.length);
+    expect(extra.totalInterest).toBeLessThan(base.totalInterest);
+  });
+  it("stopper, hvis ydelsen ikke dækker renterne", () => {
+    expect(amortization(100000, 24, 120, 1000).rows).toEqual([]);
+  });
+});

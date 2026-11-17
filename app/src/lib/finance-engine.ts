@@ -518,3 +518,32 @@ export function calcTax(input: TaxInput): TaxResult {
   const marginal = (one(input.grossMonthly + 100 / 12).totalTax - r.totalTax) / 100;   // skat af de næste 100 kr.
   return { ...r, netMonthly: r.net / 12, marginal };
 }
+
+// ======================================================================
+// Annuitetslån (afdrag på gæld)
+// ======================================================================
+/** Fast ydelse pr. måned for et annuitetslån. `ratePct` er årlig rente i %. */
+export function annuityPayment(principal: Dkk, ratePct: number, months: number): Dkk {
+  if (principal <= 0 || months <= 0) return 0;
+  const r = ratePct / 100 / 12;
+  return r ? (principal * r) / (1 - Math.pow(1 + r, -months)) : principal / months;
+}
+export interface AmortizationRow { month: number; payment: Dkk; interest: Dkk; principal: Dkk; balance: Dkk }
+/**
+ * Afdragsplan måned for måned. Med `payment` givet bruges den ydelse (fx med ekstra afdrag); ellers beregnes annuiteten.
+ * Stopper, når gælden er betalt (eller efter 600 måneder, hvis ydelsen ikke dækker renterne).
+ */
+export function amortization(principal: Dkk, ratePct: number, months: number, payment?: Dkk): { rows: AmortizationRow[]; totalInterest: Dkk; payment: Dkk } {
+  const pay = payment ?? annuityPayment(principal, ratePct, months);
+  const r = ratePct / 100 / 12;
+  const rows: AmortizationRow[] = [];
+  let bal = principal;
+  for (let m = 1; bal > 0.005 && m <= 600; m++) {
+    const interest = bal * r;
+    if (pay <= interest) break;   // ydelsen dækker ikke renterne
+    const p = Math.min(pay - interest, bal);
+    bal = round2(bal - p);
+    rows.push({ month: m, payment: round2(p + interest), interest: round2(interest), principal: round2(p), balance: Math.max(0, bal) });
+  }
+  return { rows, totalInterest: round2(rows.reduce((s, x) => s + x.interest, 0)), payment: pay };
+}

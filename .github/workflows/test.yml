@@ -24,7 +24,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node smoke.js
 
-  # Den nye React/TypeScript-app (app/): typetjek og unit tests af beregningsmotoren
+  # Den nye React/TypeScript-app (app/): typetjek, tests og byg
   app:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -39,3 +39,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npx tsc --noEmit
       - run: npx vitest run
+      # Bygget skal lykkes (offentlige værdier – samme som docs/config.js)
+      - run: npx vite build --outDir dist-check
+        env:
+          VITE_SUPABASE_URL: https://xqxgnfwwkdlgcatyajhx.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_VUy-w4H6N5Va6lUfb5NpWQ_mt3Tlv84

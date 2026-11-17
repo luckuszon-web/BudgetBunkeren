@@ -73,10 +73,11 @@ async function setup(page, db, log){
     return json({}, 404);
   });
   await page.route(SITE + '**', (route) => {
-    const p = new URL(route.request().url()).pathname.replace('/BudgetBunkeren/','') || 'index.html';
+    let p = new URL(route.request().url()).pathname.replace('/BudgetBunkeren/','') || 'index.html';
+    if (p.endsWith('/')) p += 'index.html';
     const f = path.join(DOCS, p);
     if (!fs.existsSync(f)) return route.fulfill({status:404, body:'nf'});
-    route.fulfill({ status:200, contentType: p.endsWith('.js')?'application/javascript':p.endsWith('.png')?'image/png':p.endsWith('.webmanifest')?'application/manifest+json':'text/html', body: fs.readFileSync(f) });
+    route.fulfill({ status:200, contentType: p.endsWith('.js')?'application/javascript':p.endsWith('.css')?'text/css':p.endsWith('.png')?'image/png':p.endsWith('.webmanifest')?'application/manifest+json':'text/html', body: fs.readFileSync(f) });
   });
   await page.addInitScript(([k,s])=>localStorage.setItem(k, s), ['sb-xqxgnfwwkdlgcatyajhx-auth-token', JSON.stringify(session)]);
 }

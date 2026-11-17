@@ -10,6 +10,7 @@ import {
   type Classifier, type ForecastResult,
 } from "@/lib/finance-engine";
 import { periodRange, type Filters, type PeriodSelection } from "./finance-state";
+import { buildInsights, type Insight } from "./insights";
 
 export interface BudgetStatus { category: Category; spent: number; budget: number; ratio: number }
 export interface FinanceDerived {
@@ -28,6 +29,7 @@ export interface FinanceDerived {
   score: HealthScoreResult;
   forecast: ForecastResult | null;
   uncategorizedCount: number;
+  insights: Insight[];
   /** Måneder med data, nyeste først. */
   monthsWithData: YearMonth[];
 }
@@ -55,8 +57,10 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
 
   // Listen (originaler + indtastede) med filtre
   const q = filters.search.trim().toLowerCase();
+  const from = filters.dateFrom || null, to = filters.dateTo || null;
   const listTxs = base.filter((t) => {
-    if (!q && (t.date < range.from || t.date > range.to)) return false;   // søgning gælder alle perioder
+    if (from || to) { if ((from && t.date < from) || (to && t.date > to)) return false; }
+    else if (!q && (t.date < range.from || t.date > range.to)) return false;   // søgning gælder alle perioder
     if (q && !`${t.text} ${t.counterparty ?? ""} ${t.notes ?? ""}`.toLowerCase().includes(q) && !String(Math.abs(t.amount)).includes(q)) return false;
     if (filters.categoryId && String(c.effCat(t) ?? "none") !== filters.categoryId) return false;
     switch (filters.kind) {
@@ -105,8 +109,10 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   const forecast = forecastNextMonth({ previousMonths: prevMonths(thisMonth, 6), monthTxs, recurring: fixedExpenses, salaryCategoryId,
     classifier: c, nextMonth: shiftMonth(thisMonth, 1), ownSalary });
 
+  const uncategorizedCount = base.filter((t) => t.date >= range.from && t.date <= range.to && !c.effCat(t)).length;
+  const insights = buildInsights({ classifier: c, categories: data.categories, monthTxs, today, period, budgets, fixedExpenses, uncategorizedCount });
   return {
-    classifier: c, salaryCategoryId, calcTxs, listTxs, periodTotals, fixedExpenses, available: avail, budgets, overBudget, score, forecast,
-    uncategorizedCount: base.filter((t) => t.date >= range.from && t.date <= range.to && !c.effCat(t)).length, monthsWithData,
+    insights, classifier: c, salaryCategoryId, calcTxs, listTxs, periodTotals, fixedExpenses, available: avail, budgets, overBudget, score, forecast,
+    uncategorizedCount, monthsWithData,
   };
 }

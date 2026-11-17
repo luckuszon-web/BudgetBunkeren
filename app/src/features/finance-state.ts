@@ -10,7 +10,11 @@ import type { UserData } from "@/services";
 export type Granularity = "month" | "year";
 export interface PeriodSelection { gran: Granularity; /** "YYYY-MM" eller "YYYY". */ key: string }
 export type TxKindFilter = "all" | "expense" | "income" | "uncategorized" | "oneoff";
-export interface Filters { search: string; kind: TxKindFilter; categoryId: string | null }
+export interface Filters {
+  search: string; kind: TxKindFilter; categoryId: string | null;
+  /** Valgfrit datointerval (YYYY-MM-DD). Er det sat, bruges det i stedet for den valgte periode i listen. */
+  dateFrom?: string | null; dateTo?: string | null;
+}
 export interface Toast { id: number; tone: "info" | "success" | "error"; text: string }
 
 export interface FinanceState {

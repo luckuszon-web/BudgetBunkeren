@@ -35,6 +35,18 @@ export function createAuthService(sb: SupabaseClient, onSignedOut: () => Promise
       const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
       return !!data && data.nextLevel === "aal2" && data.currentLevel !== "aal2";
     },
+    /** Bekræft login med 6-cifret kode fra godkendelses-appen (TOTP). */
+    async verifyMfa(code: string): Promise<void> {
+      try {
+        const c = z.string().trim().regex(/^\d{6}$/, "Koden er 6 cifre").parse(code);
+        const { data, error } = await sb.auth.mfa.listFactors();
+        if (error) throw error;
+        const factor = data?.totp?.[0];
+        if (!factor) throw new RepositoryError("Der er ingen totrinsbekræftelse sat op.", "not_found");
+        const r = await sb.auth.mfa.challengeAndVerify({ factorId: factor.id, code: c });
+        if (r.error) throw new RepositoryError("Forkert kode – prøv igen.", "permission", r.error);
+      } catch (e) { throw toRepositoryError(e); }
+    },
     async changePassword(password: string): Promise<void> {
       try {
         const { error } = await sb.auth.updateUser({ password: NewPassword.parse(password) });

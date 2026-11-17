@@ -2,6 +2,7 @@
 // at der ikke kommer fejl i konsollen, og at intet stikker ud til siden. Afslutter med fejlkode, hvis noget fejler.
 // Kør:  cd tests && npm install && npx playwright install chromium && node smoke.js
 const h = require('./harness');
+const fs = require('fs'), path = require('path');
 
 const SIZES = [['iPhone 16 Plus', 430, 932, true], ['iPhone SE', 320, 568, true], ['computer', 1280, 900, false]];
 const VIEWS = [['app'], ['txs'], ['budget'], ['plan'], ['pot'], ['tools', 'cal'], ['tools', 'whatif'], ['tools', 'year'], ['tools', 'quarter'], ['tools', 'tax'], ['tools', 'compare'], ['advisor'],
@@ -56,6 +57,22 @@ async function functional(page, db) {
       }
       if (name === 'computer' && theme === 'dark') await functional(page, db);
       for (const e of errors) fail(`konsolfejl: ${e}`);
+      await browser.close();
+    }
+  }
+  // Den nye app (docs/ny – bygget fra app/): alle sider uden konsolfejl og uden vandret scroll
+  if (fs.existsSync(path.join(__dirname, '..', 'docs', 'ny', 'index.html'))) {
+    for (const [name, w, hh, mob] of SIZES) {
+      console.log(`ny app · ${name}`);
+      const { browser, page, errors } = await h.open({ mobile: mob, dpr: 1, url: h.SITE + 'ny/' });
+      await page.setViewportSize({ width: w, height: hh });
+      for (const [route, title] of [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer']]) {
+        await page.goto(h.SITE + 'ny/#/' + route); await page.waitForTimeout(800);
+        const r = await page.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, over: document.documentElement.scrollWidth - innerWidth }));
+        if (r.h1 !== title) fail(`ny app /${route}: forventede overskriften "${title}", fik "${r.h1}"`);
+        if (r.over > 0) fail(`ny app /${route}: ${r.over}px for bred på ${name}`);
+      }
+      for (const e of errors) fail(`ny app konsolfejl: ${e}`);
       await browser.close();
     }
   }
