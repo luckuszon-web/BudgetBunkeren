@@ -311,6 +311,20 @@
     @page { size: A4 landscape; margin: 12mm; }
   }
 
+  /* Låseskærm */
+  .lock { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom); }
+  body.locked { overflow: hidden; }
+  .lock-box { width: min(300px, 100%); text-align: center; }
+  .lock-t { font-size: 18px; font-weight: 650; margin-bottom: 18px; }
+  .lock-dots { display: flex; justify-content: center; gap: 16px; margin-bottom: 10px; }
+  .lock-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line2); }
+  .lock-dots i.on { background: var(--accent); border-color: var(--accent); }
+  .lock-dots.shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .lock-msg { min-height: 20px; font-size: 13px; color: var(--red); margin-bottom: 10px; }
+  .lock-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .lock-pad button { height: 64px; border-radius: 50%; font-size: 24px; font-weight: 500; aspect-ratio: 1; justify-self: center; width: 64px; padding: 0; }
+
   /* Sundhedstjek */
   .hc-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
   .hc-row:last-child { border-bottom: 0; }
@@ -943,6 +957,11 @@
           <button class="small">Skift adgangskode</button>
         </form>
       </div>
+      <div class="card">
+        <div class="head"><h2>Lås med kode</h2><span id="pinState" class="pill-s"></span></div>
+        <p class="small muted" style="margin-top:0">Appen beder om en 4-cifret kode, når du åbner den, og når den har ligget i baggrunden i mere end 1 minut. Koden gælder kun denne enhed. Glemmer du den, logger du bare ud og ind igen.</p>
+        <div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" id="pinBtn">Slå kode til</button><button class="small ghost hidden" id="pinChange">Skift kode</button></div>
+      </div>
       <div class="card hidden" id="inviteCard">
         <div class="head"><h2>Invitér en bruger</h2><button class="small primary" id="invNew">Lav invitationskode</button></div>
         <p class="small muted" style="margin-top:0">Koden kan bruges én gang og gælder i 14 dage. Den nye bruger opretter sig selv på login-siden og ser kun sine egne data – aldrig dine.</p>
@@ -1189,6 +1208,24 @@
 </dialog>
 
 <div id="toast" class="toast hidden"></div>
+<!-- Låseskærm (lås med kode) -->
+<div id="lockScreen" class="lock hidden" role="dialog" aria-modal="true" aria-label="Lås">
+  <div class="lock-box">
+    <div class="logo-mark" style="margin:0 auto 14px">B</div>
+    <div class="lock-t" id="lockTitle">Skriv din kode</div>
+    <div class="lock-dots" id="lockDots"><i></i><i></i><i></i><i></i></div>
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="lock-pad" id="lockPad">
+      <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+      <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+      <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+      <span></span><button data-d="0">0</button><button data-d="del" aria-label="Slet">⌫</button>
+    </div>
+    <button class="ghost small" id="lockForgot">Glemt koden? Log ud</button>
+    <button class="ghost small hidden" id="lockCancel">Annuller</button>
+  </div>
+</div>
+
 <div id="updBar" class="upd hidden" role="status">
   <span>Der er en ny version af BudgetBunkeren</span>
   <button class="primary small" id="updBtn">Opdater</button>
@@ -1218,7 +1255,7 @@
     apply();
   })();
 </script>
-<script>window.APP_VERSION = "20261117153113";</script>
+<script>window.APP_VERSION = "20261117153411";</script>
 <script src="config.js"></script>
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -3782,6 +3819,7 @@ async function renderAcct() {
   $("acEmail").textContent = user?.email ?? "–";
   $("acLast").textContent = fmtDT(user?.last_sign_in_at);
   renderMfa();
+  renderPinCard();
   renderInvites();
 }
 $("pwForm").onsubmit = async (e) => {
@@ -3968,6 +4006,79 @@ function makeCtx() {
   };
 }
 
+// ---------- Lås med kode ----------
+// En 4-cifret kode på denne enhed. Appen låses ved start og efter 1 minut i baggrunden.
+// Koden gemmes kun som en hash (med salt) i browseren – den er en ekstra lås, hvis andre låner telefonen.
+const PIN_KEY = "bb-pin";
+const pinSaved = () => { try { return JSON.parse(localStorage.getItem(PIN_KEY) || "null"); } catch { return null; } };
+async function pinHash(pin, salt) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + pin));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+let pinEntry = "", pinFails = 0, pinMode = null, pinFirst = "";   // pinMode: "unlock" | "set1" | "set2"
+function showLock(mode = "unlock") {
+  pinMode = mode; pinEntry = ""; pinFirst = mode === "set2" ? pinFirst : "";
+  $("lockTitle").textContent = mode === "unlock" ? "Skriv din kode" : mode === "set1" ? "Vælg en 4-cifret kode" : "Gentag koden";
+  $("lockMsg").textContent = "";
+  $("lockForgot").classList.toggle("hidden", mode !== "unlock");
+  $("lockCancel").classList.toggle("hidden", mode === "unlock");
+  paintPin();
+  $("lockScreen").classList.remove("hidden");
+  document.body.classList.add("locked");
+}
+const hideLock = () => { $("lockScreen").classList.add("hidden"); document.body.classList.remove("locked"); pinMode = null; };
+const paintPin = () => $("lockDots").querySelectorAll("i").forEach((d, i) => d.classList.toggle("on", i < pinEntry.length));
+async function pinDigit(d) {
+  if (!pinMode) return;
+  if (d === "del") { pinEntry = pinEntry.slice(0, -1); return paintPin(); }
+  if (pinEntry.length >= 4) return;
+  pinEntry += d; paintPin();
+  if (pinEntry.length < 4) return;
+  const entry = pinEntry;
+  setTimeout(async () => {
+    if (pinMode === "unlock") {
+      const s = pinSaved();
+      if (s && await pinHash(entry, s.salt) === s.hash) { pinFails = 0; hideLock(); return; }
+      pinFails++; pinEntry = ""; paintPin();
+      $("lockMsg").textContent = pinFails >= 5 ? "Forkert kode for mange gange – log ud og ind igen." : "Forkert kode – prøv igen.";
+      $("lockDots").classList.add("shake"); setTimeout(() => $("lockDots").classList.remove("shake"), 400);
+      if (pinFails >= 5) $("lockForgot").textContent = "Log ud";
+    } else if (pinMode === "set1") { pinFirst = entry; showLock("set2"); }
+    else if (pinMode === "set2") {
+      if (entry !== pinFirst) { pinFirst = ""; showLock("set1"); $("lockMsg").textContent = "Koderne var ikke ens – prøv igen."; return; }
+      const salt = crypto.randomUUID();
+      try { localStorage.setItem(PIN_KEY, JSON.stringify({ salt, hash: await pinHash(entry, salt) })); } catch {}
+      hideLock(); toast("Koden er slået til på denne enhed.", 3000); renderPinCard();
+    }
+  }, 120);
+}
+document.querySelectorAll("#lockPad button[data-d]").forEach((b) => b.onclick = () => pinDigit(b.dataset.d));
+document.addEventListener("keydown", (e) => { if (!pinMode) return; if (/^[0-9]$/.test(e.key)) pinDigit(e.key); else if (e.key === "Backspace") pinDigit("del"); });
+$("lockForgot").onclick = async () => {
+  if (!confirm("Log ud? Du logger ind igen med din e-mail og adgangskode, og koden slås fra.")) return;
+  try { localStorage.removeItem(PIN_KEY); } catch {}
+  clearCaches(); await sb.auth.signOut(); location.reload();
+};
+$("lockCancel").onclick = () => { hideLock(); renderPinCard(); };
+// Lås efter 1 minut i baggrunden
+let hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) hiddenAt = Date.now();
+  else if (pinSaved() && hiddenAt && Date.now() - hiddenAt > 60000 && !$("app").classList.contains("hidden")) showLock("unlock");
+});
+function renderPinCard() {
+  const on = !!pinSaved();
+  $("pinState").textContent = on ? "Slået til" : "Slået fra";
+  $("pinState").className = "pill-s " + (on ? "good-t" : "");
+  $("pinBtn").textContent = on ? "Slå koden fra" : "Slå kode til";
+  $("pinChange").classList.toggle("hidden", !on);
+}
+$("pinBtn").onclick = () => {
+  if (pinSaved()) { if (!confirm("Slå koden fra på denne enhed?")) return; try { localStorage.removeItem(PIN_KEY); } catch {} renderPinCard(); toast("Koden er slået fra.", 2000); }
+  else showLock("set1");
+};
+$("pinChange").onclick = () => showLock("set1");
+
 // ---------- Tema ----------
 const SUN = '<svg viewBox="0 0 24 24"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM11 1h2v3h-2zm0 19h2v3h-2zM1 11h3v2H1zm19 0h3v2h-3zM4.2 2.8l2.1 2.1-1.4 1.4-2.1-2.1zm14.9 14.9 2.1 2.1-1.4 1.4-2.1-2.1zM2.8 19.8l2.1-2.1 1.4 1.4-2.1 2.1zM17.7 4.9l2.1-2.1 1.4 1.4-2.1 2.1z"/></svg>';
 const MOON = '<svg viewBox="0 0 24 24"><path d="M21 14.5A9 9 0 0 1 9.5 3a9 9 0 1 0 11.5 11.5z"/></svg>';
@@ -3990,6 +4101,7 @@ async function start() {
   $("topbar").classList.remove("hidden");
   $("tabs").classList.remove("hidden");
   $("app").classList.remove("hidden");
+  if (pinSaved()) showLock("unlock");   // lås før tallene vises
   await handleBankCallback();
   await loadModules();
   state.uid = (await sb.auth.getSession()).data.session?.user?.id;
