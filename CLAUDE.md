@@ -9,6 +9,11 @@ Kommunikér på **dansk**. Brugeren er ikke udvikler – forklar trin enkelt og 
 - Nye databaseændringer: ny fil i `supabase/migrations/` (idempotent) **og** regenerér `supabase/opdater-database.sql` (002 → nyeste). Brugeren kører den via `docs/opdater.html`. Frontend skal tåle, at den ikke er kørt (banner `#dbCard` / `state.dbMissing`).
 - **Test:** `tests/` = Playwright-testmiljø (`harness.js`: falsk Supabase via rute `*.supabase.co/**`, serverer `docs/`, dato låst til 16. nov. 2026; `fixtures/demo.json` = opdigtede data) + `smoke.js` (alle faner/undersider × 3 skærme × 2 temaer: konsolfejl + intet for bredt + lidt funktion). Kør `cd tests && npm install && node smoke.js` (lokalt bruges den forudinstallerede Playwright). Workflow `.github/workflows/test.yml` kører den ved push (ubuntu-24.04 – Playwright 1.55 kan ikke installere på ubuntu-latest/26.04). Udvid `smoke.js`, når der kommer nye sider.
 
+## Ny app (under opbygning): `app/`
+React 19 + TypeScript-omskrivning i 4 faser; den nuværende app i `docs/` kører videre, til den nye kan det samme.
+- **Fase 1 (færdig):** `app/src/types/finance.ts` (domænetyper, snake_case som DB) og `app/src/lib/finance-engine.ts` (ren motor, porteret fra docs/: klassifikation/modregning `makeClassifier`, `totals`, `expandSplits`, `manualToTransactions`, `detectRecurring`/`priceIncreases`/`upcomingFixed`/`nextCharge`, `available`, `monthBudget` (uge/overførsel), `healthScore` (40/30/30 + buffer 20 når kendt, normaliseret), `cumulative`, `forecastNextMonth`, `dailyResults`, `goalSaved`, `monthsToPayoff`, `potBalance`, `calcTax` med `DEFAULT_TAX_RATES`). Tests: `app/src/lib/finance-engine.test.ts` (Vitest). Kør `cd app && npm ci && npx vitest run && npx tsc --noEmit`; CI-job `app` i test.yml.
+- **Fase 2–4 (mangler):** repository-service med Zod (ingen rå Supabase-kald i komponenter), state/cache/offline, UI. Byg til Pages via workflow, når den erstatter docs/.
+
 ## Sikkerhed
 - Aldrig `.pem`, `SYNC_SECRET`, service role key eller API-nøgler i repoet eller i chatten. De hører til Supabase → Edge Functions → Secrets.
 - Bankdata må aldrig committes.

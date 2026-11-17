@@ -4,9 +4,9 @@ name: Test af siden
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "tests/**", ".github/workflows/test.yml"]
+    paths: ["docs/**", "tests/**", "app/**", ".github/workflows/test.yml"]
   pull_request:
-    paths: ["docs/**", "tests/**"]
+    paths: ["docs/**", "tests/**", "app/**"]
   workflow_dispatch:
 jobs:
   smoke:
@@ -23,3 +23,19 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: node smoke.js
+
+  # Den nye React/TypeScript-app (app/): typetjek og unit tests af beregningsmotoren
+  app:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npx vitest run
