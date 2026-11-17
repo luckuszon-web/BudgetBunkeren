@@ -13,3 +13,6 @@ supabase/.branches/
 # Testmiljø
 tests/node_modules/
 tests/package-lock.json
+
+# Eksempelfil uden hemmeligheder må gerne med
+!app/.env.example
