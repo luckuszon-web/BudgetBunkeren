@@ -23,6 +23,9 @@ describe("nøgletal", () => {
     expect(fixed).toMatchObject({ value: 0.4, tone: "good" });
     expect(buf).toMatchObject({ value: null, tone: null });
     expect(net).toMatchObject({ value: null, tone: null });
+    expect(sav!.optimal).toBe(true);   // 20 % = helt optimalt
+    expect(fixed!.tip).toContain("Husleje");
+    expect(buf!.tip).toContain("Planlæg");
   });
   it("bruger Planlæg til buffer og nettoformue", () => {
     const pf = planFigures([{ id: "1", name: "Konto", kind: "cash", value: 24000 }, { id: "2", name: "Kort", kind: "credit", value: 30000 }]);
@@ -30,6 +33,9 @@ describe("nøgletal", () => {
     const [, , buf, net] = keyFigures(x, pf);
     expect(buf).toMatchObject({ value: 1.5, tone: "warn" });
     expect(net).toMatchObject({ value: -6000, tone: "bad" });
+    expect(buf!.tip).toContain("Der mangler 24.000 kr.");   // 3 × 16.000 − 24.000
+    expect(buf!.tip).toContain("ca. 12 måneder");            // halvdelen af 4.000 kr. overskud
+    expect(net!.tip).toContain("30.000 kr. i dyr gæld");
   });
   it("dyr gæld: kreditkort altid, lån over 7 %, boliglån aldrig", () => {
     expect(isExpensiveDebt({ kind: "credit", rate: 2 })).toBe(true);

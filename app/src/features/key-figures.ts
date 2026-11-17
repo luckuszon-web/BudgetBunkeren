@@ -5,9 +5,10 @@
 import type { FixedExpenseItem, IsoDate, Transaction, YearMonth } from "@/types/finance";
 import { avg, monthlyEquivalent, monthOf, totals, type Classifier } from "@/lib/finance-engine";
 import type { PlanFigures } from "./plan-figures";
+import { bufferText, fixedText, netWorthText, savingsText, type FigureText, type TipInput } from "./key-figure-tips";
 
 export type KeyTone = "good" | "warn" | "bad";
-export interface KeyFigure {
+export interface KeyFigure extends FigureText {
   id: "savings" | "fixed" | "buffer" | "networth";
   label: string;
   /** Procent (0,12 = 12 %), måneder eller kr. afhængigt af `unit`. */
@@ -41,14 +42,16 @@ export function keyFigures(x: KeyFigureInput, plan: PlanFigures | null): KeyFigu
   const fixed = inc > 0 && x.fixedExpenses.length ? fixedSum / inc : null;
   const buffer = plan?.cash != null && out > 0 ? plan.cash / out : null;
   const net = plan ? plan.netWorth : null;
+  const top = [...x.fixedExpenses].sort((a, b) => monthlyEquivalent(b) - monthlyEquivalent(a));
+  const ti: TipInput = { inc, out, fixedSum, fixedTop: top, cash: plan?.cash ?? null, netWorth: net, expensiveDebt: plan?.expensiveDebt ?? 0 };
   return [
     { id: "savings", label: "Opsparingsrate", value: savings, unit: "pct", target: "Mål 10–20 %",
-      tone: savings == null ? null : tone(savings, 0.1, 0.05), missing: noHist },
+      tone: savings == null ? null : tone(savings, 0.1, 0.05), missing: noHist, ...savingsText(ti) },
     { id: "fixed", label: "Faste udgifter", value: fixed, unit: "pct", target: "Af indkomsten · under 50 %",
-      tone: fixed == null ? null : tone(fixed, 0.5, 0.65, false), missing: inc > 0 ? "Ingen faste udgifter fundet" : noHist },
+      tone: fixed == null ? null : tone(fixed, 0.5, 0.65, false), missing: inc > 0 ? "Ingen faste udgifter fundet" : noHist, ...fixedText(ti) },
     { id: "buffer", label: "Buffer", value: buffer, unit: "months", target: "Mål 3–6 mdr. udgifter",
-      tone: buffer == null ? null : tone(buffer, 3, 1), missing: plan?.cash == null ? "Tilføj dine konti under Planlæg" : noHist },
+      tone: buffer == null ? null : tone(buffer, 3, 1), missing: plan?.cash == null ? "Tilføj dine konti under Planlæg" : noHist, ...bufferText(ti) },
     { id: "networth", label: "Nettoformue", value: net, unit: "kr", target: "Aktiver minus gæld",
-      tone: net == null ? null : net > 0 ? "good" : net === 0 ? "warn" : "bad", missing: "Tilføj formue og gæld under Planlæg" },
+      tone: net == null ? null : net > 0 ? "good" : net === 0 ? "warn" : "bad", missing: "Tilføj formue og gæld under Planlæg", ...netWorthText(ti) },
   ];
 }

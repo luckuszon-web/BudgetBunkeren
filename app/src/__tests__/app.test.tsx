@@ -37,6 +37,10 @@ describe("Ny app", () => {
     expect(await screen.findByText("Ingen dyr gæld")).toBeTruthy();
     expect(screen.getByText("Nøgletal")).toBeTruthy();
     expect(screen.getByTestId("kpi-networth").textContent).toMatch(/15\.000/);
+    fireEvent.click(screen.getByTestId("kpi-buffer"));
+    expect(screen.getByRole("region", { name: "Om Buffer" }).textContent).toMatch(/uforudsete udgifter/);
+    fireEvent.click(screen.getByRole("button", { name: "Luk forklaring" }));
+    expect(screen.queryByRole("region", { name: "Om Buffer" })).toBeNull();
   });
 
   it("Budget: viser bjælker og gemmer et nyt budget", async () => {
