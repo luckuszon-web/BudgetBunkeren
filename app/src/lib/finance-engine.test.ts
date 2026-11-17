@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { Category, CategoryRule, PotItem, PotMember, SharedPot, Transaction } from "@/types/finance";
 import {
-  available, avg, budgetTone, calcTax, cumulative, dailyResults, daysInMonth, detectRecurring, elapsedFraction, expandSplits,
-  forecastNextMonth, formatKr, formatSignedKr, goalSaved, groupKey, healthScore, makeClassifier, manualToTransactions, matchesRule,
+  available, avg, budgetTone, calcTax, cumulative, dailyResults, daysInMonth, detectFixedExpenses, detectPeriodic, detectRecurring,
+  elapsedFraction, expandSplits, expectedMonth, forecastNextMonth, monthlyEquivalent, monthsBetween, formatKr, formatSignedKr, goalSaved, groupKey, healthScore, makeClassifier, manualToTransactions, matchesRule,
   median, mondayOf, monthBudget, monthsToPayoff, nextCharge, potBalance, priceIncreases, recurringKey, shiftMonth, spendByCategory,
   sumOut, summarizeMonth, totals, translit, upcomingFixed,
 } from "./finance-engine";
 
 // ---------- Testdata ----------
-const cat = (id: number, name: string, kind: Category["kind"], extra: Partial<Category> = {}): Category => ({ id, user_id: "u", name, kind, ...extra });
+const cat = (id: number, name: string, kind: Category["kind"], extra: Partial<Category> = {}): Category => ({ id: String(id), user_id: "u", name, kind, monthly_budget: 0, ...extra });
 const CATS: Category[] = [
   cat(1, "Dagligvarer", "expense"), cat(2, "Restaurant", "expense"), cat(3, "Husleje", "expense"), cat(4, "Abonnementer", "expense"),
   cat(10, "Løn", "income"), cat(11, "Anden indkomst", "income"),
   cat(20, "Opsparing", "transfer"), cat(30, "Store køb", "oneoff"), cat(40, "Ignoreret", "ignore"),
 ];
 let seq = 0;
-const tx = (date: string, amount: number, description: string, category_id: number | null = null, extra: Partial<Transaction> = {}): Transaction =>
-  ({ id: `t${++seq}`, account_uid: "a", booking_date: date, amount, description, counterparty: null, category_id, category_source: "manual", ...extra });
+const tx = (date: string, amount: number, text: string, category: number | null = null, extra: Partial<Transaction> = {}): Transaction =>
+  ({ id: `t${++seq}`, account_id: "a", date, amount, text, counterparty: null, category_id: category == null ? null : String(category), category_source: "manual", ...extra });
 const C = makeClassifier(CATS);
 
 describe("formatering og tal", () => {
@@ -54,19 +54,19 @@ describe("datoer", () => {
 describe("regler og gruppering", () => {
   it("skriver æ/ø/å ud", () => expect(translit("Føtex Århus")).toBe("foetex aarhus"));
   it("korte mønstre skal være et helt ord", () => {
-    expect(matchesRule({ description: "Q8 Valby" }, "q8")).toBe(true);
-    expect(matchesRule({ description: "Q80 shop" }, "q8")).toBe(false);
+    expect(matchesRule({ text: "Q8 Valby" }, "q8")).toBe(true);
+    expect(matchesRule({ text: "Q80 shop" }, "q8")).toBe(false);
   });
   it("mellemrum i mønster er ordgrænse", () => {
-    expect(matchesRule({ description: "SPAR Valby" }, "spar ")).toBe(true);
-    expect(matchesRule({ description: "Overført til opsparing" }, "spar ")).toBe(false);
+    expect(matchesRule({ text: "SPAR Valby" }, "spar ")).toBe(true);
+    expect(matchesRule({ text: "Overført til opsparing" }, "spar ")).toBe(false);
   });
   it("gruppenøgle fjerner støj og tager to ord for betalingstjenester", () => {
-    expect(groupKey({ description: "Dankort-nota NETTO 1234 KBH" })).toBe("netto");
-    expect(groupKey({ description: "MobilePay Mads Jensen" })).toBe("mobilepay mads");
+    expect(groupKey({ text: "Dankort-nota NETTO 1234 KBH" })).toBe("netto");
+    expect(groupKey({ text: "MobilePay Mads Jensen" })).toBe("mobilepay mads");
   });
   it("nøgle for faste betalinger ignorerer tal og referencer", () => {
-    expect(recurringKey({ description: "NETFLIX.COM 12345" })).toBe(recurringKey({ description: "NETFLIX.COM 99" }));
+    expect(recurringKey({ text: "NETFLIX.COM 12345" })).toBe(recurringKey({ text: "NETFLIX.COM 99" }));
   });
 });
 
@@ -95,10 +95,10 @@ describe("klassifikation og modregning", () => {
     const aiSalaryAsFood = tx("2026-11-30", 40000, "Lønoverførsel", 1, { category_source: "ai" });
     expect(C.effCat(aiSalaryAsFood)).toBeNull();
     expect(C.kindOf(aiSalaryAsFood)).toBe("income");
-    expect(C.effCat({ ...aiSalaryAsFood, category_source: "manual" })).toBe(1);
-    const rules: CategoryRule[] = [{ id: 1, pattern: "fremleje", category_id: 3, priority: 200 }];
+    expect(C.effCat({ ...aiSalaryAsFood, category_source: "manual" })).toBe("1");
+    const rules: CategoryRule[] = [{ id: "1", pattern: "fremleje", category_id: "3", priority: 200 }];
     const viaOwnRule = tx("2026-11-01", 7000, "Fremleje", 3, { category_source: "rule" });
-    expect(makeClassifier(CATS, rules).effCat(viaOwnRule)).toBe(3);
+    expect(makeClassifier(CATS, rules).effCat(viaOwnRule)).toBe("3");
     expect(makeClassifier(CATS, []).effCat(viaOwnRule)).toBeNull();
   });
   it("forbrug pr. kategori udelader fuldt modregnede kategorier", () => {
@@ -110,15 +110,15 @@ describe("klassifikation og modregning", () => {
 describe("opdeling og indtastede beløb", () => {
   it("folder opdelte posteringer ud og lader resten blive", () => {
     const t = tx("2026-11-10", -574, "Bilka", 1);
-    const parts = expandSplits([t], [{ id: 1, tx_id: t.id, category_id: 2, amount: -200 }]);
-    expect(parts.map((p) => [p.category_id, p.amount])).toEqual([[2, -200], [1, -374]]);
+    const parts = expandSplits([t], [{ id: "1", transaction_id: t.id, category_id: "2", amount: -200 }]);
+    expect(parts.map((p) => [p.category_id, p.amount])).toEqual([["2", -200], ["1", -374]]);
     expect(sum(parts.map((p) => p.amount))).toBe(-574);
   });
   it("laver indtastet løn (Løn som standard) og kontantudgifter", () => {
-    const r = manualToTransactions([{ id: 1, pay_date: "2026-10-30", amount: 41000, direction: "in", category_id: null },
-      { id: 2, pay_date: "2026-11-02", amount: 250, direction: "out", category_id: 1, note: "Torvet" }], 10);
-    expect(r[0]).toMatchObject({ amount: 41000, category_id: 10, manual: true });
-    expect(r[1]).toMatchObject({ amount: -250, category_id: 1, description: "Torvet" });
+    const r = manualToTransactions([{ id: "1", pay_date: "2026-10-30", amount: 41000, direction: "in", category_id: null },
+      { id: "2", pay_date: "2026-11-02", amount: 250, direction: "out", category_id: "1", note: "Torvet" }], "10");
+    expect(r[0]).toMatchObject({ amount: 41000, category_id: "10", manual: true, date: "2026-10-30" });
+    expect(r[1]).toMatchObject({ amount: -250, category_id: "1", text: "Torvet" });
   });
 });
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
@@ -133,7 +133,7 @@ describe("faste udgifter", () => {
   const rec = detectRecurring(hist, "2026-11", C);
   it("finder stabile betalinger i ≥ 3 af 4 måneder", () => {
     expect(rec.map((r) => r.name)).toEqual(["Boligforeningen", "NETFLIX.COM"]);
-    expect(rec[0]).toMatchObject({ amount: 11250, day: 1, months: 4 });
+    expect(rec[0]).toMatchObject({ amount: 11250, day: 1, occurrences: 4, cadence: "monthly", category_id: "3", last_date: "2026-10-01" });
   });
   it("registrerer prisstigning", () => {
     const n = rec.find((r) => r.name === "NETFLIX.COM")!;
@@ -142,19 +142,46 @@ describe("faste udgifter", () => {
   });
   it("fremskriver faste udgifter, der mangler i måneden, og næste trækdato", () => {
     const nov = [tx("2026-11-01", -11250, "Boligforeningen", 3)];
-    expect(upcomingFixed(rec, nov).map((r) => r.name)).toEqual(["NETFLIX.COM"]);
+    expect(upcomingFixed(rec, "2026-11", nov).map((r) => r.name)).toEqual(["NETFLIX.COM"]);
     expect(nextCharge(rec[1]!, "2026-11-02", nov)).toBe("2026-11-03");
     expect(nextCharge(rec[0]!, "2026-11-02", nov)).toBe("2026-12-01");
   });
   it("deler månedens udgifter i faste og variable", () => {
-    const s = summarizeMonth("2026-10", hist.filter((t) => t.booking_date.startsWith("2026-10")), new Set(rec.map((r) => r.key)), C);
+    const s = summarizeMonth("2026-10", hist.filter((t) => t.date.startsWith("2026-10")), new Set(rec.map((r) => r.key)), C);
     expect(s).toEqual({ month: "2026-10", income: 0, fixed: 11250 + 149, variable: 1500 });
+  });
+});
+
+describe("kvartals- og årsbetalinger", () => {
+  const hist = [
+    tx("2026-02-10", -1800, "Tryg Forsikring", 4), tx("2026-05-10", -1800, "Tryg Forsikring", 4), tx("2026-08-10", -1850, "Tryg Forsikring", 4),
+    tx("2025-03-15", -1200, "Bilforsikring årlig", 4), tx("2026-03-15", -1260, "Bilforsikring årlig", 4),
+    tx("2026-01-01", -500, "Tilfældig", 1), tx("2026-06-01", -500, "Tilfældig", 1),   // 5 måneders mellemrum → hverken eller
+  ];
+  const per = detectPeriodic(hist, "2026-11", C);
+  it("finder kvartal og år, men ikke uregelmæssige betalinger", () => {
+    expect(per.map((p) => [p.name, p.cadence])).toEqual([["Tryg Forsikring", "quarterly"], ["Bilforsikring årlig", "annual"]]);
+    expect(per[1]).toMatchObject({ last: 1260, prev: 1200, priceChange: 60 });
+  });
+  it("omregner til måned og forventer næste betaling", () => {
+    expect(monthlyEquivalent(per[0]!)).toBe(600);
+    expect(monthlyEquivalent(per[1]!)).toBe(1260 / 12);
+    expect(expectedMonth(per[0]!, "2026-11")).toBe("2026-11");     // aug + 3
+    expect(expectedMonth(per[1]!, "2026-11")).toBe("2027-03");
+    expect(upcomingFixed(per, "2026-11", []).map((p) => p.name)).toEqual(["Tryg Forsikring"]);
+    expect(nextCharge(per[0]!, "2026-11-20", [])).toBe("2027-02-10");   // dagen er passeret → næste kvartal
+  });
+  it("blander ikke månedlige ind som kvartal", () => {
+    const monthly = ["2026-07", "2026-08", "2026-09", "2026-10"].map((m) => tx(`${m}-05`, -99, "Spotify", 4));
+    const all = detectFixedExpenses([...hist, ...monthly], "2026-11", C);
+    expect(all.filter((f) => f.name === "Spotify").map((f) => f.cadence)).toEqual(["monthly"]);
+    expect(monthsBetween("2025-11", "2026-02")).toBe(3);
   });
 });
 
 describe("disponibelt beløb", () => {
   it("bruger snittet, når lønnen ikke er kommet, og trækker faste regninger på vej fra", () => {
-    const rec = [{ key: "netflix", name: "Netflix", cat: 4, amount: 129, day: 3, months: 4, lastDate: "", last: 129, prev: 129, priceChange: 0 }];
+    const rec = [{ key: "netflix", name: "Netflix", amount: 129, cadence: "monthly" as const, last_date: "2026-10-03", day: 3 }];
     const r = available({ monthTxs: [tx("2026-11-05", -1000, "Netto", 1), tx("2026-11-01", -2000, "Opsparing", 20)],
       previousIncomes: [40000, 42000, 44000], recurring: rec, classifier: C, today: "2026-11-16" });
     expect(r.expectedIncome).toBe(42000);
@@ -186,9 +213,11 @@ describe("økonomisk sundhedsscore", () => {
     expect(s.parts.map((p) => p.max)).toEqual([40, 30, 30]);
     expect(s.score).toBe(100);
     expect(s.tone).toBe("good");
+    expect(s.word).toBe("Fremragende");
   });
   it("normaliserer, når budgetter og historik mangler", () => {
-    expect(healthScore({ savingsRate: 0.1 }).score).toBe(50);
+    expect(healthScore({ savingsRate: 0.1 })).toMatchObject({ score: 50, word: "Kan forbedres", tone: "warn" });
+    expect(healthScore({ savingsRate: 0.15 })).toMatchObject({ score: 75, word: "God", tone: "good" });
   });
   it("forbrug 30 % over snittet giver 0 point for stabilitet", () => {
     const s = healthScore({ savingsRate: 0.2, spendRatio: 1.3 });
@@ -200,6 +229,7 @@ describe("økonomisk sundhedsscore", () => {
     expect(s.parts.find((p) => p.name === "Buffer")!.pts).toBe(10);
     expect(s.score).toBe(Math.round((10 / 60) * 100));
     expect(s.tone).toBe("bad");
+    expect(s.word).toBe("Opmærksomhed");
   });
 });
 
@@ -207,7 +237,7 @@ describe("forløb og prognose", () => {
   it("kumulerer forbrug dag for dag med modregning", () => {
     const keys = ["2026-11-01", "2026-11-02", "2026-11-03"];
     const list = [tx("2026-11-01", -100, "a", 1), tx("2026-11-03", -50, "b", 2), tx("2026-11-03", 20, "refusion", 2)];
-    expect(cumulative(list, keys, (t) => t.booking_date)).toEqual([100, 100, 130]);
+    expect(cumulative(list, keys, (t) => t.date)).toEqual([100, 100, 130]);
   });
   it("prognose med svingende løn giver interval og respekterer eget skøn", () => {
     const months = ["2026-10", "2026-09", "2026-08"];
@@ -216,7 +246,7 @@ describe("forløb og prognose", () => {
       "2026-09": [tx("2026-09-30", 50000, "Løn", 10), tx("2026-09-05", -7000, "Netto", 1)],
       "2026-08": [tx("2026-08-31", 44000, "Løn", 10), tx("2026-08-05", -6000, "Netto", 1)],
     };
-    const base = { previousMonths: months, monthTxs: (m: string) => data[m] ?? [], recurring: [], salaryCategoryId: 10, classifier: C, nextMonth: "2026-12" };
+    const base = { previousMonths: months, monthTxs: (m: string) => data[m] ?? [], recurring: [], salaryCategoryId: "10", classifier: C, nextMonth: "2026-12" };
     const f = forecastNextMonth(base)!;
     expect(f.salary).toMatchObject({ min: 38000, avg: 44000, max: 50000 });
     expect(f.expected).toBe(44000 - 6000);
@@ -228,14 +258,14 @@ describe("forløb og prognose", () => {
   });
   it("kalender: løn fordelt ligeligt, udgifter og andre indtægter på dagen", () => {
     const list = [tx("2026-11-01", -11250, "Husleje", 3), tx("2026-11-02", 300, "MobilePay", 11), tx("2026-11-30", 30000, "Løn", 10)];
-    const r = dailyResults("2026-11", list, 30000, 10, C, 3);
+    const r = dailyResults("2026-11", list, 30000, "10", C, 3);
     expect(r).toEqual([1000 - 11250, 1000 + 300, 1000]);
   });
 });
 
 describe("mål, gæld og fællesøkonomi", () => {
   it("opsparingsmål fyldes med overførsler til den koblede kategori", () => {
-    const g = { id: 1, name: "Buffer", target_amount: 50000, saved_amount: 30000, linked_category_id: 20, linked_since: "2026-11-01" };
+    const g = { id: "1", name: "Buffer", target_amount: 50000, saved_amount: 30000, linked_category_id: "20", linked_since: "2026-11-01" };
     const list = [tx("2026-10-15", -5000, "Opsparing", 20), tx("2026-11-15", -5000, "Opsparing", 20), tx("2026-11-20", 1000, "Hævet", 20)];
     expect(goalSaved(g, list, C)).toBe(35000);
   });
@@ -245,16 +275,16 @@ describe("mål, gæld og fællesøkonomi", () => {
     expect(monthsToPayoff(68000, 6.9, 2350)).toBe(32);
   });
   it("balance i den fælles post med 60/40-fordeling og afregning", () => {
-    const pot: SharedPot = { id: 1, name: "Fælles", created_by: "a", owner_pct: 60 };
+    const pot: SharedPot = { id: "1", name: "Fælles", created_by: "a", owner_pct: 60 };
     const members: PotMember[] = [{ user_id: "a", name: "A" }, { user_id: "b", name: "B" }];
     const items: PotItem[] = [
-      { id: 1, user_id: "a", kind: "expense", item_date: "2026-11-01", amount: 1217, description: "Netto" },
-      { id: 2, user_id: "b", kind: "expense", item_date: "2026-11-02", amount: 1000, description: "Rema" },
+      { id: "1", user_id: "a", kind: "expense", item_date: "2026-11-01", amount: 1217, description: "Netto" },
+      { id: "2", user_id: "b", kind: "expense", item_date: "2026-11-02", amount: 1000, description: "Rema" },
     ];
     const bal = potBalance(pot, members, items);
     expect(Math.round(bal.get("a")!)).toBe(-113);   // A skylder 113 kr.
     expect(Math.round(bal.get("b")!)).toBe(113);
-    const after = potBalance(pot, members, [...items, { id: 3, user_id: "a", kind: "settle", item_date: "2026-11-03", amount: 113.2, description: "Afregning" }]);
+    const after = potBalance(pot, members, [...items, { id: "3", user_id: "a", kind: "settle", item_date: "2026-11-03", amount: 113.2, description: "Afregning" }]);
     expect(Math.abs(after.get("a")!)).toBeLessThan(0.01);
     expect(Math.abs(after.get("b")!)).toBeLessThan(0.01);
   });

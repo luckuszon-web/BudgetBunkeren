@@ -8,10 +8,11 @@
  * - Automatiske kategorier (standardregler/AI) må ikke gå imod pengenes retning; manuelle valg og egne regler må.
  */
 import type {
-  Category, CategoryKind, CategoryRule, Dkk, HealthScore, IsoDate, ManualEntry, MonthSummary, PeriodTotals, PotItem,
-  PotMember, RecurringExpense, SavingsGoal, ScorePart, SharedPot, TaxInput, TaxRates, TaxResult, Transaction,
-  TransactionSplit, YearMonth,
+  Cadence, Category, CategoryKind, CategoryRule, Dkk, FixedExpenseItem, HealthScoreResult, IsoDate, ManualEntry, MonthSummary,
+  PeriodTotals, PotItem, PotMember, SavingsGoal, SharedPot, TaxInput, TaxRates, TaxResult, Transaction, TxSplit, YearMonth,
 } from "@/types/finance";
+type ScorePart = HealthScoreResult["parts"][number];
+type TextOf = Pick<Transaction, "text" | "counterparty">;
 
 // ======================================================================
 // Formatering og tal
@@ -38,6 +39,8 @@ export function shiftMonth(ym: YearMonth, delta: number): YearMonth {
   const d = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + delta, 1));
   return d.toISOString().slice(0, 7);
 }
+/** Antal måneder fra a til b (b − a). */
+export const monthsBetween = (a: YearMonth, b: YearMonth): number => (+b.slice(0, 4) - +a.slice(0, 4)) * 12 + (+b.slice(5, 7) - +a.slice(5, 7));
 export const daysInMonth = (ym: YearMonth): number => new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7), 0)).getUTCDate();
 export const addDays = (iso: IsoDate, n: number): IsoDate => {
   const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
@@ -59,12 +62,12 @@ export function elapsedFraction(month: YearMonth, today: IsoDate): number {
 export const translit = (s: string): string => String(s).toLowerCase()
   .replace(/æ/g, "ae").replace(/ø/g, "oe").replace(/å/g, "aa").replace(/ö/g, "oe").replace(/ä/g, "ae").replace(/é/g, "e").replace(/ü/g, "u")
   .replace(/[^a-z0-9&.+@']+/g, " ").replace(/\s+/g, " ");
-const normTx = (t: Pick<Transaction, "description" | "counterparty">) => ` ${translit(`${t.description} ${t.counterparty ?? ""}`).trim()} `;
+const normTx = (t: TextOf) => ` ${translit(`${t.text} ${t.counterparty ?? ""}`).trim()} `;
 /**
  * Rammer reglen posteringen? Mellemrum i mønsteret = ordgrænse (fx "spar " rammer "SPAR Valby", ikke "Opsparing").
  * Korte mønstre (≤ 3 tegn) skal altid være et helt ord.
  */
-export function matchesRule(t: Pick<Transaction, "description" | "counterparty">, pattern: string): boolean {
+export function matchesRule(t: TextOf, pattern: string): boolean {
   let p = translit(pattern);
   if (!p.trim()) return false;
   if (p.trim().length <= 3) p = ` ${p.trim()} `;
@@ -72,8 +75,8 @@ export function matchesRule(t: Pick<Transaction, "description" | "counterparty">
 }
 const NOISE = /^(dankort nota|dankort|visa dankort|visa|mastercard|k\s?b|koeb|kortkoeb|nota|betaling|bs betaling|overfoersel|ovf|fra|til|den|d)$/;
 /** Gruppenøgle til hurtig sortering og regel-forslag: butikkens navn uden støj (Dankort, Visa, tal …). */
-export function groupKey(t: Pick<Transaction, "description" | "counterparty">): string {
-  const words = translit(t.counterparty || t.description).replace(/[0-9]+/g, " ").split(" ").filter((w) => w && w.length > 1);
+export function groupKey(t: TextOf): string {
+  const words = translit(t.counterparty || t.text).replace(/[0-9]+/g, " ").split(" ").filter((w) => w && w.length > 1);
   while (words.length && NOISE.test(words[0]!)) words.shift();
   while (words.length > 1 && NOISE.test(words.slice(0, 2).join(" "))) words.splice(0, 2);
   if (!words.length) return "";
@@ -81,16 +84,16 @@ export function groupKey(t: Pick<Transaction, "description" | "counterparty">): 
   return viaService || words[0]!.length < 4 ? words.slice(0, 2).join(" ") : words[0]!;
 }
 /** Nøgle for faste betalinger: de første tre ord uden tal og referencer. */
-export const recurringKey = (t: Pick<Transaction, "description" | "counterparty">): string =>
-  (t.counterparty || t.description).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
+export const recurringKey = (t: TextOf): string =>
+  (t.counterparty || t.text).toLowerCase().replace(/[0-9*#.,:/-]+/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 3).join(" ");
 
 // ======================================================================
 // Klassifikation og modregning (netting)
 // ======================================================================
 export interface Classifier {
-  catById(id: number | string | null | undefined): Category | undefined;
+  catById(id: string | number | null | undefined): Category | undefined;
   /** Den kategori, der gælder (automatiske kategorier i forkert retning ignoreres). */
-  effCat(t: Transaction): number | null;
+  effCat(t: Transaction): string | null;
   kindOf(t: Transaction): CategoryKind;
   /** Udgift efter kategoriens type (også indbetalinger, der modregnes). */
   isExp(t: Transaction): boolean;
@@ -103,7 +106,7 @@ export interface Classifier {
 
 export function makeClassifier(categories: readonly Category[], rules: readonly CategoryRule[] = []): Classifier {
   const byId = new Map(categories.map((c) => [String(c.id), c]));
-  const catById = (id: number | string | null | undefined) => (id == null ? undefined : byId.get(String(id)));
+  const catById = (id: string | number | null | undefined) => (id == null ? undefined : byId.get(String(id)));
   // En automatisk kategori, der vender forkert (fx løn med en udgiftskategori), ignoreres –
   // medmindre det er dit eget valg eller en af dine egne regler (prioritet 200).
   const autoMismatch = (t: Transaction): boolean => {
@@ -113,7 +116,7 @@ export function makeClassifier(categories: readonly Category[], rules: readonly 
     if (fits) return false;
     return !(t.category_source === "rule" && rules.some((r) => r.priority >= 200 && String(r.category_id) === String(c.id) && matchesRule(t, r.pattern)));
   };
-  const effCat = (t: Transaction) => (t.category_id != null && !autoMismatch(t) ? t.category_id : null);
+  const effCat = (t: Transaction) => (t.category_id != null && !autoMismatch(t) ? String(t.category_id) : null);
   const kindOf = (t: Transaction): CategoryKind => {
     const k = catById(effCat(t))?.kind;
     if (k === "ignore") return k;
@@ -156,9 +159,9 @@ export function spendByCategory(txs: readonly Transaction[], c: Classifier): Map
 }
 
 /** Opdelte posteringer foldes ud til deres dele; det, der ikke er fordelt, bliver på posteringens kategori. */
-export function expandSplits(txs: readonly Transaction[], splits: readonly TransactionSplit[]): Transaction[] {
-  const by = new Map<string, TransactionSplit[]>();
-  for (const s of splits) by.set(s.tx_id, [...(by.get(s.tx_id) ?? []), s]);
+export function expandSplits(txs: readonly Transaction[], splits: readonly TxSplit[]): Transaction[] {
+  const by = new Map<string, TxSplit[]>();
+  for (const s of splits) by.set(s.transaction_id, [...(by.get(s.transaction_id) ?? []), s]);
   const out: Transaction[] = [];
   for (const t of txs) {
     const parts = by.get(t.id);
@@ -171,37 +174,37 @@ export function expandSplits(txs: readonly Transaction[], splits: readonly Trans
 }
 
 /** Indtastede beløb som kunstige posteringer (løn positiv med Løn som standard; udgifter negative). */
-export function manualToTransactions(entries: readonly ManualEntry[], salaryCategoryId: number | null): Transaction[] {
+export function manualToTransactions(entries: readonly ManualEntry[], salaryCategoryId: string | null): Transaction[] {
   return entries.map((m) => {
     const out = m.direction === "out";
-    return { id: `manual-${m.id}`, manual: true, account_uid: null, booking_date: m.pay_date, amount: out ? -m.amount : m.amount,
-      description: m.note || (out ? "Kontant udgift" : "Løn (indtastet)"), counterparty: null,
+    return { id: `manual-${m.id}`, manual: true, account_id: null, date: m.pay_date, amount: out ? -m.amount : m.amount,
+      text: m.note || (out ? "Kontant udgift" : "Løn (indtastet)"), counterparty: null,
       category_id: m.category_id ?? (out ? null : salaryCategoryId), category_source: "manual" };
   });
 }
 
 // ======================================================================
-// Faste udgifter
+// Faste udgifter (månedlige, kvartalsvise og årlige)
 // ======================================================================
 /**
- * Faste udgifter: samme modtager i ≥ 3 af de 4 måneder før `baseMonth`, højst 2 gange pr. måned, stabilt beløb (±20 % af medianen).
- * Faste indbetalinger med en udgiftskategori (fx fremleje) kommer med som negative beløb.
+ * Månedlige faste udgifter: samme modtager i ≥ 3 af de 4 måneder før `baseMonth`, højst 2 gange pr. måned,
+ * stabilt beløb (±20 % af medianen). Faste indbetalinger med en udgiftskategori (fx fremleje) kommer med som negative beløb.
  */
-export function detectRecurring(txs: readonly Transaction[], baseMonth: YearMonth, c: Pick<Classifier, "isExp">): RecurringExpense[] {
+export function detectRecurring(txs: readonly Transaction[], baseMonth: YearMonth, c: Pick<Classifier, "isExp">): FixedExpenseItem[] {
   const months = [1, 2, 3, 4].map((i) => shiftMonth(baseMonth, -i));   // nyeste først
-  const groups = new Map<string, { key: string; name: string; cat: number | null; byMonth: Map<string, { n: number; sum: number }>; days: number[]; lastDate: string }>();
+  const groups = new Map<string, { key: string; name: string; cat: string | null; byMonth: Map<string, { n: number; sum: number }>; days: number[]; last: string }>();
   for (const t of txs) {
-    const m = monthOf(t.booking_date);
+    const m = monthOf(t.date);
     if (!c.isExp(t) || !months.includes(m)) continue;
     const key = recurringKey(t);
-    if (!groups.has(key)) groups.set(key, { key, name: t.counterparty || t.description, cat: t.category_id, byMonth: new Map(), days: [], lastDate: "" });
+    if (!groups.has(key)) groups.set(key, { key, name: t.counterparty || t.text, cat: t.category_id ?? null, byMonth: new Map(), days: [], last: "" });
     const g = groups.get(key)!;
     const e = g.byMonth.get(m) ?? { n: 0, sum: 0 };
     e.n++; e.sum -= t.amount; g.byMonth.set(m, e);
-    g.days.push(+t.booking_date.slice(8, 10));
-    if (t.booking_date > g.lastDate) g.lastDate = t.booking_date;
+    g.days.push(+t.date.slice(8, 10));
+    if (t.date > g.last) g.last = t.date;
   }
-  const out: RecurringExpense[] = [];
+  const out: FixedExpenseItem[] = [];
   for (const g of groups.values()) {
     const vals = [...g.byMonth.values()];
     if (vals.length < 3 || vals.some((v) => v.n > 2)) continue;
@@ -209,28 +212,84 @@ export function detectRecurring(txs: readonly Transaction[], baseMonth: YearMont
     if (!md || vals.some((v) => Math.abs(v.sum - md) > Math.abs(md) * 0.2)) continue;
     const seen = months.filter((m) => g.byMonth.has(m));
     const last = seen[0] ? g.byMonth.get(seen[0])!.sum : null, prev = seen[1] ? g.byMonth.get(seen[1])!.sum : null;
-    out.push({ key: g.key, name: g.name, cat: g.cat, amount: md, day: median(g.days), months: vals.length, lastDate: g.lastDate,
-      last, prev, priceChange: last != null && prev != null ? round2(last - prev) : 0 });
+    out.push({ key: g.key, name: g.name, amount: md, cadence: "monthly", ...(g.cat ? { category_id: g.cat } : {}), last_date: g.last,
+      day: median(g.days), occurrences: vals.length, last, prev, priceChange: last != null && prev != null ? round2(last - prev) : 0 });
   }
   return out.sort((a, b) => b.amount - a.amount);
 }
 
-/** Prisstigninger værd at nævne: mindst 5 kr. og 3 % mere end måneden før. */
-export const priceIncreases = (rec: readonly RecurringExpense[]): RecurringExpense[] =>
-  rec.filter((r) => (r.prev ?? 0) > 0 && r.priceChange >= 5 && r.priceChange / r.prev! >= 0.03);
+/**
+ * Kvartals- og årsbetalinger (fx forsikring hvert kvartal, licens/abonnement én gang om året) i de 24 måneder før `baseMonth`:
+ * - kvartal: ≥ 3 betalinger med 2–4 måneders mellemrum,
+ * - år: ≥ 2 betalinger med 11–13 måneders mellemrum,
+ * og stabilt beløb (±20 %). Månedlige betalinger (se `detectRecurring`) udelades.
+ */
+export function detectPeriodic(txs: readonly Transaction[], baseMonth: YearMonth, c: Pick<Classifier, "isExp">): FixedExpenseItem[] {
+  const from = shiftMonth(baseMonth, -24);
+  const groups = new Map<string, Transaction[]>();
+  for (const t of txs) {
+    const m = monthOf(t.date);
+    if (!c.isExp(t) || t.amount >= 0 || m < from || m >= baseMonth) continue;
+    const k = recurringKey(t); if (!k) continue;
+    groups.set(k, [...(groups.get(k) ?? []), t]);
+  }
+  const out: FixedExpenseItem[] = [];
+  for (const [key, list] of groups) {
+    const sorted = [...list].sort((a, b) => a.date.localeCompare(b.date));
+    const months = sorted.map((t) => monthOf(t.date));
+    if (new Set(months).size !== months.length) continue;   // flere gange samme måned → ikke kvartal/år
+    const gaps = months.slice(1).map((m, i) => monthsBetween(months[i]!, m));
+    const amounts = sorted.map((t) => -t.amount), md = median(amounts);
+    if (!md || amounts.some((a) => Math.abs(a - md) > md * 0.2)) continue;
+    let cadence: Cadence | null = null;
+    if (sorted.length >= 3 && gaps.every((g) => g >= 2 && g <= 4)) cadence = "quarterly";
+    else if (sorted.length >= 2 && gaps.every((g) => g >= 11 && g <= 13)) cadence = "annual";
+    if (!cadence) continue;
+    const lastT = sorted[sorted.length - 1]!, prevT = sorted[sorted.length - 2]!;
+    out.push({ key, name: lastT.counterparty || lastT.text, amount: md, cadence, ...(lastT.category_id ? { category_id: lastT.category_id } : {}),
+      last_date: lastT.date, day: +lastT.date.slice(8, 10), occurrences: sorted.length, last: -lastT.amount, prev: -prevT.amount,
+      priceChange: round2(prevT.amount - lastT.amount) });
+  }
+  return out.sort((a, b) => b.amount - a.amount);
+}
 
-/** Faste udgifter, der endnu ikke er trukket i måneden (fremskrivning). */
-export const upcomingFixed = (rec: readonly RecurringExpense[], monthTxs: readonly Transaction[]): RecurringExpense[] => {
+/** Alle faste udgifter: månedlige + kvartals- og årsbetalinger. */
+export function detectFixedExpenses(txs: readonly Transaction[], baseMonth: YearMonth, c: Pick<Classifier, "isExp">): FixedExpenseItem[] {
+  const monthly = detectRecurring(txs, baseMonth, c);
+  const keys = new Set(monthly.map((m) => m.key));
+  return [...monthly, ...detectPeriodic(txs, baseMonth, c).filter((p) => !keys.has(p.key))];
+}
+
+/** Månedens andel af en fast udgift (kvartal ÷ 3, år ÷ 12) – til budgetter og prognoser. */
+export const monthlyEquivalent = (f: Pick<FixedExpenseItem, "amount" | "cadence">): Dkk =>
+  f.amount / (f.cadence === "quarterly" ? 3 : f.cadence === "annual" ? 12 : 1);
+
+/** Hvornår forventes næste betaling (måned)? Månedlige: hver måned; kvartal/år: 3/12 måneder efter seneste. */
+export function expectedMonth(f: Pick<FixedExpenseItem, "cadence" | "last_date">, after: YearMonth): YearMonth {
+  if (f.cadence === "monthly") return after;
+  const step = f.cadence === "quarterly" ? 3 : 12;
+  let m = shiftMonth(monthOf(f.last_date), step);
+  while (m < after) m = shiftMonth(m, step);
+  return m;
+}
+
+/** Prisstigninger værd at nævne: mindst 5 kr. og 3 % mere end forrige betaling. */
+export const priceIncreases = (rec: readonly FixedExpenseItem[]): FixedExpenseItem[] =>
+  rec.filter((r) => (r.prev ?? 0) > 0 && (r.priceChange ?? 0) >= 5 && r.priceChange! / r.prev! >= 0.03);
+
+/** Faste udgifter, der forventes i måneden, men endnu ikke er trukket (fremskrivning). */
+export const upcomingFixed = (rec: readonly FixedExpenseItem[], month: YearMonth, monthTxs: readonly Transaction[]): FixedExpenseItem[] => {
   const seen = new Set(monthTxs.filter((t) => t.amount < 0).map(recurringKey));
-  return rec.filter((r) => r.amount > 0 && !seen.has(r.key));
+  return rec.filter((r) => r.amount > 0 && !seen.has(r.key) && expectedMonth(r, month) === month);
 };
 
-/** Næste trækdato for en fast betaling (denne måned, hvis den ikke er trukket endnu – ellers næste). */
-export function nextCharge(r: Pick<RecurringExpense, "key" | "day">, today: IsoDate, monthTxs: readonly Transaction[]): IsoDate {
-  const m = monthOf(today);
+/** Næste trækdato (denne måned, hvis den ikke er trukket endnu og dagen ikke er passeret – ellers næste forventede). */
+export function nextCharge(r: Pick<FixedExpenseItem, "key" | "day" | "cadence" | "last_date">, today: IsoDate, monthTxs: readonly Transaction[]): IsoDate {
+  const m = monthOf(today), day = r.day ?? +r.last_date.slice(8, 10);
   const paid = monthTxs.some((t) => t.amount < 0 && recurringKey(t) === r.key);
-  const mm = !paid && +today.slice(8, 10) <= r.day ? m : shiftMonth(m, 1);
-  return `${mm}-${String(Math.min(r.day, daysInMonth(mm))).padStart(2, "0")}`;
+  let mm = expectedMonth(r, m);
+  if (mm === m && (paid || +today.slice(8, 10) > day)) mm = expectedMonth(r, shiftMonth(m, 1));
+  return `${mm}-${String(Math.min(day, daysInMonth(mm))).padStart(2, "0")}`;
 }
 
 /** Månedens indtægt, faste og variable udgifter. */
@@ -248,7 +307,7 @@ export interface AvailableInput {
   monthTxs: readonly Transaction[];
   /** Indtægter i de forrige hele måneder (fx 3). */
   previousIncomes: readonly Dkk[];
-  recurring: readonly RecurringExpense[];
+  recurring: readonly FixedExpenseItem[];
   classifier: Classifier;
   today: IsoDate;
 }
@@ -260,7 +319,7 @@ export interface AvailableResult {
 export function available(i: AvailableInput): AvailableResult {
   const t = totals(i.monthTxs, i.classifier);
   const expectedIncome = Math.max(t.inc, avg(i.previousIncomes));
-  const upcoming = sum(upcomingFixed(i.recurring, i.monthTxs).map((r) => r.amount));
+  const upcoming = sum(upcomingFixed(i.recurring, monthOf(i.today), i.monthTxs).map((r) => r.amount));
   const value = expectedIncome - t.out - Math.max(0, t.saved) - upcoming;
   const m = monthOf(i.today);
   const daysLeft = daysInMonth(m) - +i.today.slice(8, 10) + 1;
@@ -302,7 +361,7 @@ export const SCORE_WEIGHTS = { savings: 40, budget: 30, spend: 30, buffer: 20 } 
  * Score 0–100. Dele, der ikke kan beregnes (ingen budgetter, ingen historik, ingen buffer), udelades,
  * og scoren normaliseres over de resterende dele.
  */
-export function healthScore(i: ScoreInput): HealthScore {
+export function healthScore(i: ScoreInput): HealthScoreResult {
   const clamp = (v: number) => Math.max(0, Math.min(1, v));
   const W = SCORE_WEIGHTS;
   const parts: ScorePart[] = [{ name: "Opsparingsrate", max: W.savings, pts: clamp(i.savingsRate / 0.2) * W.savings,
@@ -318,7 +377,8 @@ export function healthScore(i: ScoreInput): HealthScore {
     txt: `${i.bufferMonths.toFixed(1).replace(".", ",")} mdr. · mål 3`, tip: "Byg en buffer op svarende til 3 måneders udgifter." });
   const max = sum(parts.map((p) => p.max));
   const score = max ? Math.round((sum(parts.map((p) => p.pts)) / max) * 100) : 0;
-  const [word, tone] = score >= 70 ? (["Rigtig godt", "good"] as const) : score >= 40 ? (["OK", "warn"] as const) : (["Kan forbedres", "bad"] as const);
+  const [word, tone] = score >= 85 ? (["Fremragende", "good"] as const) : score >= 70 ? (["God", "good"] as const)
+    : score >= 40 ? (["Kan forbedres", "warn"] as const) : (["Opmærksomhed", "bad"] as const);
   return { score, parts, word, tone };
 }
 
@@ -337,8 +397,8 @@ export interface ForecastInput {
   /** Hele måneder før den igangværende med data, nyeste først (op til 6). */
   previousMonths: readonly YearMonth[];
   monthTxs: (m: YearMonth) => readonly Transaction[];
-  recurring: readonly RecurringExpense[];
-  salaryCategoryId: number | null;
+  recurring: readonly FixedExpenseItem[];
+  salaryCategoryId: string | null;
   classifier: Classifier;
   nextMonth: YearMonth;
   /** Eget lønskøn for næste måned (fx provisionsløn). */
@@ -359,12 +419,13 @@ export function forecastNextMonth(i: ForecastInput): ForecastResult | null {
   const pos = salVals.filter((v) => v > 0);
   const salTx = full6.flatMap((m) => i.monthTxs(m).filter(isSal));
   const dimN = daysInMonth(i.nextMonth);
-  const fromEnd = median(salTx.map((t) => daysInMonth(monthOf(t.booking_date)) - +t.booking_date.slice(8, 10)));
-  const day = salTx.length ? (fromEnd <= 3 ? dimN - fromEnd : Math.min(dimN, median(salTx.map((t) => +t.booking_date.slice(8, 10))))) : null;
+  const fromEnd = median(salTx.map((t) => daysInMonth(monthOf(t.date)) - +t.date.slice(8, 10)));
+  const day = salTx.length ? (fromEnd <= 3 ? dimN - fromEnd : Math.min(dimN, median(salTx.map((t) => +t.date.slice(8, 10))))) : null;
   const sAvg = avg(pos), sMin = pos.length ? Math.min(...pos) : 0, sMax = pos.length ? Math.max(...pos) : 0;
   const own = i.ownSalary ?? null;
   const fixedKeys = new Set(i.recurring.map((r) => r.key));
-  const fixedSum = sum(i.recurring.map((r) => r.amount));
+  // Kvartals- og årsbetalinger tæller med den måned, de forventes i
+  const fixedSum = sum(i.recurring.filter((r) => expectedMonth(r, i.nextMonth) === i.nextMonth).map((r) => r.amount));
   const varVals = full3.map((m) => { const r = i.monthTxs(m); return sumOut(r, c) - sumOut(r.filter((t) => fixedKeys.has(recurringKey(t))), c); });
   const savedAvg = Math.max(0, avg(full3.map((m) => totals(i.monthTxs(m), c).saved)));
   const otherInc = avg(full3.map((m) => sum(i.monthTxs(m).filter((t) => t.amount > 0 && c.isInc(t) && !isSal(t)).map((t) => t.amount))));
@@ -379,11 +440,11 @@ export function forecastNextMonth(i: ForecastInput): ForecastResult | null {
 }
 
 /** Kalender: lønnen fordelt ligeligt over månedens dage; dagens resultat = løn/dage + andre indtægter − udgifter. */
-export function dailyResults(month: YearMonth, monthTxs: readonly Transaction[], salary: Dkk, salaryCategoryId: number | null, c: Classifier, uptoDay: number): number[] {
+export function dailyResults(month: YearMonth, monthTxs: readonly Transaction[], salary: Dkk, salaryCategoryId: string | null, c: Classifier, uptoDay: number): number[] {
   const perDay = salary / daysInMonth(month);
   const res = Array.from({ length: uptoDay }, () => perDay);
   for (const t of monthTxs) {
-    const d = +t.booking_date.slice(8, 10);
+    const d = +t.date.slice(8, 10);
     if (d > uptoDay || !c.counts(t)) continue;
     if (c.isExp(t)) res[d - 1]! += t.amount;
     else if (c.isInc(t) && !(salaryCategoryId != null && String(c.effCat(t)) === String(salaryCategoryId))) res[d - 1]! += t.amount;
@@ -398,7 +459,7 @@ export function dailyResults(month: YearMonth, monthTxs: readonly Transaction[],
 export function goalSaved(g: SavingsGoal, txs: readonly Transaction[], c: Pick<Classifier, "effCat">): Dkk {
   if (!g.linked_category_id) return g.saved_amount;
   const since = g.linked_since ?? "0000-00-00";
-  return g.saved_amount - sum(txs.filter((t) => t.amount < 0 && t.booking_date >= since && String(c.effCat(t)) === String(g.linked_category_id)).map((t) => t.amount));
+  return g.saved_amount - sum(txs.filter((t) => t.amount < 0 && t.date >= since && String(c.effCat(t)) === String(g.linked_category_id)).map((t) => t.amount));
 }
 /** Antal måneder til en gæld er betalt (Infinity, hvis ydelsen ikke dækker renterne). */
 export function monthsToPayoff(principal: Dkk, ratePct: number | null | undefined, payment: Dkk | null | undefined): number {

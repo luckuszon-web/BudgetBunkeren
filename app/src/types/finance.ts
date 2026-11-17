@@ -1,11 +1,12 @@
 /**
- * Domænetyper for BudgetBunkeren.
+ * Domænetyper for BudgetBunkeren (domænemodellen – uafhængig af databasen).
  *
  * Konventioner:
- * - Alle beløb er i DKK. Negative beløb = penge ud (udgift), positive = penge ind.
+ * - Alle beløb er i DKK. Negativ = udgift (penge ud), positiv = indtægt (penge ind).
  * - Datoer er ISO-strenge: "YYYY-MM-DD" (dag) og "YYYY-MM" (måned).
- * - Felterne matcher kolonnerne i Supabase-databasen (snake_case), så repository-laget (fase 2)
- *   kan validere rækkerne med Zod og give dem videre uden omdøbning.
+ * - Id'er er strenge i domænet. Repository-laget (fase 2) oversætter fra databasens kolonner
+ *   (fx `booking_date` → `date`, `description` → `text`, `account_uid` → `account_id`, `note` → `notes`,
+ *   `tx_splits.tx_id` → `transaction_id`, bigint-id'er → strenge) og validerer med Zod.
  */
 
 /** ISO-dato "YYYY-MM-DD". */
@@ -28,13 +29,15 @@ export type Dkk = number;
 export type CategoryKind = "expense" | "income" | "transfer" | "oneoff" | "ignore";
 
 export interface Category {
-  id: number;
-  user_id: string;
+  id: string;
+  user_id?: string;
   name: string;
   kind: CategoryKind;
-  icon?: string | null;
-  /** Budget i kr. pr. måned – eller pr. uge, hvis `budget_week` er sand. */
-  monthly_budget?: number | null;
+  icon?: string;
+  color?: string;
+  /** Budget i kr. pr. måned (eller pr. uge, hvis `budget_week`). 0 = intet budget. */
+  monthly_budget: number;
+  sort_order?: number;
   /** Budgettet gælder pr. uge (mandag–søndag) i stedet for pr. måned. */
   budget_week?: boolean;
   /** Ubrugt budget overføres til næste måned fra og med denne måned. */
@@ -45,10 +48,10 @@ export interface Category {
 export type CategorySource = "rule" | "ai" | "manual";
 
 export interface CategoryRule {
-  id: number;
+  id: string;
   /** Tekst, der skal indgå i posteringen (æ/ø/å skrives ud; ≤ 3 tegn = helt ord). */
   pattern: string;
-  category_id: number;
+  category_id: string;
   /** 200 = egen regel, 100 = standardregel. */
   priority: number;
 }
@@ -57,16 +60,21 @@ export interface CategoryRule {
 
 export interface Transaction {
   id: string;
-  account_uid: string | null;
-  booking_date: IsoDate;
+  user_id?: string;
+  account_id?: string | null;
+  /** YYYY-MM-DD */
+  date: IsoDate;
+  text: string;
+  /** Negativ = udgift, positiv = indtægt. */
   amount: Dkk;
-  description: string;
+  category_id?: string | null;
+  notes?: string | null;
+  is_subscription?: boolean;
+  /** Modpart (afsender/modtager), hvis banken oplyser den. */
   counterparty?: string | null;
-  category_id: number | null;
   category_source?: CategorySource | null;
   /** Engangskøb markeret på selve posteringen (beholder sin kategori). */
   one_off?: boolean;
-  note?: string | null;
   /** Kunstig postering fra et indtastet beløb (løn eller kontantkøb). */
   manual?: boolean;
   /** Sat på delene, når en opdelt postering foldes ud. */
@@ -74,45 +82,46 @@ export interface Transaction {
 }
 
 /** En del af en postering, der er delt i flere kategorier. Samme fortegn som posteringen. */
-export interface TransactionSplit {
-  id: number;
-  tx_id: string;
-  category_id: number | null;
+export interface TxSplit {
+  id: string;
+  transaction_id: string;
+  category_id: string;
   amount: Dkk;
 }
 
 /** Et beløb, man selv har tastet ind (løn, der ikke kommer på en forbundet konto, eller et kontantkøb). */
 export interface ManualEntry {
-  id: number;
+  id: string;
   pay_date: IsoDate;
   /** Altid positivt; retningen står i `direction`. */
   amount: Dkk;
   direction: "in" | "out";
-  category_id: number | null;
+  category_id?: string | null;
   note?: string | null;
 }
 
 // ---------- Faste udgifter ----------
 
-/** En fast betaling fundet automatisk: samme modtager i ≥ 3 af 4 måneder med stabilt beløb. */
-export interface RecurringExpense {
+export type Cadence = "monthly" | "quarterly" | "annual";
+
+/** En fast betaling fundet automatisk. */
+export interface FixedExpenseItem {
   /** Modtagerens navn normaliseret (uden tal og referencer). */
   key: string;
   name: string;
-  /** Typisk kategori. */
-  cat: number | null;
-  /** Median pr. måned. Positiv = udgift; negativ = fast indbetaling, der modregnes (fx fremleje). */
+  /** Beløb pr. betaling – positiv værdi for udgiftens størrelse (negativ = fast indbetaling, der modregnes, fx fremleje). */
   amount: Dkk;
+  cadence: Cadence;
+  category_id?: string;
+  last_date: IsoDate;
   /** Typisk dag i måneden. */
-  day: number;
-  /** Antal af de 4 måneder, posten blev set i. */
-  months: number;
-  lastDate: IsoDate;
-  /** Beløb i seneste og forrige måned, posten blev set i. */
-  last: Dkk | null;
-  prev: Dkk | null;
-  /** Seneste minus forrige (positiv = steget). */
-  priceChange: Dkk;
+  day?: number;
+  /** Antal gange, posten er set i perioden, der blev undersøgt. */
+  occurrences?: number;
+  /** Seneste og forrige beløb, og forskellen (positiv = steget). */
+  last?: Dkk | null;
+  prev?: Dkk | null;
+  priceChange?: Dkk;
 }
 
 // ---------- Formue og mål ----------
@@ -121,21 +130,19 @@ export type AssetKind = "cash" | "investment" | "pension" | "property" | "vehicl
 export const DEBT_KINDS: ReadonlySet<AssetKind> = new Set(["loan", "mortgage", "credit"]);
 
 export interface Asset {
-  id: number;
+  id: string;
   name: string;
   kind: AssetKind;
   /** Værdi – eller restgæld for lån/kreditkort (altid positiv). */
   value: Dkk;
   /** Rente (gæld) eller forventet afkast (investering) i % pr. år. */
   rate?: number | null;
-  /** Ydelse pr. måned (gæld). */
   monthly_payment?: Dkk | null;
-  /** Indskudt i alt (investering), til beregning af afkast. */
   invested?: Dkk | null;
 }
 
 export interface SavingsGoal {
-  id: number;
+  id: string;
   name: string;
   icon?: string | null;
   target_amount: Dkk;
@@ -144,16 +151,16 @@ export interface SavingsGoal {
   monthly_amount?: Dkk | null;
   target_date?: IsoDate | null;
   /** Fyldes automatisk med udbetalinger til denne kategori fra `linked_since`. */
-  linked_category_id?: number | null;
+  linked_category_id?: string | null;
   linked_since?: IsoDate | null;
 }
 
 // ---------- Fællesøkonomi ----------
 
 export interface PotMember { user_id: string; name: string }
-export interface SharedPot { id: number; name: string; created_by: string; /** Opretterens andel i %. */ owner_pct: number }
+export interface SharedPot { id: string; name: string; created_by: string; /** Opretterens andel i %. */ owner_pct: number }
 export interface PotItem {
-  id: number;
+  id: string;
   user_id: string;
   kind: "expense" | "settle";
   item_date: IsoDate;
@@ -178,8 +185,12 @@ export interface PeriodTotals {
 
 export interface MonthSummary { month: YearMonth; income: Dkk; fixed: Dkk; variable: Dkk }
 
-export interface ScorePart { name: string; max: number; pts: number; txt: string; tip: string }
-export interface HealthScore { score: number; parts: ScorePart[]; word: string; tone: "good" | "warn" | "bad" }
+export interface HealthScoreResult {
+  score: number;
+  word: "Fremragende" | "God" | "Kan forbedres" | "Opmærksomhed";
+  tone: "good" | "warn" | "bad";
+  parts: { name: string; pts: number; max: number; txt: string; tip: string }[];
+}
 
 export interface TaxRates {
   /** Procentsatser og beløb pr. år (ATP pr. måned). */
