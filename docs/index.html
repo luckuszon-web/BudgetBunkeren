@@ -12,7 +12,8 @@
   <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
   <!-- Forsiden sender videre til appen (ny/) og tager ?… og #… med: links fra mails (invitation, glemt adgangskode)
-       og tilbagevenden fra bank-login (MitID) lander her. Den klassiske udgave ligger på klassisk.html. -->
+       og tilbagevenden fra bank-login (MitID) lander her.
+       (Den gamle udgave er fjernet; den kan findes i Git-historikken før commit 75c3376.) -->
   <script>location.replace("ny/" + location.search + location.hash);</script>
   <style>body{font-family:system-ui,sans-serif;background:#f7f7f5;color:#1c1e21;display:grid;place-items:center;min-height:100vh;margin:0}
     @media (prefers-color-scheme:dark){body{background:#0f1115;color:#e8e9ec}} a{color:#2f6fd6}</style>

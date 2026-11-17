@@ -37,7 +37,6 @@ export function SettingsPage() {
       <button type="button" onClick={signOut} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3.5 text-sm font-medium text-destructive transition-colors hover:bg-accent">
         <LogOut className="h-4 w-4" /> Log ud
       </button>
-      <p className="mt-4 text-center text-xs text-muted-foreground"><a href="../klassisk.html" className="underline">Den gamle udgave</a> (findes stadig, men alt er nu i denne app)</p>
     </>
   );
 }

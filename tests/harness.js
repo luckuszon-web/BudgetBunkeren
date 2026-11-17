@@ -1,4 +1,4 @@
-// Testmiljø (standard: den klassiske app, klassisk.html): kører docs/ lokalt i Chromium mod en falsk Supabase med opdigtede demodata (tests/fixtures/demo.json).
+// Testmiljø: kører docs/ (appen i docs/ny) lokalt i Chromium mod en falsk Supabase med opdigtede demodata (tests/fixtures/demo.json).
 // Datoen låses til 16. nov. 2026, så resultaterne er de samme hver gang.
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
@@ -94,7 +94,7 @@ async function open(opts={}){
   await page.clock.install({ time: new Date(opts.now ?? '2026-11-16T12:00:00Z') });
   await setup(page, db, log);
   if (opts.noSession) await page.addInitScript(() => localStorage.clear());
-  await page.goto(opts.url ?? SITE + 'klassisk.html'); await page.waitForTimeout(2500);
+  await page.goto(opts.url ?? SITE + 'ny/'); await page.waitForTimeout(2500);
   return { browser, page, log, errors, db };
 }
 module.exports = { open, SITE, uid };
