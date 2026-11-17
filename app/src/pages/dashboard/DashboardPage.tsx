@@ -11,6 +11,7 @@ import { currentMonth } from "@/lib/today";
 import { ForecastCard } from "./ForecastCard";
 import { HeroCard } from "./HeroCard";
 import { KeyFiguresCard } from "./KeyFiguresCard";
+import { IncomeExpenseCard } from "./IncomeExpenseCard";
 import { InsightsCard } from "./InsightsCard";
 import { ScoreCard } from "./ScoreCard";
 import { AlertBar } from "./AlertBar";
@@ -41,6 +42,7 @@ export function DashboardPage() {
         <div className="lg:col-span-2"><HeroCard d={derived} /></div>
         <ScoreCard score={extra.score} />
         <div className="lg:col-span-3"><KeyFiguresCard figures={extra.figures} /></div>
+        <div className="lg:col-span-3"><IncomeExpenseCard /></div>
         <div className="lg:col-span-2"><InsightsCard insights={derived.insights} /></div>
         <ForecastCard f={derived.forecast} month={shiftMonth(currentMonth(), 1)} />
         <div className="lg:col-span-2"><PaceCard /></div>

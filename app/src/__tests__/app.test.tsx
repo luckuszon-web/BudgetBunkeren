@@ -43,6 +43,8 @@ describe("Ny app", () => {
     expect(screen.queryByRole("region", { name: "Om Buffer" })).toBeNull();
     fireEvent.click(document.querySelector("[aria-controls=score-forklaring-opsparingsrate]")!);
     expect(screen.getByRole("region", { name: "Om Opsparingsrate" }).textContent).toMatch(/Fuldt point ved 20 %/);
+    expect(screen.getByText("Indtægter og udgifter")).toBeTruthy();
+    expect(screen.getByText(/Median faste udgifter/)).toBeTruthy();
   });
 
   it("Budget: viser bjælker og gemmer et nyt budget", async () => {
