@@ -14,7 +14,10 @@ export interface Filters {
   search: string; kind: TxKindFilter; categoryId: string | null;
   /** Valgfrit datointerval (YYYY-MM-DD). Er det sat, bruges det i stedet for den valgte periode i listen. */
   dateFrom?: string | null; dateTo?: string | null;
+  /** Rækkefølge i listen (standard: nyeste først). */
+  sort?: TxSort;
 }
+export type TxSort = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
 export interface Toast { id: number; tone: "info" | "success" | "error"; text: string }
 
 export interface FinanceState {

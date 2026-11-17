@@ -44,6 +44,17 @@ export interface FinanceDerived {
   scoreCtx: ScoreCtx;
 }
 
+/** Sortering af posteringslisten. Beløb sorteres efter størrelse (uanset om det er ud eller ind); ens beløb → nyeste først. */
+export function txSorter(sort: Filters["sort"] = "date-desc"): (a: Transaction, b: Transaction) => number {
+  const byDate = (a: Transaction, b: Transaction) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id);
+  switch (sort) {
+    case "date-asc": return (a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
+    case "amount-desc": return (a, b) => Math.abs(b.amount) - Math.abs(a.amount) || byDate(a, b);
+    case "amount-asc": return (a, b) => Math.abs(a.amount) - Math.abs(b.amount) || byDate(a, b);
+    default: return byDate;
+  }
+}
+
 export function deriveFinance(data: UserData, period: PeriodSelection, filters: Filters, today: IsoDate, ownSalary: number | null = null): FinanceDerived {
   const c = makeClassifier(data.categories, data.rules);
   const salary = data.categories.find((x) => /^løn$/i.test(x.name.trim()));
@@ -80,7 +91,7 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
       case "oneoff": return c.kindOf(t) === "oneoff";
       default: return true;
     }
-  }).sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+  }).sort(txSorter(filters.sort));
 
   // Faste udgifter og disponibelt (igangværende måned)
   const fixedExpenses = detectFixedExpenses(calcTxs, thisMonth, c);

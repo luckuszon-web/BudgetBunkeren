@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ListChecks, Plus } from "lucide-react";
+import { Check, ListChecks, Pencil, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PeriodPicker } from "@/components/layout/PeriodPicker";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +23,7 @@ export function TransactionsPage() {
   const { pots } = useServices();
   const pot = useResource((s) => s.pots.fetchPot().catch(() => null));
   const [limit, setLimit] = useState(PAGE), [splitTx, setSplitTx] = useState<Transaction | null>(null), [openTx, setOpenTx] = useState<Transaction | null>(null);
+  const [editing, setEditing] = useState(false);
   const [manual, setManual] = useState(false), [selectMode, setSelectMode] = useState(false), [sel, setSel] = useState<Set<string>>(new Set());
   const splitCount = useMemo(() => {
     const m = new Map<string, number>();
@@ -67,16 +68,19 @@ export function TransactionsPage() {
             <span>{list.length} {list.length === 1 ? "postering" : "posteringer"} {scope}</span>
             <span>Ind <Money value={sumIn} /></span><span>Ud <Money value={sumOut} /></span>
           </p>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button variant={editing ? "primary" : "ghost"} aria-pressed={editing} icon={editing ? <Check size={16} /> : <Pencil size={16} />}
+              onClick={() => setEditing(!editing)}>{editing ? "Færdig" : "Rediger"}</Button>
             <Button variant={selectMode ? "soft" : "ghost"} icon={<ListChecks size={16} />} onClick={() => (selectMode ? closeSel() : setSelectMode(true))}>Vælg</Button>
             <Button icon={<Plus size={16} />} onClick={() => setManual(true)}>Kontant</Button>
           </div>
         </div>
+        {editing && <p className="mb-2 rounded-lg bg-accent px-3 py-2 text-xs text-accent-foreground">Redigering er slået til – vælg kategori, del op eller slet. Tryk <b>Færdig</b>, når du er færdig.</p>}
         {!list.length ? <p className="py-6 text-center text-sm text-muted-foreground">Ingen posteringer matcher.</p> : (
           <ul className="divide-y divide-border">
             {list.slice(0, limit).map((t) => (
               <TransactionRow key={t.id} t={t} categories={state.data!.categories} classifier={derived.classifier} h={h}
-                splitCount={splitCount.get(t.id) ?? 0} saving={state.saving.includes(t.id)} selectMode={selectMode} selected={sel.has(t.id)} />
+                splitCount={splitCount.get(t.id) ?? 0} saving={state.saving.includes(t.id)} selectMode={selectMode} selected={sel.has(t.id)} editing={editing} />
             ))}
           </ul>
         )}

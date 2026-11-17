@@ -76,6 +76,20 @@ describe("Ny app – resten", () => {
   });
 });
 
+describe("Posteringer: sortering", () => {
+  it("største beløb først – og tilbage til nyeste først", async () => {
+    setup("/posteringer");
+    await screen.findByLabelText("Sortér posteringer");
+    const amounts = () => screen.getAllByRole("listitem").map((li) => li.querySelector(".num")?.textContent ?? "").filter(Boolean);
+    fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "amount-desc" } });
+    expect(amounts()[0]).toBe("−11.250 kr.");
+    fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "amount-asc" } });
+    expect(amounts()[0]).toBe("−272 kr.");
+    fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "date-desc" } });
+    expect(amounts()[0]).toBe("+300 kr.");   // 8. nov. er nyest
+  });
+});
+
 describe("Gæld", () => {
   it("kan tilføjes direkte fra kortet Gæld – afbetaling", async () => {
     const { plan } = setup("/planlaeg");

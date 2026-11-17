@@ -48,6 +48,9 @@ describe("Ny app", () => {
   it("Posteringer: søg, giv kategori og del en postering op", async () => {
     const { repo } = setup("/posteringer");
     fireEvent.change(await screen.findByLabelText("Søg i posteringer"), { target: { value: "wolt" } });
+    // Uden redigering kan kategorien ikke ændres
+    expect(screen.queryAllByLabelText(/Kategori for Wolt/)).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Rediger" }));
     const select = (await screen.findAllByLabelText(/Kategori for Wolt/))[0]!;
     await act(async () => { fireEvent.change(select, { target: { value: "2" } }); });
     expect(repo.saveTransaction).toHaveBeenCalledWith({ id: expect.any(String), category_id: "2" });

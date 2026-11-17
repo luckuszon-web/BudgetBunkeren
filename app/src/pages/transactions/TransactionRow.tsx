@@ -3,6 +3,7 @@ import { Loader2, Scissors, StickyNote, Trash2 } from "lucide-react";
 import { Money } from "@/components/ui/Money";
 import type { Classifier } from "@/lib/finance-engine";
 import type { Category, Transaction } from "@/types/finance";
+import { CategoryIcon } from "@/components/ui/CategoryIcon";
 import { CategorySelect } from "./CategorySelect";
 
 const fmtDate = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("da-DK", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -16,9 +17,9 @@ export interface RowHandlers {
 }
 
 /** Én postering: tryk på teksten for detaljer, hurtig kategorisering, opdeling – eller afkrydsning i "Vælg flere". */
-export const TransactionRow = memo(function TransactionRow({ t, categories, classifier, splitCount, saving, selectMode, selected, h }: {
+export const TransactionRow = memo(function TransactionRow({ t, categories, classifier, splitCount, saving, selectMode, selected, editing, h }: {
   t: Transaction; categories: readonly Category[]; classifier: Classifier; splitCount: number; saving: boolean;
-  selectMode: boolean; selected: boolean; h: RowHandlers;
+  selectMode: boolean; selected: boolean; /** Kategori kan kun ændres (og opdeling/sletning bruges) i redigeringstilstand. */ editing: boolean; h: RowHandlers;
 }) {
   const kind = classifier.kindOf(t), cat = classifier.effCat(t);
   const muted = kind === "transfer" || kind === "oneoff" || kind === "ignore";
@@ -46,17 +47,20 @@ export const TransactionRow = memo(function TransactionRow({ t, categories, clas
       </div>
       <Money value={t.amount} signed className={`text-right text-sm font-medium sm:col-start-4 sm:row-start-1 ${t.amount > 0 ? "text-success" : ""}`} />
       <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:col-start-3 sm:row-start-1">
-        {t.manual ? (
-          <span className="flex-1 truncate text-xs text-muted-foreground">{classifier.catById(cat)?.name ?? "Uden kategori"}</span>
+        {!editing || t.manual ? (
+          <span className={`flex min-w-0 flex-1 items-center gap-1.5 text-sm ${cat ? "text-muted-foreground" : "text-warning"}`}>
+            {cat && <CategoryIcon category={classifier.catById(cat) ?? { id: cat }} />}
+            <span className="truncate">{classifier.catById(cat)?.name ?? "Uden kategori"}</span>
+          </span>
         ) : (
           <CategorySelect categories={categories} value={cat} onChange={(id) => h.onCategory(t, id)} aria-label={`Kategori for ${t.text}`}
             className={`flex-1 ${!cat ? "border-warning" : ""}`} />
         )}
-        {t.manual
+        {editing && (t.manual
           ? <button type="button" onClick={() => h.onDeleteManual(t)} aria-label={`Slet ${t.text}`} className="rounded-lg border border-border p-1.5 text-muted-foreground hover:text-destructive sm:hidden"><Trash2 size={16} /></button>
-          : splitBtn("rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground sm:hidden")}
+          : splitBtn("rounded-lg border border-border p-1.5 text-muted-foreground hover:text-foreground sm:hidden"))}
       </div>
-      {t.manual
+      {!editing ? <span className="hidden sm:col-start-5 sm:row-start-1 sm:block" /> : t.manual
         ? <button type="button" onClick={() => h.onDeleteManual(t)} aria-label={`Slet ${t.text}`} className="hidden justify-self-end rounded-lg p-1.5 text-muted-foreground hover:text-destructive sm:col-start-5 sm:row-start-1 sm:block"><Trash2 size={16} /></button>
         : splitBtn("hidden justify-self-end rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground sm:col-start-5 sm:row-start-1 sm:block")}
     </li>
