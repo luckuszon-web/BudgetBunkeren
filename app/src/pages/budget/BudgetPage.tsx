@@ -13,6 +13,7 @@ import { todayIso } from "@/lib/today";
 import type { Category } from "@/types/finance";
 import { BudgetEditor } from "./BudgetEditor";
 import { BudgetRow } from "./BudgetRow";
+import { SpreadBillsCard } from "./SpreadBillsCard";
 import { SubscriptionsCard } from "./SubscriptionsCard";
 
 export function BudgetPage() {
@@ -69,7 +70,7 @@ export function BudgetPage() {
           )}
         </Card>
       </div>
-      <div className="mt-4"><SubscriptionsCard /></div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2"><SpreadBillsCard /><SubscriptionsCard /></div>
       <BudgetEditor open={!!edit} category={edit?.category ?? null} onClose={() => setEdit(null)} />
     </>
   );

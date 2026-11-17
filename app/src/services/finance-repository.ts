@@ -11,11 +11,11 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ZodError } from "zod";
-import type { Category, CategoryRule, IsoDate, ManualEntry, Transaction, TxSplit } from "@/types/finance";
+import type { BillCadence, Category, CategoryRule, IsoDate, ManualEntry, Transaction, TxSplit } from "@/types/finance";
 import { matchesRule } from "@/lib/finance-engine";
 import {
-  AccountRow, CategoryInput, CategoryRow, ManualEntryInput, ManualRow, RuleKeywordInput, RuleRow, SplitRow, TransactionPatchInput,
-  TransactionRow, parseRows, validateSplits, type Account, type CategoryDraft, type TransactionPatch,
+  AccountRow, CadenceRow, CategoryInput, CategoryRow, ManualEntryInput, ManualRow, RuleKeywordInput, RuleRow, SplitRow, TransactionPatchInput,
+  TransactionRow, CadenceInput, parseRows, validateSplits, type Account, type CategoryDraft, type TransactionPatch,
 } from "./schemas";
 import type { OfflineCache } from "./offline-cache";
 
@@ -50,6 +50,8 @@ export interface UserData {
   splits: TxSplit[];
   manualEntries: ManualEntry[];
   accounts: Account[];
+  /** Regninger markeret som kvartalsvise/halvårlige/årlige (nøgle = modtager). Mangler i ældre cache. */
+  billCadences?: Record<string, BillCadence>;
   /** Rækker, der ikke bestod valideringen (bør være 0). */
   rejected: number;
   fetchedAt: string;
@@ -77,7 +79,7 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
         const t = new Date(`${d}T00:00:00Z`);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(t.getTime()) || t.toISOString().slice(0, 10) !== d) throw new RepositoryError(`Ugyldig dato: ${d}`, "validation");
       }
-      const [cats, rules, txs, splits, manual, accounts] = await Promise.all([
+      const [cats, rules, txs, splits, manual, accounts, cadences] = await Promise.all([
         sb.from("categories").select("*").eq("user_id", userId).order("name"),
         fetchPaged((a, b) => sb.from("rules").select("id, pattern, category_id, priority").eq("user_id", userId).order("id").range(a, b)),
         fetchPaged((a, b) => sb.from("transactions").select("*").eq("user_id", userId).gte("booking_date", period.from).lte("booking_date", period.to)
@@ -85,6 +87,7 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
         sb.from("tx_splits").select("id, tx_id, category_id, amount").eq("user_id", userId),
         sb.from("manual_income").select("*").eq("user_id", userId).gte("pay_date", period.from).lte("pay_date", period.to),
         sb.from("accounts").select("*").eq("user_id", userId),
+        sb.from("bill_cadence").select("key, cadence").eq("user_id", userId),
       ]);
       const C = parseRows(CategoryRow, must(cats as Result<unknown[]>)), R = parseRows(RuleRow, rules), T = parseRows(TransactionRow, txs);
       // Tabeller fra senere databaseopdateringer må gerne mangle (så er listen bare tom)
@@ -96,6 +99,7 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
         categories: C.items.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "da")),
         rules: R.items, transactions: T.items.filter((t) => !t.account_id || !hidden.has(t.account_id)),
         splits: S.items, manualEntries: M.items, accounts: A.items,
+        billCadences: Object.fromEntries(parseRows(CadenceRow, (cadences as Result<unknown[]>).error ? [] : (cadences as Result<unknown[]>).data).items.map((x) => [x.key, x.cadence])),
         rejected: C.rejected + R.rejected + T.rejected + S.rejected + M.rejected + A.rejected, fetchedAt: new Date().toISOString(),
       };
       await cache?.save(userId, data);
@@ -132,6 +136,13 @@ export function createFinanceRepository(sb: SupabaseClient, cache?: OfflineCache
       if (!Object.keys(row).length || !bank.length) return 0;
       for (let i = 0; i < bank.length; i += 100) must(await sb.from("transactions").update(row).in("id", bank.slice(i, i + 100)));
       return bank.length;
+    }),
+
+    /** Markér en regning (modtager) som kvartalsvis/halvårlig/årlig – eller fjern markeringen (null). */
+    saveBillCadence: (key: string, cadence: BillCadence | null): Promise<void> => run(async () => {
+      const k = CadenceInput.parse({ key, cadence });
+      if (k.cadence) must(await sb.from("bill_cadence").upsert({ key: k.key, cadence: k.cadence }, { onConflict: "user_id,key" }).select("key"));
+      else must(await sb.from("bill_cadence").delete().eq("key", k.key));
     }),
 
     /** Opretter et indtastet beløb (løn eller kontantkøb). */

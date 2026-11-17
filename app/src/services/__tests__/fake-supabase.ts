@@ -16,6 +16,7 @@ export function createFakeSupabase(tables: Record<string, Row[]>, userId: string
   function builder(table: string) {
     const rows = (tables[table] ??= []);
     let op: "select" | "update" | "insert" | "delete" = "select";
+    let conflict: string[] | null = null;   // upsert: kolonner, der afgør "samme række"
     let payload: Row | Row[] | null = null;
     const filters: Filter[] = [(r) => !("user_id" in r) || r.user_id === userId];   // RLS
     let range: [number, number] | null = null, single = false, orderCol: string | null = null, asc = true;
@@ -23,7 +24,8 @@ export function createFakeSupabase(tables: Record<string, Row[]>, userId: string
     const exec = () => {
       if (op === "insert") {
         if (table === "transactions") return denied("permission denied for table transactions");
-        const list = (Array.isArray(payload) ? payload : [payload!]).map((p) => ({ id: nextId++, user_id: userId, ...p }));
+        const list: Row[] = (Array.isArray(payload) ? payload : [payload!]).map((p) => ({ id: nextId++, user_id: userId, ...p }));
+        if (conflict) for (const r of list) { const i = rows.findIndex((x) => conflict!.every((c) => String(x[c]) === String(r[c]))); if (i >= 0) rows.splice(i, 1); }
         rows.push(...list); calls.push({ table, op, payload });
         return finish(list);
       }
@@ -50,6 +52,7 @@ export function createFakeSupabase(tables: Record<string, Row[]>, userId: string
     const b: Record<string, unknown> = {
       select: () => b,
       insert: (p: Row | Row[]) => { op = "insert"; payload = p; return b; },
+      upsert: (p: Row | Row[], o?: { onConflict?: string }) => { op = "insert"; payload = p; conflict = (o?.onConflict ?? "id").split(",").map((x) => x.trim()); return b; },
       update: (p: Row) => { op = "update"; payload = p; return b; },
       delete: () => { op = "delete"; return b; },
       eq: (c: string, v: unknown) => { filters.push((r) => String(r[c]) === String(v)); return b; },

@@ -70,3 +70,21 @@ describe("rådgiverens sammendrag", () => {
     expect(JSON.stringify(ctx)).not.toMatch(/acc1/);
   });
 });
+
+describe("regninger fordelt i budgettet", () => {
+  it("kvartalsregning tæller 1/3 i betalingsmåneden og de 2 næste – og ikke med fuldt beløb", async () => {
+    const { spreadBills } = await import("../bill-spread");
+    const data = sampleData();
+    data.transactions.push(tx("2026-08-20", -900, "Ejendomsskat", "3"), tx("2026-11-20", -930, "Ejendomsskat", "3"));
+    const d = derive(data), s = spreadBills(d.calcTxs, d.classifier, { ejendomsskat: "quarterly" });
+    expect(s.share("3", "2026-07")).toBe(0);
+    expect(s.share("3", "2026-08")).toBe(300);
+    expect(s.share("3", "2026-10")).toBe(300);
+    expect(s.share("3", "2026-11")).toBe(310);
+    expect(s.isSpread(data.transactions.at(-1)!)).toBe(true);
+    expect(s.bills[0]).toMatchObject({ name: "Ejendomsskat", cadence: "quarterly", categoryId: "3", lastAmount: 930, monthly: 310 });
+    // Kommer betalingen for sent, fortsætter fordelingen (intet hul) – men højst 2 perioder
+    expect(s.share("3", "2027-04")).toBe(310);
+    expect(s.share("3", "2027-05")).toBe(0);
+  });
+});

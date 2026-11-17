@@ -5,6 +5,8 @@ import { avg, elapsedFraction, healthScore, monthBudget, monthOf, recurringKey, 
 export interface ScoreCtx {
   c: Classifier; categories: readonly Category[]; monthTxs: (m: YearMonth) => readonly Transaction[];
   prevMonths: (m: YearMonth, n: number) => YearMonth[]; fixedExpenses: readonly FixedExpenseItem[]; today: IsoDate;
+  /** Forbrug i en budgetkategori (med fordelte regninger). Standard: alt i måneden. */
+  budgetSpent?: (cat: Category, m: YearMonth) => number;
   /** Kontanter/opsparing (Planlæg) – giver bufferpoint, hvis kendt. */
   cash?: number | null;
 }
@@ -21,7 +23,7 @@ export function scoreFor(m: YearMonth, x: ScoreCtx): HealthScoreResult & { budge
   const outProj = fixedOut + missing + (sumOut(tx, c) - fixedOut) / (isCur ? Math.max(f, 0.2) : 1);
   const avgOut = avg(prev.map((q) => totals(x.monthTxs(q), c).out));
   const budgeted = x.categories.filter((k) => k.kind === "expense" && k.monthly_budget > 0);
-  const spent = (cat: Category) => sumOut(tx.filter((t) => String(c.effCat(t)) === cat.id), c);
+  const spent = (cat: Category) => (x.budgetSpent ? x.budgetSpent(cat, m) : sumOut(tx.filter((t) => String(c.effCat(t)) === cat.id), c));
   const budgetsOk = budgeted.filter((cat) => spent(cat) <= monthBudget(cat, m) * Math.min(1, f * 1.1)).length;
   const sc = healthScore({
     savingsRate: expInc ? (expInc - outProj) / expInc : 0, budgetsOk, budgetsTotal: budgeted.length,

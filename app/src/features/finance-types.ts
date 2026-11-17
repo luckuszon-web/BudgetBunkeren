@@ -1,12 +1,12 @@
 /** Typer for FinanceStore (adskilt, så storen holder sig kort). */
-import type { Category } from "@/types/finance";
+import type { BillCadence, Category } from "@/types/finance";
 import type { AuthService, AuthUser, CategoryDraft, FinanceRepository } from "@/services";
 import type { FinanceDerived } from "./finance-selectors";
 import type { Filters, FinanceState, PeriodSelection } from "./finance-state";
 
 export type FinanceServices = {
   repo: Pick<FinanceRepository, "fetchAllUserData" | "loadCached" | "saveTransaction" | "saveSplits" | "saveCategory" | "createRuleAndReclassify"
-    | "saveTransactionsBulk" | "saveManualEntry" | "deleteTransaction">;
+    | "saveTransactionsBulk" | "saveManualEntry" | "deleteTransaction" | "saveBillCadence">;
   auth: Pick<AuthService, "currentUser">;
 };
 export interface FinanceActions {
@@ -25,6 +25,8 @@ export interface FinanceActions {
   /** Indtastet beløb (løn eller kontantkøb). */
   addManual(entry: { pay_date: string; amount: number; direction: "in" | "out"; category_id?: string | null; note?: string | null }): Promise<boolean>;
   deleteManual(id: string): Promise<boolean>;
+  /** Markér en regning (modtager-nøgle) som kvartalsvis/halvårlig/årlig – null = almindelig. Fordeles i budgettet. */
+  setBillCadence(key: string, cadence: BillCadence | null): Promise<boolean>;
   dismissToast(id: number): void;
   /** Vis en kort besked (fx fra andre sider). */
   notify(tone: "info" | "success" | "error", text: string): void;

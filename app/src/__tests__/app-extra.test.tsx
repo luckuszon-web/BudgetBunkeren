@@ -57,3 +57,18 @@ describe("Ny app – det, der før kun var i den klassiske", () => {
     expect(localStorage.getItem("theme")).toBe("dark");
   });
 });
+
+describe("Regninger, der betales en gang imellem", () => {
+  it("markeres på posteringen og vises under Budget", async () => {
+    const { repo } = setup("/posteringer");
+    fireEvent.change(await screen.findByLabelText("Søg i posteringer"), { target: { value: "boligforeningen" } });
+    fireEvent.click((await screen.findAllByText("Boligforeningen", { selector: "p" }))[0]!);
+    await act(async () => { fireEvent.change(screen.getByLabelText("Betales hver"), { target: { value: "quarterly" } }); });
+    expect(repo.saveBillCadence).toHaveBeenCalledWith("boligforeningen", "quarterly");
+    expect(screen.getByText(/Fordeles i budgettet/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Færdig" }));
+    fireEvent.click(screen.getAllByRole("link", { name: "Budget" })[0]!);
+    expect(await screen.findByText("Regninger fordelt i budgettet")).toBeTruthy();
+    expect(screen.getByText(/Hvert kvartal/)).toBeTruthy();
+  });
+});

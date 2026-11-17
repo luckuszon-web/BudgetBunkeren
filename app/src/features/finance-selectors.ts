@@ -12,6 +12,7 @@ import {
 import { periodRange, type Filters, type PeriodSelection } from "./finance-state";
 import { buildInsights, type Insight } from "./insights";
 import { scoreFor, type ScoreCtx } from "./score";
+import { spreadBills, type SpreadBill } from "./bill-spread";
 
 export interface BudgetStatus { category: Category; spent: number; budget: number; ratio: number }
 export interface FinanceDerived {
@@ -37,6 +38,8 @@ export interface FinanceDerived {
   monthTxs: (m: YearMonth) => Transaction[];
   /** Op til n måneder med data før m (nyeste først). */
   prevMonths: (m: YearMonth, n: number) => YearMonth[];
+  /** Regninger fordelt over månederne i budgettet. */
+  spreadBills: SpreadBill[];
   /** Til scoreFor() for andre måneder (fx månedsrapporten). */
   scoreCtx: ScoreCtx;
 }
@@ -85,8 +88,10 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   const prev3 = prevMonths(thisMonth, 3);
   const avail = isCurrent ? available({ monthTxs: monthTxs(thisMonth), previousIncomes: prev3.map((m) => totals(monthTxs(m), c).inc), recurring: fixedExpenses, classifier: c, today }) : null;
 
-  // Budgetter i perioden
-  const spentIn = (cat: Category, months: YearMonth[]) => sumOut(months.flatMap(monthTxs).filter((t) => String(c.effCat(t)) === cat.id), c);
+  // Budgetter i perioden. Regninger markeret som kvartalsvise/halvårlige/årlige fordeles over månederne (kun i budgettet).
+  const spread = spreadBills(calcTxs, c, data.billCadences ?? {});
+  const spentIn = (cat: Category, months: YearMonth[]) =>
+    sumOut(months.flatMap(monthTxs).filter((t) => String(c.effCat(t)) === cat.id && !spread.isSpread(t)), c) + months.reduce((s, m) => s + spread.share(cat.id, m), 0);
   const budgets: BudgetStatus[] = data.categories.filter((x) => x.kind === "expense" && x.monthly_budget > 0).map((cat) => {
     const budget = range.months.reduce((s, m) => s + monthBudget(cat, m, (q2) => spentIn(cat, [q2])), 0);
     const spent = spentIn(cat, range.months);
@@ -95,7 +100,7 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   const overBudget = budgets.filter((b) => b.spent > b.budget);
 
   // Sundhedsscore for den valgte måned (ved år: den igangværende)
-  const scoreCtx = { c, categories: data.categories, monthTxs, prevMonths, fixedExpenses, today };
+  const scoreCtx = { c, categories: data.categories, monthTxs, prevMonths, fixedExpenses, today, budgetSpent: (cat: Category, m: YearMonth) => spentIn(cat, [m]) };
   const score = scoreFor(period.gran === "month" ? period.key : thisMonth, scoreCtx);
 
   const forecast = forecastNextMonth({ previousMonths: prevMonths(thisMonth, 6), monthTxs, recurring: fixedExpenses, salaryCategoryId,
@@ -105,6 +110,6 @@ export function deriveFinance(data: UserData, period: PeriodSelection, filters: 
   const insights = buildInsights({ classifier: c, categories: data.categories, monthTxs, today, period, budgets, fixedExpenses, uncategorizedCount });
   return {
     insights, classifier: c, salaryCategoryId, calcTxs, listTxs, periodTotals, fixedExpenses, available: avail, budgets, overBudget, score, forecast,
-    uncategorizedCount, monthsWithData, monthTxs, prevMonths, scoreCtx,
+    uncategorizedCount, monthsWithData, monthTxs, prevMonths, scoreCtx, spreadBills: spread.bills,
   };
 }

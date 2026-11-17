@@ -30,6 +30,7 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot }: { sign
     saveTransactionsBulk: vi.fn(async (ids: string[]) => ids.length),
     saveManualEntry: vi.fn(async (e: { pay_date: string; amount: number; direction: "in" | "out" }) => ({ id: "m1", category_id: null, note: null, ...e })),
     deleteTransaction: vi.fn(async () => {}),
+    saveBillCadence: vi.fn(async () => {}),
   };
   const plan = {
     fetchPlan: vi.fn(async () => ({

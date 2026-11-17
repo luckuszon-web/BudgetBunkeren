@@ -4,7 +4,7 @@
  * Optimistiske opdateringer: UI ændres med det samme (`txPatched`, `splitsReplaced`, `categoryUpserted`, `ruleApplied`),
  * og hvis gemningen fejler, rulles præcis den ændring tilbage med de gamle værdier, handlingen havde med.
  */
-import type { Category, CategoryRule, ManualEntry, Transaction, TxSplit, YearMonth } from "@/types/finance";
+import type { BillCadence, Category, CategoryRule, ManualEntry, Transaction, TxSplit, YearMonth } from "@/types/finance";
 import type { UserData } from "@/services";
 
 export type Granularity = "month" | "year";
@@ -58,6 +58,7 @@ export type FinanceAction =
   | { type: "ruleReverted"; ruleId: string; changes: { id: string; previous: Partial<TxEditable> }[] }
   | { type: "manualAdded"; entry: ManualEntry }
   | { type: "manualRemoved"; id: string }
+  | { type: "billCadenceSet"; key: string; cadence: BillCadence | null }
   | { type: "savingStarted"; id: string }
   | { type: "savingDone"; id: string }
   | { type: "toastAdded"; toast: Toast }
@@ -116,6 +117,12 @@ export function financeReducer(s: FinanceState, a: FinanceAction): FinanceState 
       return s.data ? { ...s, data: { ...s.data, manualEntries: [...s.data.manualEntries.filter((m) => m.id !== a.entry.id), a.entry] } } : s;
     case "manualRemoved":
       return s.data ? { ...s, data: { ...s.data, manualEntries: s.data.manualEntries.filter((m) => m.id !== a.id) } } : s;
+    case "billCadenceSet": {
+      if (!s.data) return s;
+      const billCadences = { ...(s.data.billCadences ?? {}) };
+      if (a.cadence) billCadences[a.key] = a.cadence; else delete billCadences[a.key];
+      return { ...s, data: { ...s.data, billCadences } };
+    }
     case "savingStarted":
       return { ...s, saving: [...s.saving, a.id] };
     case "savingDone": {

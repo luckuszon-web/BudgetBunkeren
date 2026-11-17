@@ -8,6 +8,7 @@ import { useFinance } from "@/features/finance-store";
 import { useAction, useResource, useServices } from "@/features/services-context";
 import { groupKey } from "@/lib/finance-engine";
 import type { Transaction } from "@/types/finance";
+import { BillCadenceField } from "./BillCadenceField";
 import { CategorySelect } from "./CategorySelect";
 
 /** Detaljer for én postering: note, engangskøb, opdeling, regel for lignende posteringer og "læg i fælles post". */
@@ -42,6 +43,7 @@ export function TxDialog({ tx, onClose, onSplit }: { tx: Transaction | null; onC
           <input type="checkbox" checked={!!live.one_off} onChange={(e) => void actions.setOneOff(live.id, e.target.checked)} className="h-4 w-4" />
           Engangskøb – hold udenfor forbrug og grafer (beholder kategorien)
         </label>
+        {live.amount < 0 && !live.manual && <BillCadenceField tx={live} />}
         <Button icon={<Scissors size={16} />} onClick={() => onSplit(live)}>Del op i flere kategorier</Button>
 
         <fieldset className="rounded-xl border border-line p-3">

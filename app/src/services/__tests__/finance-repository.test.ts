@@ -107,6 +107,21 @@ describe("indtastede beløb og sletning", () => {
   });
 });
 
+describe("regningers hyppighed (bill_cadence)", () => {
+  it("gemmes, rettes og fjernes – og hentes med data", async () => {
+    await repo.saveBillCadence("tryg forsikring", "annual");
+    await repo.saveBillCadence("tryg forsikring", "quarterly");
+    expect(fake.tables.bill_cadence!.filter((r) => r.key === "tryg forsikring")).toEqual([expect.objectContaining({ cadence: "quarterly", user_id: ME })]);
+    expect((await repo.fetchAllUserData(ME, { from: "2026-10-01", to: "2026-11-30" })).billCadences).toEqual({ "tryg forsikring": "quarterly" });
+    await repo.saveBillCadence("tryg forsikring", null);
+    expect(fake.tables.bill_cadence!.length).toBe(0);
+  });
+  it("afviser ukendte hyppigheder og tomme nøgler", async () => {
+    await expect(repo.saveBillCadence("x", "weekly" as never)).rejects.toMatchObject({ code: "validation" });
+    await expect(repo.saveBillCadence("  ", "annual")).rejects.toMatchObject({ code: "validation" });
+  });
+});
+
 describe("saveSplits", () => {
   it("erstatter opdelingen og validerer mod beløbet fra databasen", async () => {
     const parts = await repo.saveSplits("t1", [{ category_id: "2", amount: -200 }, { category_id: "1", amount: -74.11 }]);

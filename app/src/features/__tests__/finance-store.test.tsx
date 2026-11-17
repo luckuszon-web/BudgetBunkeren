@@ -24,6 +24,7 @@ function setup(overrides: Partial<FinanceServices["repo"]> = {}, cached: UserDat
     saveTransactionsBulk: vi.fn(async (ids: string[]) => ids.length),
     saveManualEntry: vi.fn(async (e) => ({ id: "m9", ...e, direction: e.direction, category_id: e.category_id ?? null, note: e.note ?? null } as never)),
     deleteTransaction: vi.fn(async () => {}),
+    saveBillCadence: vi.fn(async () => {}),
     ...overrides,
   };
   const services: FinanceServices = { repo, auth: { currentUser: async () => ({ id: "me", email: "me@example.com" }) } };
@@ -138,6 +139,23 @@ describe("FinanceStore", () => {
     expect(result.current.derived!.listTxs.some((t) => t.id === "manual-m9" && t.amount === -250)).toBe(true);
     await act(async () => { await result.current.actions.deleteManual("m9"); });
     expect(result.current.state.data!.manualEntries.some((m) => m.id === "m9")).toBe(false);
+  });
+
+  it("regning markeret som årlig fordeles i budgettet – og tilbage ved fejl", async () => {
+    const data = sampleData();
+    data.transactions.push({ id: "ins", account_id: "acc1", date: "2026-11-02", amount: -1200, text: "Tryg Forsikring", counterparty: null, category_id: "2", category_source: "rule" });
+    const { result, repo } = setup({ fetchAllUserData: vi.fn(async () => data) });
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    const rest = () => result.current.derived!.budgets.find((b) => b.category.id === "2")!.spent;
+    expect(rest()).toBe(900 - 300 + 272 * 0 + 1200);   // Wolt 900 − tilbagebetaling 300 + forsikring 1.200 (nov-wolt2 har ingen kategori)
+    await act(async () => { await result.current.actions.setBillCadence("tryg forsikring", "annual"); });
+    expect(repo.saveBillCadence).toHaveBeenCalledWith("tryg forsikring", "annual");
+    expect(rest()).toBe(600 + 100);                      // 1.200 / 12
+    expect(result.current.derived!.periodTotals.out).toBeGreaterThan(1200);   // overblikket viser stadig hele betalingen
+    const f = setup({ fetchAllUserData: vi.fn(async () => data), saveBillCadence: vi.fn(async () => { throw new RepositoryError("Ingen forbindelse", "network"); }) });
+    await waitFor(() => expect(f.result.current.state.status).toBe("ready"));
+    await act(async () => { await f.result.current.actions.setBillCadence("tryg forsikring", "annual"); });
+    expect(f.result.current.state.data!.billCadences).toEqual({});
   });
 
   it("periode og filtre ændrer de beregnede værdier", async () => {

@@ -61,6 +61,7 @@ export const AccountRow = z.object({
   last4: r.iban_last4 ?? null, lastSyncedAt: r.last_synced_at ?? null, connected: !!r.session_id }));
 export type Account = z.output<typeof AccountRow>;
 
+export const CadenceRow = z.object({ key: z.string().min(1).max(200), cadence: z.enum(["quarterly", "halfyear", "annual"]) });
 /** Validerer en liste rækker; ugyldige rækker springes over (og tælles), så én dårlig række ikke vælter appen. */
 export function parseRows<S extends z.ZodTypeAny>(schema: S, rows: unknown[] | null | undefined): { items: z.output<S>[]; rejected: number } {
   const items: z.output<S>[] = [];
@@ -117,3 +118,9 @@ export type CategoryDraft = z.input<typeof CategoryInput>;
 
 /** Søgeord til en regel: mindst 2 tegn efter trim (korte ord rammer for bredt). */
 export const RuleKeywordInput = safeText(60).pipe(z.string().min(2, "Søgeordet skal være mindst 2 tegn"));
+
+/** Markering af en regnings hyppighed (null = fjern). */
+export const CadenceInput = z.object({
+  key: z.string().trim().min(1, "Ukendt modtager").max(200),
+  cadence: z.enum(["quarterly", "halfyear", "annual"]).nullable(),
+}).strict();

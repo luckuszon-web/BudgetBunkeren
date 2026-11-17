@@ -103,6 +103,8 @@ export interface ManualEntry {
 // ---------- Faste udgifter ----------
 
 export type Cadence = "monthly" | "quarterly" | "annual";
+/** Hyppighed, du selv har markeret for en regning (fordeles i budgettet). */
+export type BillCadence = "quarterly" | "halfyear" | "annual";
 
 /** En fast betaling fundet automatisk. */
 export interface FixedExpenseItem {

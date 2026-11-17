@@ -11,6 +11,7 @@ import type { Category, CategoryRule, Transaction, TxSplit } from "@/types/finan
 import { daysInMonth, matchesRule, shiftMonth } from "@/lib/finance-engine";
 import { getServices, type AuthUser, RepositoryError } from "@/services";
 import { friendly } from "./friendly-error";
+import { extraActions } from "./finance-extra-actions";
 import { deriveFinance } from "./finance-selectors";
 import { financeReducer, initialState, type Toast, type TxEditable } from "./finance-state";
 import type { FinanceActions, FinanceContextValue, FinanceServices } from "./finance-types";
@@ -152,26 +153,7 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
       }
     },
 
-    async patchMany(ids, patch) {
-      const txs = (stateRef.current.data?.transactions ?? []).filter((t) => ids.includes(t.id) && !t.manual);
-      if (!txs.length) return false;
-      const full: Partial<TxEditable> = patch.category_id !== undefined ? { ...patch, category_source: patch.category_id ? "manual" : null } : { ...patch };
-      const prev = txs.map((t) => ({ id: t.id, previous: Object.fromEntries(Object.keys(full).map((k) => [k, t[k as keyof TxEditable] ?? null])) as Partial<TxEditable> }));
-      for (const t of txs) dispatch({ type: "txPatched", id: t.id, patch: full });
-      try { const n = await svc.repo.saveTransactionsBulk(txs.map((t) => t.id), patch); toast("success", `${n} ${n === 1 ? "postering" : "posteringer"} opdateret.`); return true; }
-      catch (e) { for (const p of prev) dispatch({ type: "txReverted", id: p.id, previous: p.previous }); toast("error", friendly(e)); return false; }
-    },
-    async addManual(entry) {
-      try { const saved = await svc.repo.saveManualEntry(entry); dispatch({ type: "manualAdded", entry: saved }); toast("success", "Beløbet er gemt."); return true; }
-      catch (e) { toast("error", friendly(e).replace(" Ændringen er fortrudt.", "")); return false; }
-    },
-    async deleteManual(id) {
-      const old = stateRef.current.data?.manualEntries.find((m) => m.id === id);
-      if (!old) return false;
-      dispatch({ type: "manualRemoved", id });
-      try { await svc.repo.deleteTransaction(`manual-${id}`); return true; }
-      catch (e) { dispatch({ type: "manualAdded", entry: old }); toast("error", friendly(e)); return false; }
-    },
+    ...extraActions({ svc, stateRef, dispatch, toast }),
 
     dismissToast: (id) => dispatch({ type: "toastDismissed", id }), notify: (tone, text) => toast(tone, text),
   }), [refresh, patchTx, svc, toast]);
