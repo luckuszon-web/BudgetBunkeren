@@ -1,19 +1,11 @@
 // AI-økonomisk rådgiver.
+// Grundinstruktion: prompt.ts. Satser/pejlemærker/formler: knowledge.ts.
 // Siden sender spørgsmålet + et sammendrag af din økonomi (tal pr. måned og kategori, faste udgifter, mål, formue).
 // Kun indloggede brugere kan kalde funktionen. API-nøglen ligger kun her (Supabase → Edge Functions → Secrets).
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { cors, json, userFromRequest } from "../_shared/common.ts";
-
-const SYSTEM = `Du er en venlig og konkret økonomisk rådgiver i en personlig budget-app. Brugeren er dansk.
-Svar altid på dansk, kort og præcist (typisk 3-8 sætninger eller en kort punktliste), og brug brugerens egne tal.
-Du får et sammendrag af brugerens økonomi som JSON. Beløb er i danske kroner. Negative beløb er udgifter.
-"transfer"-kategorier (opsparing, overførsler mellem egne konti) er ikke forbrug.
-Regler:
-- Byg svaret på tallene. Nævn konkrete kategorier, beløb og ændringer, når det er relevant.
-- Hvis data mangler for at svare, så sig det og foreslå, hvad brugeren kan gøre.
-- Giv realistiske, handlingsrettede forslag. Ingen moraliseren.
-- Du giver ikke individuel investeringsrådgivning om konkrete værdipapirer; hold dig til generelle principper.
-- Formatér beløb som "1.234 kr.". Brug **fed** sparsomt til de vigtigste tal.`;
+import { SYSTEM } from "./prompt.ts";
+import { knowledgeFor } from "./knowledge.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -34,6 +26,8 @@ Deno.serve(async (req) => {
       .map((m: { role: "user" | "assistant"; content: string }) => ({ role: m.role, content: m.content.slice(0, 4000) }));
     if (!history.length || history[history.length - 1].role !== "user") return json({ error: "Mangler et spørgsmål." }, 400);
 
+    // Kun relevante videnmoduler (skat, pejlemærker, formler) ud fra de seneste spørgsmål.
+    const knowledge = knowledgeFor(history.filter((m) => m.role === "user").slice(-3).map((m) => m.content));
     const client = new Anthropic();   // læser ANTHROPIC_API_KEY
     const response = await client.beta.messages.create({
       model: Deno.env.get("ADVISOR_MODEL") ?? "claude-opus-5-5",
@@ -42,7 +36,8 @@ Deno.serve(async (req) => {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       system: [
-        { type: "text", text: SYSTEM },
+        { type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } },
+        ...(knowledge ? [{ type: "text" as const, text: knowledge }] : []),
         { type: "text", text: "Brugerens økonomi (JSON):\n" + JSON.stringify(body.context ?? {}).slice(0, 150_000) },
       ],
       messages: history,
