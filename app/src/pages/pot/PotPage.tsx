@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/layout/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useFinance } from "@/features/finance-store";
@@ -26,7 +27,7 @@ export function PotPage() {
   return (
     <>
       <PageHeader title={d?.pot.name ?? "Fælles post"} subtitle={d ? d.members.map((m) => m.name).join(" og ") : "Del fælles udgifter med en anden"} />
-      {pot.loading && !d && !pot.error && <p className="text-sm text-muted-foreground">Henter …</p>}
+      {pot.loading && !d && !pot.error && <div role="status" aria-label="Henter" className="space-y-4"><Skeleton className="h-32 w-full rounded-2xl" /><Skeleton className="h-48 w-full rounded-2xl" /></div>}
       {pot.error && <Card><p role="alert" className="text-sm text-destructive">{pot.error}</p></Card>}
       {!pot.loading && !pot.error && !d && <CreatePotCard onCreated={reload} />}
       {d && (

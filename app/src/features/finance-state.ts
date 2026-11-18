@@ -21,7 +21,8 @@ export interface Filters {
   sort?: TxSort;
 }
 export type TxSort = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
-export interface Toast { id: number; tone: "info" | "success" | "error"; text: string }
+/** Besked nederst; `action` giver en knap, fx "Fortryd". */
+export interface Toast { id: number; tone: "info" | "success" | "error"; text: string; action?: { label: string; run: () => void } }
 
 export interface FinanceState {
   status: "idle" | "loading" | "ready" | "error";

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Loader2, RefreshCw, WifiOff } from "lucide-react";
+import { RefreshCw, WifiOff } from "lucide-react";
+import { SkeletonPage } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
 import { useFinance } from "@/features/finance-store";
 
@@ -15,5 +16,5 @@ export function LoadState({ children }: { children: ReactNode }) {
       <Button variant="primary" className="mt-4" icon={<RefreshCw size={16} />} onClick={() => void actions.refresh()}>Prøv igen</Button>
     </div>
   );
-  return <div className="mt-24 flex justify-center text-muted-foreground"><Loader2 className="animate-spin" aria-label="Henter dine data" /></div>;
+  return <SkeletonPage />;
 }

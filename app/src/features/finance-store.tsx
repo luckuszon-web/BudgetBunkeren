@@ -38,10 +38,10 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
   /** Er der vist data (fra cache eller net)? Sættes med det samme – stateRef opdateres først ved næste render. */
   const hasData = useRef(false);
 
-  const toast = useCallback((tone: Toast["tone"], text: string) => {
+  const toast = useCallback((tone: Toast["tone"], text: string, action?: Toast["action"]) => {
     const id = ++toastSeq.current;
-    dispatch({ type: "toastAdded", toast: { id, tone, text } });
-    if (toastMs > 0) setTimeout(() => dispatch({ type: "toastDismissed", id }), toastMs);
+    dispatch({ type: "toastAdded", toast: { id, tone, text, ...(action ? { action } : {}) } });
+    if (toastMs > 0) setTimeout(() => dispatch({ type: "toastDismissed", id }), action ? toastMs * 1.75 : toastMs);   // lidt længere tid til at fortryde
   }, [toastMs]);
 
   // ---------- Hentning: cache straks, net bagefter ----------
@@ -89,15 +89,27 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
     finally { dispatch({ type: "savingDone", id: txId }); }
   }, [toast]);
 
+  const actionsRef = useRef<FinanceActions | null>(null);   // til "Fortryd", der kalder handlingerne igen
   const actions: FinanceActions = useMemo(() => ({
     refresh,
     setPeriod: (period) => dispatch({ type: "periodSet", period }),
     stepPeriod: (delta) => dispatch({ type: "periodStepped", delta }),
     setFilters: (filters) => dispatch({ type: "filtersSet", filters }),
 
-    setCategory: (txId, categoryId) => patchTx(txId, { category_id: categoryId, category_source: categoryId ? "manual" : null },
-      () => svc.repo.saveTransaction({ id: txId, category_id: categoryId })),
-    setOneOff: (txId, oneOff) => patchTx(txId, { one_off: oneOff }, () => svc.repo.saveTransaction({ id: txId, one_off: oneOff })),
+    async setCategory(txId, categoryId, opts) {
+      const before = stateRef.current.data?.transactions.find((t) => t.id === txId);
+      const ok = await patchTx(txId, { category_id: categoryId, category_source: categoryId ? "manual" : null }, () => svc.repo.saveTransaction({ id: txId, category_id: categoryId }));
+      if (ok && before && !opts?.silent) {
+        const prev = before.category_id ?? null, name = categoryId ? stateRef.current.data?.categories.find((c) => c.id === categoryId)?.name : null;
+        toast("success", name ? `Kategori: ${name}` : "Kategorien er fjernet", { label: "Fortryd", run: () => void actionsRef.current?.setCategory(txId, prev, { silent: true }) });
+      }
+      return ok;
+    },
+    async setOneOff(txId, oneOff, opts) {
+      const ok = await patchTx(txId, { one_off: oneOff }, () => svc.repo.saveTransaction({ id: txId, one_off: oneOff }));
+      if (ok && !opts?.silent) toast("success", oneOff ? "Markeret som engangskøb" : "Ikke længere engangskøb", { label: "Fortryd", run: () => void actionsRef.current?.setOneOff(txId, !oneOff, { silent: true }) });
+      return ok;
+    },
     setNote: (txId, note) => patchTx(txId, { notes: note.trim() || null }, () => svc.repo.saveTransaction({ id: txId, notes: note.trim() || null })),
 
     async splitTransaction(txId, parts) {
@@ -154,10 +166,11 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
       }
     },
 
-    ...extraActions({ svc, stateRef, dispatch, toast }),
+    ...extraActions({ svc, stateRef, dispatch, toast, actionsRef }),
 
-    dismissToast: (id) => dispatch({ type: "toastDismissed", id }), notify: (tone, text) => toast(tone, text),
+    dismissToast: (id) => dispatch({ type: "toastDismissed", id }), notify: (tone, text, action) => toast(tone, text, action),
   }), [refresh, patchTx, svc, toast]);
+  actionsRef.current = actions;
 
   // ---------- Beregnede værdier ----------
   const hideAmounts = useHideAmounts();   // tekster med beløb (fx indsigter) beregnes igen, når beløb skjules/vises

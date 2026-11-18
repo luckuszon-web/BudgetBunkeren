@@ -14,6 +14,7 @@ export function Toasts() {
           <div key={t.id} role={t.tone === "error" ? "alert" : "status"} className="pointer-events-auto flex w-full max-w-md items-start gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-sm shadow-lg">
             <Icon size={18} className={`mt-0.5 shrink-0 ${color}`} />
             <span className="flex-1">{t.text}</span>
+            {t.action && <button type="button" onClick={() => { t.action!.run(); actions.dismissToast(t.id); }} className="shrink-0 font-semibold text-primary">{t.action.label}</button>}
             <button type="button" aria-label="Luk besked" onClick={() => actions.dismissToast(t.id)} className="text-muted-foreground"><X size={16} /></button>
           </div>
         );

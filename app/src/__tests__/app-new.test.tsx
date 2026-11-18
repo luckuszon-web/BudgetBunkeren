@@ -39,6 +39,18 @@ describe("Nye funktioner", () => {
     expect(await screen.findByText(/er udløbet/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Luk for i dag" })).toBeNull();   // kan ikke lukkes, når den er udløbet
   });
+  it("Fortryd: en ændret kategori kan fortrydes fra beskeden", async () => {
+    const { repo } = setup("/posteringer");
+    fireEvent.change(await screen.findByLabelText("Søg i posteringer"), { target: { value: "wolt" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rediger" }));
+    const select = (await screen.findAllByLabelText(/Kategori for Wolt/))[0]! as HTMLSelectElement;
+    const before = select.value || null;
+    await act(async () => { fireEvent.change(select, { target: { value: "2" } }); });
+    expect(await screen.findByText(/^Kategori: /)).toBeTruthy();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Fortryd" })); });
+    expect(repo.saveTransaction).toHaveBeenLastCalledWith({ id: expect.any(String), category_id: before });
+    expect(screen.queryByRole("button", { name: "Fortryd" })).toBeNull();
+  });
   it("Notifikationer: siger det, når browseren ikke kan", async () => {
     setup("/indstillinger/notifikationer");
     expect(await screen.findByText(/understøtter ikke notifikationer/)).toBeTruthy();

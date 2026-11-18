@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useFinance } from "@/features/finance-store";
 import { useResource } from "@/features/services-context";
 import { goalSaved } from "@/lib/finance-engine";
@@ -33,7 +34,7 @@ export function PlanPage() {
     <>
       <PageHeader title="Planlæg" subtitle="Formue, mål og gæld" />
       {plan.error && !d && <Card><p role="alert" className="text-sm text-destructive">{plan.error}</p></Card>}
-      {!d && !plan.error && <p className="text-sm text-muted-foreground">Henter …</p>}
+      {!d && !plan.error && <div role="status" aria-label="Henter" className="space-y-4"><Skeleton className="h-36 w-full rounded-2xl" /><Skeleton className="h-10 w-full rounded-xl" /><Skeleton className="h-64 w-full rounded-2xl" /></div>}
       {d && (
         <>
           <PlanSummary assets={d.assets} history={d.history} goals={d.goals} goalSaved={(g) => (derived ? goalSaved(g, derived.calcTxs, derived.classifier) : g.saved_amount)} />

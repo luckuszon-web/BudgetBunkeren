@@ -14,8 +14,9 @@ export interface FinanceActions {
   setPeriod(p: PeriodSelection): void;
   stepPeriod(delta: number): void;
   setFilters(f: Partial<Filters>): void;
-  setCategory(txId: string, categoryId: string | null): Promise<boolean>;
-  setOneOff(txId: string, oneOff: boolean): Promise<boolean>;
+  /** `silent`: ingen besked (bruges af "Fortryd"). */
+  setCategory(txId: string, categoryId: string | null, opts?: { silent?: boolean }): Promise<boolean>;
+  setOneOff(txId: string, oneOff: boolean, opts?: { silent?: boolean }): Promise<boolean>;
   setNote(txId: string, note: string): Promise<boolean>;
   splitTransaction(txId: string, parts: { category_id: string; amount: number }[]): Promise<boolean>;
   saveCategory(draft: CategoryDraft): Promise<Category | null>;
@@ -29,7 +30,7 @@ export interface FinanceActions {
   setBillCadence(key: string, cadence: BillCadence | null): Promise<boolean>;
   dismissToast(id: number): void;
   /** Vis en kort besked (fx fra andre sider). */
-  notify(tone: "info" | "success" | "error", text: string): void;
+  notify(tone: "info" | "success" | "error", text: string, action?: { label: string; run: () => void }): void;
 }
 export interface FinanceContextValue { state: FinanceState; derived: FinanceDerived | null; user: AuthUser | null; actions: FinanceActions }
 

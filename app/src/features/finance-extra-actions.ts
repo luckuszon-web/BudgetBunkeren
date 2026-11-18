@@ -9,11 +9,21 @@ import type { FinanceAction, FinanceState, Toast, TxEditable } from "./finance-s
 import type { FinanceActions, FinanceServices } from "./finance-types";
 
 interface Deps {
-  svc: FinanceServices; stateRef: MutableRefObject<FinanceState>; dispatch: Dispatch<FinanceAction>; toast: (tone: Toast["tone"], text: string) => void;
+  svc: FinanceServices; stateRef: MutableRefObject<FinanceState>; dispatch: Dispatch<FinanceAction>;
+  toast: (tone: Toast["tone"], text: string, action?: Toast["action"]) => void; actionsRef: MutableRefObject<FinanceActions | null>;
 }
 type Extra = Pick<FinanceActions, "patchMany" | "addManual" | "deleteManual" | "setBillCadence">;
 
-export function extraActions({ svc, stateRef, dispatch, toast }: Deps): Extra {
+export function extraActions({ svc, stateRef, dispatch, toast, actionsRef }: Deps): Extra {
+  /** Fortryd "Vælg flere": hver postering får sin gamle værdi igen (stille, uden ny besked). */
+  const undoMany = async (prev: { id: string; previous: Partial<TxEditable> }[]) => {
+    const a = actionsRef.current; if (!a) return;
+    for (const p of prev) {
+      if ("category_id" in p.previous) await a.setCategory(p.id, (p.previous.category_id as string | null) ?? null, { silent: true });
+      if ("one_off" in p.previous) await a.setOneOff(p.id, !!p.previous.one_off, { silent: true });
+    }
+    toast("info", "Ændringen er fortrudt.");
+  };
   return {
     async patchMany(ids, patch) {
       const txs = (stateRef.current.data?.transactions ?? []).filter((t) => ids.includes(t.id) && !t.manual);
@@ -21,7 +31,7 @@ export function extraActions({ svc, stateRef, dispatch, toast }: Deps): Extra {
       const full: Partial<TxEditable> = patch.category_id !== undefined ? { ...patch, category_source: patch.category_id ? "manual" : null } : { ...patch };
       const prev = txs.map((t) => ({ id: t.id, previous: Object.fromEntries(Object.keys(full).map((k) => [k, t[k as keyof TxEditable] ?? null])) as Partial<TxEditable> }));
       for (const t of txs) dispatch({ type: "txPatched", id: t.id, patch: full });
-      try { const n = await svc.repo.saveTransactionsBulk(txs.map((t) => t.id), patch); toast("success", `${n} ${n === 1 ? "postering" : "posteringer"} opdateret.`); return true; }
+      try { const n = await svc.repo.saveTransactionsBulk(txs.map((t) => t.id), patch); toast("success", `${n} ${n === 1 ? "postering" : "posteringer"} opdateret.`, { label: "Fortryd", run: () => void undoMany(prev) }); return true; }
       catch (e) { for (const p of prev) dispatch({ type: "txReverted", id: p.id, previous: p.previous }); toast("error", friendly(e)); return false; }
     },
     async addManual(entry) {
@@ -32,7 +42,12 @@ export function extraActions({ svc, stateRef, dispatch, toast }: Deps): Extra {
       const old = stateRef.current.data?.manualEntries.find((m) => m.id === id);
       if (!old) return false;
       dispatch({ type: "manualRemoved", id });
-      try { await svc.repo.deleteTransaction(`manual-${id}`); return true; }
+      try {
+        await svc.repo.deleteTransaction(`manual-${id}`);
+        const { id: _old, ...again } = old;
+        toast("success", "Beløbet er slettet.", { label: "Fortryd", run: () => void actionsRef.current?.addManual(again) });
+        return true;
+      }
       catch (e) { dispatch({ type: "manualAdded", entry: old }); toast("error", friendly(e)); return false; }
     },
     async setBillCadence(key: string, cadence: BillCadence | null) {

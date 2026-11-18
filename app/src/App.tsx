@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { RouterProvider, type RouterHistory } from "@tanstack/react-router";
 import { AuthGate, type GateAuth } from "@/features/auth/AuthGate";
 import { PinLock } from "@/features/auth/PinLock";
@@ -8,7 +8,7 @@ import type { BootParams } from "@/lib/boot-params";
 import { useDemoMode } from "@/lib/demo-mode";
 import { useHideAmounts } from "@/lib/privacy";
 import { withDemo } from "@/services/demo";
-import { makeRouter } from "./router";
+import { makeRouter, prefetchPages } from "./router";
 
 function Routed({ signOut, history, bank }: { signOut: () => void; history?: RouterHistory; bank: BootParams["bank"] }) {
   useHideAmounts();   // gentegn alle sider, når beløb skjules/vises
@@ -17,6 +17,7 @@ function Routed({ signOut, history, bank }: { signOut: () => void; history?: Rou
     if (!history && /access_token|error=/.test(location.hash)) window.history.replaceState(null, "", location.pathname);
     return makeRouter(signOut, history, bank);
   }, [signOut, history, bank]);
+  useEffect(() => { if (!history) { const t = setTimeout(prefetchPages, 3000); return () => clearTimeout(t); } }, [history]);
   return <RouterProvider router={router} />;
 }
 
