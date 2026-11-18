@@ -27,5 +27,8 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/services/__tests__/notify.test.ts"
   ]
 }

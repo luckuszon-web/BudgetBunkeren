@@ -1,5 +1,6 @@
 import { SignJWT, importPKCS8 } from "npm:jose@5";
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { notifyUser } from "./notify.ts";
 
 export const cors = {
   "Access-Control-Allow-Origin": Deno.env.get("SITE_ORIGIN") ?? "*",
@@ -198,7 +199,11 @@ export async function syncAll(onlyUserId?: string) {
     users.add(acc.user_id);
   }
 
-  for (const u of users) report.push({ user: u, categorized: await categorize(u) });
+  for (const u of users) {
+    report.push({ user: u, categorized: await categorize(u) });
+    // Notifikationer må aldrig vælte hentningen
+    try { report.push({ user: u, notified: await notifyUser(db, u) }); } catch (e) { console.warn("Notifikationer fejlede", e); }
+  }
   return report;
 }
 

@@ -1,5 +1,5 @@
 import { Link, useRouteContext } from "@tanstack/react-router";
-import { ChevronRight, LogOut, Database, HeartPulse, KeyRound, Landmark, PenLine, Shuffle, Tags, Wand2, type LucideIcon } from "lucide-react";
+import { Bell, ChevronRight, LogOut, Database, HeartPulse, KeyRound, Landmark, PenLine, Shuffle, Tags, Wand2, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { DemoCard } from "./DemoCard";
@@ -11,6 +11,7 @@ export const SECTIONS: { id: string; title: string; text: string; icon: LucideIc
   { id: "kategorier", title: "Kategorier", text: "Navne, ikoner, typer og budgetter", icon: Tags },
   { id: "regler", title: "Regler", text: "Automatisk kategorisering", icon: Wand2 },
   { id: "indtastet", title: "Indtastede beløb", text: "Løn og kontantkøb, du selv taster", icon: PenLine },
+  { id: "notifikationer", title: "Notifikationer", text: "Besked om løn, budgetter og ukendte trækninger", icon: Bell },
   { id: "sikkerhed", title: "Login og sikkerhed", text: "Adgangskode, totrinskode og invitationer", icon: KeyRound },
   { id: "data", title: "Data", text: "Hent nu, kategorisér igen, eksport", icon: Database },
   { id: "tjek", title: "Sundhedstjek", text: "Tjek at alt er sat rigtigt op", icon: HeartPulse },

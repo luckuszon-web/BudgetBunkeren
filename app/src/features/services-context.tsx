@@ -2,7 +2,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { AppServices } from "@/services";
 
-export type UiServices = Pick<AppServices, "auth" | "plan" | "pots" | "settings" | "server">;
+export type UiServices = Pick<AppServices, "auth" | "plan" | "pots" | "settings" | "server" | "receipts">;
 const Ctx = createContext<UiServices | null>(null);
 
 export function ServicesProvider({ services, children }: { services: UiServices; children: ReactNode }) {

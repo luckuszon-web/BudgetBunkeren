@@ -57,6 +57,10 @@ export function createServerApi(sb: SupabaseClient) {
       const r = await call<{ answer?: string; truncated?: boolean }>("advisor", { messages: msgs, context });
       return (r.answer ?? "") + (r.truncated ? "\n\n(Svaret blev afkortet.)" : "");
     },
+    /** Offentlig nøgle til notifikationer (null = ikke sat op på serveren). */
+    pushKey: async () => (await bank<{ key?: string | null }>("push-key")).key ?? null,
+    /** Send en testbesked til alle dine enheder. */
+    pushTest: async () => (await bank<{ sent?: number }>("push-test")).sent ?? 0,
     /** Er AI-nøglen sat op på serveren? */
     advisorPing: async () => !!(await call<{ hasKey?: boolean }>("advisor", { ping: true })).hasKey,
   };

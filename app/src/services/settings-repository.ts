@@ -7,6 +7,12 @@ import type { BankSession } from "@/types/plan";
 import { RepositoryError, toRepositoryError } from "./finance-repository";
 import { parseRows } from "./schemas";
 import { AccountNameInput, SessionRow } from "./schemas-plan";
+import { z } from "zod";
+
+export const PushSubInput = z.object({ endpoint: z.string().url().max(1000), p256dh: z.string().min(20).max(200), auth: z.string().min(10).max(100) });
+export const PushPrefs = z.object({ salary: z.boolean(), budget: z.boolean(), unknown: z.boolean() });
+export type PushPrefs = z.infer<typeof PushPrefs>;
+const DEFAULT_PREFS: PushPrefs = { salary: true, budget: true, unknown: true };
 
 const isId = (s: string | null) => s === null || /^\d{1,18}$/.test(s);
 
@@ -58,6 +64,21 @@ export function createSettingsRepository(sb: SupabaseClient) {
       if (!key || key.length > 200) throw new RepositoryError("Ugyldigt abonnement.", "validation");
       if (status) ok(await sb.from("subscription_marks").upsert({ key, status }, { onConflict: "user_id,key" }));
       else ok(await sb.from("subscription_marks").delete().eq("user_id", userId).eq("key", key));
+    }),
+    /** Notifikationer: gem/fjern denne enheds abonnement (databaseopdatering 019). */
+    savePushSubscription: (sub: z.input<typeof PushSubInput>) => run(async () => {
+      ok(await sb.from("push_subscriptions").upsert(PushSubInput.parse(sub), { onConflict: "endpoint" }));
+    }),
+    deletePushSubscription: (endpoint: string) => run(async () => { ok(await sb.from("push_subscriptions").delete().eq("endpoint", endpoint)); }),
+    /** Hvilke beskeder man vil have. null = databaseopdatering 019 mangler. */
+    pushPrefs: (userId: string): Promise<PushPrefs | null> => run(async () => {
+      const r = await sb.from("push_state").select("prefs").eq("user_id", userId).maybeSingle();
+      if (r.error) { if (toRepositoryError(r.error).code === "missing_migration") return null; throw r.error; }
+      const p = PushPrefs.safeParse((r.data as { prefs?: unknown } | null)?.prefs);
+      return p.success ? p.data : DEFAULT_PREFS;
+    }),
+    setPushPrefs: (userId: string, prefs: PushPrefs) => run(async () => {
+      ok(await sb.from("push_state").upsert({ user_id: userId, prefs: PushPrefs.parse(prefs) }, { onConflict: "user_id" }));
     }),
     deleteRule: (id: string) => run(async () => {
       if (!isId(id)) throw new RepositoryError("Ugyldig regel.", "validation");

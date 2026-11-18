@@ -21,7 +21,7 @@ export function createMemorySupabase(tables: Record<string, Row[]>, userId: stri
     let conflict: string[] | null = null;   // upsert: kolonner, der afgør "samme række"
     let payload: Row | Row[] | null = null;
     const filters: Filter[] = userId == null ? [] : [(r) => !("user_id" in r) || r.user_id === userId];   // RLS
-    let range: [number, number] | null = null, single = false, orderCol: string | null = null, asc = true;
+    let range: [number, number] | null = null, single = false, orderCol: string | null = null, asc = true, countOnly = false, maybe = false;
 
     const exec = () => {
       if (op === "insert") {
@@ -48,11 +48,13 @@ export function createMemorySupabase(tables: Record<string, Row[]>, userId: stri
       return finish(hit);
     };
     const finish = (list: Row[]) => {
+      if (countOnly) return { data: null, count: list.length, error: null };
       if (!single) return { data: list.map((r) => ({ ...r })), error: null };
+      if (maybe && !list.length) return { data: null, error: null };
       return list.length === 1 ? { data: { ...list[0] }, error: null } : { data: null, error: { code: "PGRST116", message: "no rows" } };
     };
     const b: Record<string, unknown> = {
-      select: () => b,
+      select: (_c?: string, o?: { count?: string; head?: boolean }) => { if (o?.head) countOnly = true; return b; },
       insert: (p: Row | Row[]) => { op = "insert"; payload = p; return b; },
       upsert: (p: Row | Row[], o?: { onConflict?: string }) => { op = "insert"; payload = p; conflict = (o?.onConflict ?? "id").split(",").map((x) => x.trim()); return b; },
       update: (p: Row) => { op = "update"; payload = p; return b; },
@@ -61,13 +63,14 @@ export function createMemorySupabase(tables: Record<string, Row[]>, userId: stri
       eq: (c: string, v: unknown) => { if (!(userId == null && c === "user_id")) filters.push((r) => String(r[c]) === String(v)); return b; },
       neq: (c: string, v: unknown) => { filters.push((r) => String(r[c]) !== String(v)); return b; },
       gte: (c: string, v: unknown) => { filters.push((r) => String(r[c]) >= String(v)); return b; },
+      gt: (c: string, v: unknown) => { filters.push((r) => String(r[c]) > String(v)); return b; },
       lte: (c: string, v: unknown) => { filters.push((r) => String(r[c]) <= String(v)); return b; },
       in: (c: string, vs: unknown[]) => { const s = new Set(vs.map(String)); filters.push((r) => s.has(String(r[c]))); return b; },
       order: (c: string, o?: { ascending?: boolean }) => { if (!orderCol) { orderCol = c; asc = o?.ascending ?? true; } return b; },
       range: (a: number, z: number) => { range = [a, z]; return b; },
       limit: (n: number) => { range = [0, n - 1]; return b; },
       single: () => { single = true; return b; },
-      maybeSingle: () => { single = true; return b; },
+      maybeSingle: () => { single = true; maybe = true; return b; },
       then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => Promise.resolve(exec()).then(res, rej),
     };
     return b;

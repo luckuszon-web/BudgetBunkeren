@@ -2,7 +2,7 @@
 // - Appens egne filer: hent fra nettet først (så opdateringer altid kommer med), og brug den gemte kopi, hvis der ikke er net.
 // - Skrifttyper fra Google Fonts: brug den gemte kopi, hvis den findes.
 // - Data fra Supabase går aldrig gennem her – de sidst hentede tal ligger i appens egen cache (localStorage).
-const CACHE = "bb-app-v3";
+const CACHE = "bb-app-v4";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icon-192.png", "icon-180.png", "ny/"];
 
 self.addEventListener("install", (e) => {
@@ -27,4 +27,19 @@ self.addEventListener("fetch", (e) => {
       return res;
     })));
   }
+});
+
+// Notifikationer (Web Push): beskeden er krypteret fra serveren og pakkes ud af browseren
+self.addEventListener("push", (e) => {
+  let m = { title: "BudgetBunkeren", body: "" };
+  try { m = { ...m, ...e.data.json() }; } catch { if (e.data) m.body = e.data.text(); }
+  e.waitUntil(self.registration.showNotification(m.title, { body: m.body, tag: m.tag, icon: "icon-192.png", badge: "icon-192.png", data: { url: m.url || "ny/" } }));
+});
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = new URL(e.notification.data?.url || "ny/", self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+    const open = list.find((c) => c.url.startsWith(new URL("ny/", self.registration.scope).href));
+    return open ? open.focus() : self.clients.openWindow(url);
+  }));
 });

@@ -50,12 +50,15 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot }: { sign
     credentialsStatus: vi.fn(async () => ({ available: true, owner: true, own: false, app_id: null, since: null })), saveCredentials: vi.fn(),
     removeCredentials: vi.fn(), listInvites: vi.fn(async () => ({ owner: true, invites: [] })), createInvite: vi.fn(async () => "ABCDE-FGHJK"),
     advisor: vi.fn(async () => "Du har brugt **mere** på restaurant.\n- Spar på Wolt"), syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
+    pushKey: vi.fn(async () => "BPUBKEY"), pushTest: vi.fn(async () => 1),
   };
-  const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn() };
+  const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn(),
+    pushPrefs: vi.fn(async () => ({ salary: true, budget: true, unknown: true })), setPushPrefs: vi.fn(async () => {}), savePushSubscription: vi.fn(async () => {}), deletePushSubscription: vi.fn(async () => {}) };
+  const receipts = { list: vi.fn(async () => [{ path: "me/t1/1.jpg", url: "blob:kvittering", created: null }]), upload: vi.fn(async () => {}), remove: vi.fn(async () => {}) };
   const history = createMemoryHistory({ initialEntries: [path] });
   const authAll = Object.assign(auth, { userInfo: vi.fn(async () => ({ email: "me@example.com", lastSignIn: null })), mfaEnabled: vi.fn(async () => false),
     mfaEnroll: vi.fn(), mfaConfirm: vi.fn(), mfaDisable: vi.fn(), changePassword: vi.fn(async () => {}), resetPassword: vi.fn(async () => {}) });
-  render(<App services={{ auth, repo, plan, pots, server, settings } as never} history={history} today={() => "2026-11-16"} boot={boot} />);
-  return { auth: authAll, repo, plan, pots, server, settings };
+  render(<App services={{ auth, repo, plan, pots, server, settings, receipts } as never} history={history} today={() => "2026-11-16"} boot={boot} />);
+  return { auth: authAll, repo, plan, pots, server, settings, receipts };
 }
 

@@ -21,17 +21,18 @@ function demoServer(): ServerApi {
     credentialsStatus: async () => ({ available: true, owner: true, own: false, app_id: null, since: null }), saveCredentials: blocked, removeCredentials: blocked,
     listInvites: async () => ({ owner: true, invites: [] }), createInvite: blocked, potCreate: blocked, potDelete: blocked,
     advisor: async () => "Dette er demotilstand, så rådgiveren svarer med et eksempel:\n\n**Overblik:** Du har et pænt overskud hver måned, men bufferen dækker under 3 måneders udgifter.\n\n**Top 3:**\n- Afdrag kreditkortet (22 % rente) først.\n- Byg bufferen op til ca. 50.000 kr.\n- Sæt et loft på restaurant og takeaway.",
-    advisorPing: async () => true,
+    advisorPing: async () => true, pushKey: async () => null, pushTest: blocked,
   } as unknown as ServerApi;
 }
 
 /** Erstat datatjenesterne med fiktive data. `today` styrer, hvilke måneder demodata dækker. */
-export function withDemo<T extends Pick<AppServices, "repo" | "plan" | "pots" | "settings" | "server"> & { auth: object }>(real: T, today: string): T {
+export function withDemo<T extends Pick<AppServices, "repo" | "plan" | "pots" | "settings" | "server" | "receipts"> & { auth: object }>(real: T, today: string): T {
   const sb = createMemorySupabase(demoTables(today), null).client;
   const auth = real.auth as Partial<AppServices["auth"]>;
   return {
     ...real,
     repo: createFinanceRepository(sb), plan: createPlanRepository(sb), pots: createPotRepository(sb), settings: createSettingsRepository(sb), server: demoServer(),
+    receipts: { list: async () => [], upload: blocked, remove: blocked } as unknown as AppServices["receipts"],
     auth: Object.assign(Object.create(Object.getPrototypeOf(real.auth)), real.auth, auth.userInfo
       ? { userInfo: async () => ({ email: "demo@eksempel.dk", lastSignIn: (await auth.userInfo!()).lastSignIn }) } : {}),
   };

@@ -10,6 +10,7 @@ import { groupKey } from "@/lib/finance-engine";
 import type { Transaction } from "@/types/finance";
 import { BillCadenceField } from "./BillCadenceField";
 import { CategorySelect } from "./CategorySelect";
+import { ReceiptsField } from "./ReceiptsField";
 
 /** Detaljer for én postering: note, engangskøb, opdeling, regel for lignende posteringer og "læg i fælles post". */
 export function TxDialog({ tx, onClose, onSplit }: { tx: Transaction | null; onClose: () => void; onSplit: (t: Transaction) => void }) {
@@ -45,6 +46,7 @@ export function TxDialog({ tx, onClose, onSplit }: { tx: Transaction | null; onC
         </label>
         {live.amount < 0 && !live.manual && <BillCadenceField tx={live} />}
         <Button icon={<Scissors size={16} />} onClick={() => onSplit(live)}>Del op i flere kategorier</Button>
+        {!live.manual && <ReceiptsField tx={live} />}
 
         <fieldset className="rounded-xl border border-border p-3">
           <legend className="flex items-center gap-1 px-1 text-sm font-medium"><Wand2 size={14} /> Lav en regel</legend>

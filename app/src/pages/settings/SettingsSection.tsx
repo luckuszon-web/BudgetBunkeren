@@ -7,12 +7,13 @@ import { DataSection } from "./DataSection";
 import { HealthSection } from "./HealthSection";
 import { QuickSortSection } from "./QuickSortSection";
 import { ManualSection } from "./ManualSection";
+import { NotificationsSection } from "./NotificationsSection";
 import { RulesSection } from "./RulesSection";
 import { SecuritySection } from "./SecuritySection";
 import { SECTIONS } from "./SettingsPage";
 
 const VIEW: Record<string, () => React.JSX.Element> = {
-  bank: BankSection, kategorier: CategoriesSection, regler: RulesSection, indtastet: ManualSection, sikkerhed: SecuritySection, data: DataSection, sortering: QuickSortSection, tjek: HealthSection,
+  bank: BankSection, kategorier: CategoriesSection, regler: RulesSection, indtastet: ManualSection, sikkerhed: SecuritySection, data: DataSection, sortering: QuickSortSection, tjek: HealthSection, notifikationer: NotificationsSection,
 };
 
 /** En underside i Indstillinger (#/indstillinger/<id>). */

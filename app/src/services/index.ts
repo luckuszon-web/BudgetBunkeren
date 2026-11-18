@@ -7,6 +7,7 @@ import { createFinanceRepository, type UserData } from "./finance-repository";
 import { createOfflineCache } from "./offline-cache";
 import { createPlanRepository } from "./plan-repository";
 import { createPotRepository } from "./pot-repository";
+import { createReceiptsRepository } from "./receipts-repository";
 import { createServerApi } from "./server-api";
 import { createSettingsRepository } from "./settings-repository";
 
@@ -17,6 +18,7 @@ export interface AppServices {
   pots: ReturnType<typeof createPotRepository>;
   settings: ReturnType<typeof createSettingsRepository>;
   server: ReturnType<typeof createServerApi>;
+  receipts: ReturnType<typeof createReceiptsRepository>;
 }
 let services: AppServices | null = null;
 
@@ -27,7 +29,7 @@ export function getServices() {
   const repo = createFinanceRepository(sb, cache);
   services = {
     repo, auth: createAuthService(sb, () => cache.clearAll()), plan: createPlanRepository(sb), pots: createPotRepository(sb),
-    settings: createSettingsRepository(sb), server: createServerApi(sb),
+    settings: createSettingsRepository(sb), server: createServerApi(sb), receipts: createReceiptsRepository(sb),
   };
   return services;
 }
@@ -39,5 +41,6 @@ export type { Account, CategoryDraft, TransactionPatch } from "./schemas";
 export type { PlanRepository } from "./plan-repository";
 export type { PotRepository } from "./pot-repository";
 export type { ServerApi } from "./server-api";
-export type { SettingsRepository } from "./settings-repository";
+export type { SettingsRepository, PushPrefs } from "./settings-repository";
+export type { ReceiptsRepository, Receipt } from "./receipts-repository";
 export type { AssetDraft, ChallengeDraft, GoalDraft, PotItemDraft } from "./schemas-plan";

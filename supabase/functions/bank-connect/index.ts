@@ -2,6 +2,7 @@
 // action "start"  -> returnerer et link til Nordeas MitID-login
 // action "finish" -> modtager koden efter login, gemmer konti og henter posteringer
 import { admin, cors, credsFor, eb, ebToken, isOwner, json, sha, syncAll, userFromRequest, toPkcs8 } from "../_shared/common.ts";
+import { pushToUser, vapidKeys } from "../_shared/notify.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -80,6 +81,14 @@ Deno.serve(async (req) => {
       if (pot.created_by === user.id) await db.from("shared_pots").delete().eq("id", pot.id);
       else await db.from("pot_members").delete().eq("pot_id", pot.id).eq("user_id", user.id);
       return json({ ok: true });
+    }
+
+    // --- Notifikationer: offentlig nøgle til browseren og en testbesked ---
+    if (body.action === "push-key") return json({ key: vapidKeys()?.publicKey ?? null });
+    if (body.action === "push-test") {
+      if (!vapidKeys()) return json({ error: "Notifikationer er ikke sat op endnu: VAPID_PUBLIC_KEY og VAPID_PRIVATE_KEY mangler under Supabase → Edge Functions → Secrets." }, 400);
+      const sent = await pushToUser(db, user.id, [{ title: "BudgetBunkeren", body: "Det virker! Du får nu besked om løn, budgetter og ukendte trækninger. 🎉", tag: "test" }]);
+      return json({ sent });
     }
 
     // --- Egen Enable Banking-app (fx til en partner med egne konti) ---
