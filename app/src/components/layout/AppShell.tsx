@@ -10,6 +10,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { BankRenewalBar } from "./BankRenewalBar";
 import { DemoBar } from "./DemoBar";
 import { UpdateBar } from "./UpdateBar";
+import { WelcomeSheet } from "./WelcomeSheet";
 
 type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger" | "/mere";
 /** De 4 hovedsider (bundmenu på mobil) – resten står i sidebaren og nås på mobil via "Mere". */
@@ -95,6 +96,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
         <MoreLink />
       </nav>
       <Toasts />
+      <WelcomeSheet />
     </div>
   );
 }

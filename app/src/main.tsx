@@ -2,11 +2,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { getServices } from "@/services";
 import { readBootParams } from "@/lib/boot-params";
+import { listenForInstall } from "@/lib/install";
 import { App } from "./App";
 import "./index.css";
 
 const el = document.getElementById("root")!;
 const boot = readBootParams();   // før Supabase og routeren læser adressen
+listenForInstall();
 
 // Offline: appens filer gemmes af den fælles service worker (kun på https og ikke under automatiske tests)
 if ("serviceWorker" in navigator && location.protocol === "https:" && !navigator.webdriver) {
