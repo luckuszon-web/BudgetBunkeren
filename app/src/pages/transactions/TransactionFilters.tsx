@@ -15,6 +15,8 @@ const CHIPS: { id: TxKindFilter; label: string }[] = [
 const RESET: Partial<Filters> = { search: "", kind: "all", categoryId: null, dateFrom: null, dateTo: null, sort: "date-desc" };
 const d = (s: string) => new Date(`${s}T00:00:00Z`).toLocaleDateString("da-DK", { day: "numeric", month: "short", timeZone: "UTC" });
 const field = "w-full rounded-lg border border-border bg-card px-2.5 py-2 text-sm text-foreground";
+// iPhone giver datofelter en fast minimumsbredde og højde – nulstil, så de ikke flyder ind over hinanden
+const dateField = `${field} block min-w-0 max-w-full min-h-10 appearance-none text-left [&::-webkit-date-and-time-value]:text-left`;
 
 /** Søgning på én linje + type-knapper; kategori, datoer og sortering ligger bag "Filtre" og vises som små mærker, når de er sat. */
 export function TransactionFilters() {
@@ -65,12 +67,12 @@ export function TransactionFilters() {
               {SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </label>
-          <div className="grid grid-cols-2 gap-2 sm:col-span-2">
-            <label className="grid gap-1 text-xs text-muted-foreground">Fra dato
-              <input type="date" value={f.dateFrom ?? ""} max={f.dateTo ?? undefined} onChange={(e) => set({ dateFrom: e.target.value || null })} className={field} />
+          <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2">
+            <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">Fra dato
+              <input type="date" value={f.dateFrom ?? ""} max={f.dateTo ?? undefined} onChange={(e) => set({ dateFrom: e.target.value || null })} className={dateField} />
             </label>
-            <label className="grid gap-1 text-xs text-muted-foreground">Til dato
-              <input type="date" value={f.dateTo ?? ""} min={f.dateFrom ?? undefined} onChange={(e) => set({ dateTo: e.target.value || null })} className={field} />
+            <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">Til dato
+              <input type="date" value={f.dateTo ?? ""} min={f.dateFrom ?? undefined} onChange={(e) => set({ dateTo: e.target.value || null })} className={dateField} />
             </label>
           </div>
           <p className="text-xs text-muted-foreground sm:col-span-2">Datoer gælder i stedet for den valgte periode øverst.</p>
