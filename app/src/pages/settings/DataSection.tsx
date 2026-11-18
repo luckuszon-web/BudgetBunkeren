@@ -8,6 +8,7 @@ import { useAction, useServices } from "@/features/services-context";
 import { currentMonth } from "@/lib/today";
 import { transactionsCsv, yearCsv, downloadFile } from "./csv";
 import { fixedIcs, printYear } from "./ics-print";
+import { YourDataCard } from "./YourDataCard";
 import { todayIso } from "@/lib/today";
 
 /** Hent nu, kategorisér igen, eksport (CSV) og databaseopdatering. */
@@ -62,6 +63,7 @@ export function DataSection() {
         <a href="../opdater.html" className="mt-2 inline-block text-sm font-medium text-primary underline">Åbn databaseopdatering</a>
         <p className="mt-3 text-xs text-muted-foreground">{state.data?.transactions.length ?? 0} posteringer hentet{state.data?.rejected ? ` · ${state.data.rejected} ugyldige rækker sprunget over` : ""}.</p>
       </Card>
+      <YourDataCard />
     </div>
   );
 }

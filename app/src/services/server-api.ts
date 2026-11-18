@@ -57,6 +57,8 @@ export function createServerApi(sb: SupabaseClient) {
       const r = await call<{ answer?: string; truncated?: boolean }>("advisor", { messages: msgs, context });
       return (r.answer ?? "") + (r.truncated ? "\n\n(Svaret blev afkortet.)" : "");
     },
+    /** Slet din konto og alle dine data (ikke ejeren). `confirm` skal være "SLET". */
+    deleteAccount: (confirm: string) => bank("delete-account", { confirm: z.literal("SLET", { errorMap: () => ({ message: "Skriv SLET for at bekræfte." }) }).parse(confirm) }),
     /** Offentlig nøgle til notifikationer (null = ikke sat op på serveren). */
     pushKey: async () => (await bank<{ key?: string | null }>("push-key")).key ?? null,
     /** Send en testbesked til alle dine enheder. */

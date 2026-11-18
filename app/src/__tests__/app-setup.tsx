@@ -50,7 +50,7 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot, sessions
     credentialsStatus: vi.fn(async () => ({ available: true, owner: true, own: false, app_id: null, since: null })), saveCredentials: vi.fn(),
     removeCredentials: vi.fn(), listInvites: vi.fn(async () => ({ owner: true, invites: [] })), createInvite: vi.fn(async () => "ABCDE-FGHJK"),
     advisor: vi.fn(async () => "Du har brugt **mere** på restaurant.\n- Spar på Wolt"), syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
-    pushKey: vi.fn(async () => "BPUBKEY"), pushTest: vi.fn(async () => 1),
+    pushKey: vi.fn(async () => "BPUBKEY"), pushTest: vi.fn(async () => 1), deleteAccount: vi.fn(async () => ({ ok: true })),
   };
   const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => sessions), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn(),
     pushPrefs: vi.fn(async () => ({ salary: true, budget: true, unknown: true, digest: "off" })), setPushPrefs: vi.fn(async () => {}), savePushSubscription: vi.fn(async () => {}), deletePushSubscription: vi.fn(async () => {}) };

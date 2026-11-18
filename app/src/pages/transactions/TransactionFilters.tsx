@@ -37,7 +37,7 @@ export function TransactionFilters() {
         <div className="relative min-w-0 flex-1">
           <Search size={16} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
           <input type="search" value={f.search} onChange={(e) => set({ search: e.target.value })} placeholder="Søg butik, note eller beløb"
-            aria-label="Søg i posteringer" className="w-full rounded-xl border border-border bg-card py-2.5 pr-9 pl-9 text-sm outline-none focus:border-primary [&::-webkit-search-cancel-button]:hidden" />
+            aria-label="Søg i posteringer" className="w-full rounded-xl border border-border bg-card py-2.5 pr-9 pl-9 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30 [&::-webkit-search-cancel-button]:hidden" />
           {f.search && <button type="button" aria-label="Ryd søgning" onClick={() => set({ search: "" })}
             className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted"><X size={14} /></button>}
         </div>

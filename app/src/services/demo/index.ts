@@ -21,7 +21,7 @@ function demoServer(): ServerApi {
     credentialsStatus: async () => ({ available: true, owner: true, own: false, app_id: null, since: null }), saveCredentials: blocked, removeCredentials: blocked,
     listInvites: async () => ({ owner: true, invites: [] }), createInvite: blocked, potCreate: blocked, potDelete: blocked,
     advisor: async () => "Dette er demotilstand, så rådgiveren svarer med et eksempel:\n\n**Overblik:** Du har et pænt overskud hver måned, men bufferen dækker under 3 måneders udgifter.\n\n**Top 3:**\n- Afdrag kreditkortet (22 % rente) først.\n- Byg bufferen op til ca. 50.000 kr.\n- Sæt et loft på restaurant og takeaway.",
-    advisorPing: async () => true, pushKey: async () => null, pushTest: blocked,
+    advisorPing: async () => true, pushKey: async () => null, pushTest: blocked, deleteAccount: blocked,
   } as unknown as ServerApi;
 }
 

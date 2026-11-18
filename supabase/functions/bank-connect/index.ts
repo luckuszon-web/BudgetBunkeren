@@ -163,6 +163,27 @@ Deno.serve(async (req) => {
     }
 
     // Fjern adgang: træk samtykket tilbage hos Enable Banking. Posteringerne bevares.
+    // --- Slet min konto (GDPR): luk bankforbindelser, fjern kvitteringer, slet brugeren (alle rækker følger med) ---
+    if (body.action === "delete-account") {
+      if (body.confirm !== "SLET") return json({ error: "Skriv SLET for at bekræfte." }, 400);
+      if (owner) return json({ error: "Ejerens konto kan ikke slettes her – den bærer appens opsætning for de inviterede." }, 400);
+      const { data: sessions } = await db.from("bank_sessions").select("id").eq("user_id", user.id);
+      for (const s of sessions ?? []) {
+        try { await eb(`/sessions/${encodeURIComponent(s.id)}`, { method: "DELETE" }, creds); }
+        catch (e) { console.warn("Kunne ikke lukke bankforbindelsen (måske udløbet)", e); }
+      }
+      try {   // kvitteringer: <bruger>/<postering>/<fil>
+        const store = db.storage.from("receipts"), { data: dirs } = await store.list(user.id, { limit: 1000 });
+        for (const d of dirs ?? []) {
+          const { data: files } = await store.list(`${user.id}/${d.name}`, { limit: 1000 });
+          if (files?.length) await store.remove(files.map((f) => `${user.id}/${d.name}/${f.name}`));
+        }
+      } catch (e) { console.warn("Kunne ikke rydde kvitteringer", e); }
+      const { error } = await db.auth.admin.deleteUser(user.id);
+      if (error) return json({ error: `Kontoen kunne ikke slettes: ${error.message}` }, 500);
+      return json({ ok: true });
+    }
+
     if (body.action === "disconnect") {
       const { data: s } = await db.from("bank_sessions").select("id, user_id").eq("id", body.session_id).maybeSingle();
       if (!s || s.user_id !== user.id) return json({ error: "Forbindelsen blev ikke fundet" }, 404);

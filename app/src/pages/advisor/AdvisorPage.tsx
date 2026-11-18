@@ -63,7 +63,7 @@ export function AdvisorPage() {
         <form className="mt-3 grid grid-cols-[1fr_auto] items-end gap-2" onSubmit={(e) => { e.preventDefault(); void ask(input); }}>
           <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={2} maxLength={2000} placeholder="Skriv et spørgsmål …" aria-label="Dit spørgsmål"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void ask(input); } }}
-            className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary" />
+            className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/30" />
           <Button type="submit" variant="primary" disabled={busy || !input.trim()} icon={<Send size={16} />}>Send</Button>
         </form>
       </Card>

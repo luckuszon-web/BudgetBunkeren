@@ -10,6 +10,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { BankRenewalBar } from "./BankRenewalBar";
 import { DemoBar } from "./DemoBar";
 import { UpdateBar } from "./UpdateBar";
+import { NewsSheet } from "./NewsSheet";
 import { WelcomeSheet } from "./WelcomeSheet";
 
 type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger" | "/mere";
@@ -97,6 +98,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
       </nav>
       <Toasts />
       <WelcomeSheet />
+      <NewsSheet />
     </div>
   );
 }
