@@ -36,9 +36,25 @@ describe("Nye funktioner", () => {
   });
   it("Værktøjer: #tags, butikker, gebyrer, året og danskerne kan åbnes", async () => {
     setup("/vaerktoejer");
-    for (const [tab, text] of [["#Rejser og projekter", /Skriv et/], ["Butikker", /uden faste regninger/], ["Gebyr-jæger", /Gebyr-jæger/], ["Mod danskerne", /Danmarks Statistik/], ["Året der gik", /Året der gik/]] as const) {
-      fireEvent.click(await screen.findByRole("tab", { name: tab }));
+    for (const [tab, text] of [["#Projekter", /Skriv et/], ["Butikker", /uden faste regninger/], ["Gebyr-jæger", /Gebyr/], ["Mod danskerne", /Danmarks Statistik/], ["Året der gik", /Året der gik/]] as const) {
+      fireEvent.click(await screen.findByRole("button", { name: tab }));
       expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
+      fireEvent.click(screen.getByRole("button", { name: "Alle værktøjer" }));
     }
+  });
+  it("Planlæg: faner for formue, mål (med udfordringer) og gæld – og Mere i bundmenuen", async () => {
+    setup("/planlaeg");
+    expect(await screen.findByText("Nettoformue")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Formue", selected: true })).toBeTruthy();
+    expect(screen.getByText("Lønkonto")).toBeTruthy();
+    expect(screen.queryByText("Billån")).toBeNull();                 // gæld står kun under Gæld
+    fireEvent.click(screen.getByRole("tab", { name: "Gæld" }));
+    expect(screen.getByText("Billån")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: "Mål" }));
+    expect(screen.queryByLabelText("Højst beløb")).toBeNull();       // formularen er lukket
+    fireEvent.click(screen.getByRole("button", { name: "Ny udfordring" }));
+    expect(screen.getByLabelText("Højst beløb")).toBeTruthy();
+    fireEvent.click(screen.getAllByRole("link", { name: "Mere" })[0]!);
+    expect(await screen.findByRole("heading", { name: "Mere" })).toBeTruthy();
   });
 });

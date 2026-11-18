@@ -8,7 +8,7 @@ const QUICK = process.argv.includes('--hurtig');
 const SIZES = QUICK ? [['iPhone SE', 320, 568, true]] : [['iPhone 16 Plus', 430, 932, true], ['iPhone SE', 320, 568, true], ['computer', 1280, 900, false]];
 const THEMES = QUICK ? ['dark'] : ['dark', 'light'];
 const ROUTES = [['', 'Overblik'], ['budget', 'Budget'], ['posteringer', 'Posteringer'], ['vaerktoejer', 'Værktøjer'], ['planlaeg', 'Planlæg'],
-  ['faelles', 'Fælles post'], ['raadgiver', 'Rådgiver'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
+  ['faelles', 'Fælles post'], ['mere', 'Mere'], ['raadgiver', 'Rådgiver'], ['indstillinger', 'Indstillinger'], ['indstillinger/bank', 'Bank og konti'],
   ['indstillinger/sortering', 'Hurtig sortering'], ['indstillinger/kategorier', 'Kategorier'], ['indstillinger/regler', 'Regler'],
   ['indstillinger/indtastet', 'Indtastede beløb'], ['indstillinger/sikkerhed', 'Login og sikkerhed'], ['indstillinger/data', 'Data'], ['indstillinger/tjek', 'Sundhedstjek']];
 

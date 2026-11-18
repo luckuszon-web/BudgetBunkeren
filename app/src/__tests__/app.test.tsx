@@ -85,9 +85,10 @@ describe("Ny app", () => {
 
   it("Værktøjer: skat og annuitet regner med det samme", async () => {
     setup("/vaerktoejer");
-    fireEvent.click(await screen.findByRole("tab", { name: "Løn og skat" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Løn og skat" }));
     expect(await screen.findByText("Udbetalt pr. måned (ca.)")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Afdrag" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alle værktøjer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Afdrag" }));
     expect(screen.getByText("1.061 kr.")).toBeTruthy();   // 100.000 kr., 5 %, 10 år
     fireEvent.change(screen.getByLabelText(/^Ekstra afdrag pr\. måned/), { target: { value: "500" } });
     expect(screen.getByText(/Gældfri \d+ mdr\. før/)).toBeTruthy();

@@ -23,10 +23,13 @@ describe("Ny app – det, der før kun var i den klassiske", () => {
 
   it("Værktøjer: kalender med grønne/røde dage og sammenlign", async () => {
     setup("/vaerktoejer");
+    fireEvent.click(await screen.findByRole("button", { name: "Kalender" }));
     expect(await screen.findByText(/dage? med overskud/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Sammenlign" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alle værktøjer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sammenlign" }));
     expect(await screen.findByText("Sammenlign to måneder")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "Hvad nu hvis" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alle værktøjer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hvad nu hvis" }));
     expect(await screen.findByText(/Til overs pr. måned bagefter/)).toBeTruthy();
   });
 

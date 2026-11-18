@@ -9,11 +9,13 @@ describe("Ny app – resten", () => {
   it("Planlæg: nettoformue, mål og indbetaling", async () => {
     const { plan } = setup("/planlaeg");
     expect(await screen.findByText("15.000 kr.")).toBeTruthy();                 // 20.000 − 5.000
+    fireEvent.click(screen.getByRole("tab", { name: "Mål" }));
     expect(screen.getByText(/nås om 8 måneder/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Indbetal" }));
     fireEvent.change(screen.getByLabelText("Indbetal til Ferie"), { target: { value: "500" } });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Indbetal" })); });
     expect(plan.saveGoal).toHaveBeenCalledWith(expect.objectContaining({ id: "g1", saved_amount: 2500 }));
+    fireEvent.click(screen.getByRole("tab", { name: "Gæld" }));
     expect(screen.getByText(/gældfri .* \(6 mdr\.\)/)).toBeTruthy();
   });
 
@@ -91,9 +93,10 @@ describe("Posteringer: sortering", () => {
 });
 
 describe("Gæld", () => {
-  it("kan tilføjes direkte fra kortet Gæld – afbetaling", async () => {
+  it("kan tilføjes direkte fra fanen Gæld", async () => {
     const { plan } = setup("/planlaeg");
-    fireEvent.click(await screen.findByRole("button", { name: "Tilføj gæld" }));
+    fireEvent.click(await screen.findByRole("tab", { name: "Gæld" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tilføj gæld" }));
     const dlg = screen.getByRole("dialog", { name: "Ny gæld" });
     fireEvent.change(within(dlg).getByLabelText("Navn"), { target: { value: "Billån" } });
     fireEvent.change(within(dlg).getByLabelText("Restgæld (kr.)"), { target: { value: "180.000" } });

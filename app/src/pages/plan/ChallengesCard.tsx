@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Field";
@@ -18,7 +18,7 @@ export function ChallengesCard({ challenges, onChanged }: { challenges: Challeng
   const { state, derived } = useFinance();
   const { plan } = useServices();
   const act = useAction();
-  const [cat, setCat] = useState<string | null>(null), [limit, setLimit] = useState("");
+  const [cat, setCat] = useState<string | null>(null), [limit, setLimit] = useState(""), [adding, setAdding] = useState(false);
   if (!derived || !state.data) return null;
   const cm = currentMonth();
   const spent = (c: Challenge) => sumOut(derived.calcTxs.filter((t) => t.date.startsWith(c.month) && (!c.category_id || String(derived.classifier.effCat(t)) === c.category_id)), derived.classifier);
@@ -28,11 +28,12 @@ export function ChallengesCard({ challenges, onChanged }: { challenges: Challeng
     const v = parseKr(limit);
     if (!(v >= 0) || !limit.trim()) return act.setError("Skriv et beløb.");
     const name = cat ? derived!.classifier.catById(cat)?.name ?? "kategorien" : "alt forbrug";
-    if (await act.run(() => plan.saveChallenge({ title: `Højst ${Math.round(v)} kr. på ${name}`, category_id: cat, limit_amount: v, month: cm }))) { setLimit(""); onChanged(); }
+    if (await act.run(() => plan.saveChallenge({ title: `Højst ${Math.round(v)} kr. på ${name}`, category_id: cat, limit_amount: v, month: cm }))) { setLimit(""); setAdding(false); onChanged(); }
   }
 
   return (
-    <Card title="Spareudfordringer">
+    <Card title="Spareudfordringer" action={!adding ? <Button variant="soft" icon={<Plus size={16} />} onClick={() => setAdding(true)}>Ny udfordring</Button> : undefined}>
+      {!shown.length && !adding && <p className="text-sm text-muted-foreground">Sæt dig selv en udfordring – fx højst 800 kr. på takeaway i denne måned – og følg den her.</p>}
       <ul className="space-y-3">
         {shown.map((c) => {
           const s = spent(c), r = c.limit_amount ? s / c.limit_amount : s > 0 ? 2 : 0, done = c.month < cm;
@@ -50,11 +51,11 @@ export function ChallengesCard({ challenges, onChanged }: { challenges: Challeng
           );
         })}
       </ul>
-      <form className="mt-4 grid gap-2 sm:grid-cols-[1fr_8rem_auto]" onSubmit={(e) => { e.preventDefault(); void add(); }}>
+      {adding && <form className="mt-4 grid gap-2 sm:grid-cols-[1fr_8rem_auto]" onSubmit={(e) => { e.preventDefault(); void add(); }}>
         <CategorySelect categories={state.data.categories.filter((c) => c.kind === "expense")} value={cat} onChange={setCat} emptyLabel="Alt forbrug" aria-label="Kategori til udfordringen" className="py-2" />
         <Input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="Højst kr." aria-label="Højst beløb" />
-        <Button type="submit" variant="soft" disabled={act.busy}>Start i {monthName(cm, false)}</Button>
-      </form>
+        <Button type="submit" variant="primary" disabled={act.busy}>Start i {monthName(cm, false)}</Button>
+      </form>}
       {act.error && <p role="alert" className="mt-2 text-sm text-destructive">{act.error}</p>}
     </Card>
   );

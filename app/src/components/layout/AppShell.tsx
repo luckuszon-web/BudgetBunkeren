@@ -1,5 +1,5 @@
-import { Link, Outlet } from "@tanstack/react-router";
-import { Calculator, LayoutDashboard, ListChecks, MessageCircle, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Calculator, LayoutDashboard, LayoutGrid, ListChecks, MessageCircle, PieChart, Settings, Target, Users, type LucideIcon } from "lucide-react";
 import { Toasts } from "@/components/ui/Toasts";
 import type { BootParams } from "@/lib/boot-params";
 import { BankCallback } from "./BankCallback";
@@ -10,8 +10,8 @@ import { ThemeToggle } from "./ThemeToggle";
 import { DemoBar } from "./DemoBar";
 import { UpdateBar } from "./UpdateBar";
 
-type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger";
-/** De 4 hovedsider (bundmenu på mobil) – resten står i sidebaren og nås på mobil via Planlæg/tandhjulet. */
+type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger" | "/mere";
+/** De 4 hovedsider (bundmenu på mobil) – resten står i sidebaren og nås på mobil via "Mere". */
 const NAV: { to: To; label: string; icon: LucideIcon }[] = [
   { to: "/", label: "Overblik", icon: LayoutDashboard },
   { to: "/posteringer", label: "Posteringer", icon: ListChecks },
@@ -31,6 +31,18 @@ function SideLink({ to, label, icon: Icon }: { to: To; label: string; icon: Luci
       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       activeProps={{ className: "!bg-sidebar-accent !text-sidebar-accent-foreground font-medium" }}>
       <Icon className="h-4 w-4 shrink-0" />{label}
+    </Link>
+  );
+}
+
+/** "Mere" i bundmenuen – aktiv på alle sider, der ikke har deres egen knap. */
+function MoreLink() {
+  const path = useRouterState({ select: (r) => r.location.pathname });
+  const active = path === "/mere" || MORE.some((m) => path.startsWith(m.to));
+  return (
+    <Link to="/mere" aria-current={active ? "page" : undefined}
+      className={`flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors hover:text-primary ${active ? "font-medium text-primary" : "text-muted-foreground"}`}>
+      <LayoutGrid className="h-5 w-5" />Mere
     </Link>
   );
 }
@@ -71,7 +83,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
       </main>
 
       {/* Mobil: bundmenu med iPhone safe-area padding */}
-      <nav aria-label="Hovedmenu" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <nav aria-label="Hovedmenu" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         {NAV.map(({ to, label, icon: Icon }) => (
           <Link key={to} to={to} activeOptions={{ exact: to === "/" }}
             className="flex flex-col items-center gap-1 py-2.5 text-[11px] text-muted-foreground transition-colors hover:text-primary"
@@ -79,6 +91,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
             <Icon className="h-5 w-5" />{label}
           </Link>
         ))}
+        <MoreLink />
       </nav>
       <Toasts />
     </div>

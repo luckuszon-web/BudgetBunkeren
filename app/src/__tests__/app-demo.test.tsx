@@ -23,6 +23,7 @@ describe("Demotilstand", () => {
   it("demodata vises på Planlæg", async () => {
     localStorage.setItem("bb-demo", "1");
     const s = setup("/planlaeg");
+    fireEvent.click(await screen.findByRole("tab", { name: "Mål" }));
     expect(await screen.findByText(/Udbetaling til bolig/)).toBeTruthy();
     expect(s.plan.fetchPlan).not.toHaveBeenCalled();
   });

@@ -16,7 +16,8 @@ const when = (n: number) => {
 export function DebtCard({ assets, onEdit, onAdd }: { assets: Asset[]; onEdit: (a: Asset) => void; onAdd: () => void }) {
   const debts = assets.filter((a) => isDebt(a.kind));
   return (
-    <Card title="Gæld – afbetaling" action={<Button variant="soft" icon={<Plus size={16} />} onClick={onAdd}>Tilføj gæld</Button>}>
+    <Card title="Gæld" action={<Button variant="soft" icon={<Plus size={16} />} onClick={onAdd}>Tilføj gæld</Button>}>
+      {debts.length > 0 && <p className="mb-2 text-sm text-muted-foreground">Restgæld i alt <Money value={debts.reduce((x, d) => x + d.value, 0)} className="font-semibold text-foreground" /></p>}
       {!debts.length ? <p className="text-sm text-muted-foreground">Ingen gæld registreret. Har du fx lån i bilen eller boligen, så tilføj restgæld, rente og ydelse – så kan du se, hvornår du er gældfri.</p> : (
         <ul className="divide-y divide-border">
           {debts.map((d) => {
@@ -37,36 +38,6 @@ export function DebtCard({ assets, onEdit, onAdd }: { assets: Asset[]; onEdit: (
             );
           })}
         </ul>
-      )}
-    </Card>
-  );
-}
-
-/** Investeringer og pension: værdi, indskud og afkast. */
-export function InvestCard({ assets, onEdit }: { assets: Asset[]; onEdit: (a: Asset) => void }) {
-  const inv = assets.filter((a) => a.kind === "investment" || a.kind === "pension");
-  const total = inv.reduce((s, a) => s + a.value, 0);
-  return (
-    <Card title="Investeringer og pension">
-      {!inv.length ? <p className="text-sm text-muted-foreground">Tilføj investeringer eller pension under Nettoformue.</p> : (
-        <>
-          <p className="text-2xl font-semibold num"><Money value={total} /></p>
-          <ul className="mt-2 divide-y divide-border">
-            {inv.map((a) => {
-              const gain = a.invested ? a.value - a.invested : null;
-              return (
-                <li key={a.id}>
-                  <button type="button" onClick={() => onEdit(a)} className="flex w-full items-center justify-between gap-2 py-2 text-left">
-                    <span className="min-w-0"><span className="block truncate text-sm">{a.name}</span>
-                      {a.rate != null && <span className="text-xs text-muted-foreground">forventet {String(a.rate).replace(".", ",")} % om året</span>}</span>
-                    <span className="text-right"><Money value={a.value} className="block text-sm" />
-                      {gain != null && <Money value={gain} signed tone className="text-xs" />}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </>
       )}
     </Card>
   );

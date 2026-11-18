@@ -4,6 +4,7 @@ import type { BootParams } from "@/lib/boot-params";
 import { BudgetPage } from "@/pages/budget/BudgetPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { AdvisorPage } from "@/pages/advisor/AdvisorPage";
+import { MorePage } from "@/pages/more/MorePage";
 import { PlanPage } from "@/pages/plan/PlanPage";
 import { PotPage } from "@/pages/pot/PotPage";
 import { SettingsPage } from "@/pages/settings/SettingsPage";
@@ -26,6 +27,7 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/raadgiver", component: AdvisorPage,
     validateSearch: (s: Record<string, unknown>): { q?: string } => (typeof s.q === "string" ? { q: s.q.slice(0, 500) } : {}) }),
   createRoute({ getParentRoute: () => root, path: "/faelles", component: PotPage }),
+  createRoute({ getParentRoute: () => root, path: "/mere", component: MorePage }),
   createRoute({ getParentRoute: () => root, path: "/indstillinger", component: SettingsPage }),
   createRoute({ getParentRoute: () => root, path: "/indstillinger/$section", component: SettingsSection }),
 ];
