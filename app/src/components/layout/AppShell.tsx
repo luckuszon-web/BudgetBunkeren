@@ -6,6 +6,7 @@ import { BankCallback } from "./BankCallback";
 import { LoadState } from "./LoadState";
 import { Logo } from "./Logo";
 import { ThemeToggle } from "./ThemeToggle";
+import { DemoBar } from "./DemoBar";
 import { UpdateBar } from "./UpdateBar";
 
 type To = "/" | "/posteringer" | "/budget" | "/planlaeg" | "/faelles" | "/vaerktoejer" | "/raadgiver" | "/indstillinger";
@@ -64,7 +65,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
 
       {/* Indhold */}
       <main className="px-4 pb-28 pt-5 md:ml-60 md:px-8 md:pb-10 md:pt-8">
-        <div className="mx-auto max-w-6xl"><UpdateBar /><BankCallback bank={bank} /><LoadState><Outlet /></LoadState></div>
+        <div className="mx-auto max-w-6xl"><UpdateBar /><DemoBar /><BankCallback bank={bank} /><LoadState><Outlet /></LoadState></div>
       </main>
 
       {/* Mobil: bundmenu med iPhone safe-area padding */}

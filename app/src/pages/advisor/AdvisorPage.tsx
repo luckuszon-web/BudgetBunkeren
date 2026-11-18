@@ -9,12 +9,13 @@ import { useFinance } from "@/features/finance-store";
 import { useResource, useServices } from "@/features/services-context";
 import { todayIso } from "@/lib/today";
 import { Formatted } from "./Formatted";
+import { privateKey } from "@/lib/demo-mode";
 
 interface Msg { role: "user" | "assistant"; content: string; error?: boolean }
 const KEY = "advisorChat";
 const SUGGESTIONS = ["Hvorfor har jeg brugt mere denne måned?", "Hvor kan jeg spare 1.000 kr. om måneden?", "Hvordan når jeg mine opsparingsmål hurtigere?",
   "Hvilke abonnementer og faste udgifter bør jeg se på?", "Er min økonomi sund? Giv mig de tre vigtigste råd."];
-const load = (): Msg[] => { try { return JSON.parse(localStorage.getItem(KEY) || "[]") as Msg[]; } catch { return []; } };
+const load = (): Msg[] => { try { return JSON.parse(localStorage.getItem(privateKey(KEY)) || "[]") as Msg[]; } catch { return []; } };
 
 /** Spørg om din økonomi. Rådgiveren (AI på serveren) ser et sammendrag af tallene – ikke de enkelte posteringer. */
 export function AdvisorPage() {
@@ -24,7 +25,7 @@ export function AdvisorPage() {
   const search = useSearch({ from: "/raadgiver" });
   const [msgs, setMsgs] = useState<Msg[]>(load), [input, setInput] = useState(search.q ?? ""), [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(msgs.slice(-20))); } catch { /* ok */ } end.current?.scrollIntoView?.({ behavior: "smooth", block: "end" }); }, [msgs]);
+  useEffect(() => { try { localStorage.setItem(privateKey(KEY), JSON.stringify(msgs.slice(-20))); } catch { /* ok */ } end.current?.scrollIntoView?.({ behavior: "smooth", block: "end" }); }, [msgs]);
 
   async function ask(q: string) {
     q = q.trim();

@@ -2,6 +2,7 @@ import { Link, useRouteContext } from "@tanstack/react-router";
 import { ChevronRight, LogOut, Database, HeartPulse, KeyRound, Landmark, PenLine, Shuffle, Tags, Wand2, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
+import { DemoCard } from "./DemoCard";
 import { ThemePicker } from "./ThemePicker";
 
 export const SECTIONS: { id: string; title: string; text: string; icon: LucideIcon }[] = [
@@ -34,6 +35,7 @@ export function SettingsPage() {
         </ul>
       </Card>
       <Card title="Udseende" className="mt-4"><ThemePicker /></Card>
+      <DemoCard />
       <button type="button" onClick={signOut} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card p-3.5 text-sm font-medium text-destructive transition-colors hover:bg-accent">
         <LogOut className="h-4 w-4" /> Log ud
       </button>

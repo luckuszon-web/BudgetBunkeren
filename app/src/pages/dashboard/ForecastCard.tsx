@@ -1,11 +1,12 @@
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import type { ForecastResult } from "@/lib/finance-engine";
+import { privateKey } from "@/lib/demo-mode";
 import { monthName } from "@/lib/today";
 import { useState } from "react";
 
 const KEY = "own-salary";
-const readOwn = () => { try { const v = Number(localStorage.getItem(KEY)); return v > 0 ? v : null; } catch { return null; } };
+const readOwn = () => { try { const v = Number(localStorage.getItem(privateKey(KEY))); return v > 0 ? v : null; } catch { return null; } };
 
 /** Prognose for næste måned: forventet løn − faste − variabelt snit − opsparing. */
 export function ForecastCard({ f: base, month }: { f: ForecastResult | null; month: string }) {
@@ -14,7 +15,7 @@ export function ForecastCard({ f: base, month }: { f: ForecastResult | null; mon
   const f = base && own ? { ...base, expected: base.expected - base.salary.expected + own, low: base.low - base.salary.min + own, high: base.high - base.salary.max + own, salary: { ...base.salary, expected: own } } : base;
   const save = (v: string) => {
     const n = Number(v.replace(/\s|\./g, "").replace(",", "."));
-    try { if (n > 0) localStorage.setItem(KEY, String(n)); else localStorage.removeItem(KEY); } catch { /* ok */ }
+    try { if (n > 0) localStorage.setItem(privateKey(KEY), String(n)); else localStorage.removeItem(privateKey(KEY)); } catch { /* ok */ }
     setOwn(n > 0 ? n : null); setEdit(false);
   };
   return (
