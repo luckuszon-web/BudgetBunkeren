@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Delete, Lock } from "lucide-react";
 
 /** Talblok med 4 prikker (fuld skærm). `onCode` får 4 cifre og returnerer en fejltekst eller null. */
-export function PinPad({ title, onCode, footer }: { title: string; onCode: (code: string) => Promise<string | null>; footer?: React.ReactNode }) {
+export function PinPad({ title, onCode, footer, extra }: { title: string; onCode: (code: string) => Promise<string | null>; footer?: React.ReactNode; extra?: React.ReactNode }) {
   const [code, setCode] = useState(""), [msg, setMsg] = useState<string | null>(null);
   const press = (d: string) => {
     if (d === "del") return setCode((c) => c.slice(0, -1));
@@ -31,6 +31,7 @@ export function PinPad({ title, onCode, footer }: { title: string; onCode: (code
               className="grid h-16 place-items-center rounded-2xl bg-card text-xl font-medium shadow-sm active:bg-muted">{d === "del" ? <Delete size={20} /> : d}</button>
           ))}
         </div>
+        {extra}
         {footer}
       </div>
     </div>

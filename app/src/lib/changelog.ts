@@ -1,5 +1,9 @@
 /** "Nyt i appen" – nyeste først. `id` stiger (dato + løbenummer); nye punkter vises én gang efter en opdatering. */
 export const CHANGELOG: { id: string; date: string; title: string; items: string[] }[] = [
+  { id: "2026-11-18-5", date: "2026-11-18", title: "Lås op med Face ID", items: [
+    "Slå Face ID (eller Touch ID/fingeraftryk) til under Indstillinger → Login og sikkerhed – så åbner appen, når du kigger på telefonen.",
+    "Koden virker stadig som reserve.",
+  ] },
   { id: "2026-11-18-4", date: "2026-11-18", title: "Penge tilbage fra Skat", items: [
     "Nyt værktøj finder fradrag i dine posteringer: service, håndværker, fitness og musik (nyt i 2026), fagforening, gaver m.m.",
     "Beregner til kørselsfradrag med de forhøjede satser for 2026.",

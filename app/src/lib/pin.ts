@@ -13,7 +13,8 @@ export async function savePin(pin: string) {
   const salt = crypto.randomUUID();
   localStorage.setItem(KEY, JSON.stringify({ salt, hash: await pinHash(pin, salt) }));
 }
-export const clearPin = () => { try { localStorage.removeItem(KEY); } catch { /* ok */ } };
+/** Slår koden fra – og dermed også Face ID (som kun er en genvej forbi koden). */
+export const clearPin = () => { try { localStorage.removeItem(KEY); localStorage.removeItem("bb-bio"); } catch { /* ok */ } };
 export async function checkPin(pin: string): Promise<boolean> {
   const s = pinSaved();
   return !!s && (await pinHash(pin, s.salt)) === s.hash;
