@@ -81,10 +81,11 @@ describe("Ny app – resten", () => {
 describe("Posteringer: sortering", () => {
   it("største beløb først – og tilbage til nyeste først", async () => {
     setup("/posteringer");
-    await screen.findByLabelText("Sortér posteringer");
+    fireEvent.click(await screen.findByRole("button", { name: "Filtre" }));
     const amounts = () => screen.getAllByRole("listitem").map((li) => li.querySelector(".num")?.textContent ?? "").filter(Boolean);
     fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "amount-desc" } });
     expect(amounts()[0]).toBe("−11.250 kr.");
+    expect(screen.getByRole("button", { name: "Fjern filter: Største beløb først" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "amount-asc" } });
     expect(amounts()[0]).toBe("−272 kr.");
     fireEvent.change(screen.getByLabelText("Sortér posteringer"), { target: { value: "date-desc" } });
