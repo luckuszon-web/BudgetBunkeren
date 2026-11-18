@@ -3,11 +3,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { useFinance } from "@/features/finance-store";
-import { dailyResults, daysInMonth, formatKr, shiftMonth, upcomingFixed } from "@/lib/finance-engine";
+import { amountsHidden, dailyResults, daysInMonth, formatKr, shiftMonth, upcomingFixed } from "@/lib/finance-engine";
 import { currentMonth, monthName, todayIso } from "@/lib/today";
 import { salaryFor } from "./tool-helpers";
 
-const short = (v: number) => { const a = Math.abs(Math.round(v)); return a >= 10000 ? `${Math.round(a / 1000)}k` : a.toLocaleString("da-DK"); };
+const short = (v: number) => { if (amountsHidden()) return "•••"; const a = Math.abs(Math.round(v)); return a >= 10000 ? `${Math.round(a / 1000)}k` : a.toLocaleString("da-DK"); };
 
 /** Månedens løn fordelt ligeligt over dagene: grøn dag = overskud, rød = underskud (styrke efter beløb). */
 export function CalendarTool() {

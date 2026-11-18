@@ -14,6 +14,7 @@ Personligt budgetværktøj (Nordea via Enable Banking). Ejeren + inviterede brug
 - Signups slået fra – kun via ejerens invitationskode. RLS: egne rækker. Browseren må kun ændre `category_id`/`category_source`/`one_off`/`note` på posteringer og `display_name`/`hidden` på konti.
 - UI må aldrig kalde Supabase direkte – kun via services (Zod-valideret).
 - Demotilstand (Indstillinger, `lib/demo-mode.ts`, localStorage `bb-demo`): `App` bytter services til `services/demo` (fiktive tal i `memory-supabase.ts`, genereret af `demo-data.ts` ud fra dags dato). Rigtige data hentes/gemmes aldrig; serverhandlinger blokeres; personlige localStorage-nøgler via `privateKey()`.
+- Skjul beløb (øje i topbar/sidebar, `lib/privacy.ts`, localStorage `bb-hide-amounts`): `formatKr`/`formatSignedKr` i motoren viser "••• kr." via `setAmountsHidden`; brug altid `formatKr`/`Money` til beløb (aldrig `toLocaleString` direkte), ellers slipper tal igennem.
 
 ## Opbygning
 - **Hosting:** GitHub Pages fra `docs/`. `docs/index.html` = videresender til `ny/` (tager `?…`/`#…` med: bank-login og mail-links lander på forsiden). `docs/sw.js` (offline, netværk-først), `config.js` (offentlig URL + publishable key, læses af build-scriptet), `opdater.html`, `push-noegler.html`, `hemmelighed.html`, `privatliv.html`, `vilkaar.html`. Den gamle vanilla-app er fjernet (Git før 75c3376; noter i `notes/CLAUDE-arkiv-2026-11-17.md`).

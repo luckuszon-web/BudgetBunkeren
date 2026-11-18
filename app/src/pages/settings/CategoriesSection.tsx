@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { useFinance } from "@/features/finance-store";
-import { shiftMonth } from "@/lib/finance-engine";
+import { formatKr, shiftMonth } from "@/lib/finance-engine";
 import { currentMonth } from "@/lib/today";
 import type { Category, CategoryKind } from "@/types/finance";
 import { CategoryDialog, KIND_TEXT } from "./CategoryDialog";
@@ -52,7 +52,7 @@ export function CategoriesSection() {
                       <button type="button" onClick={() => setEdit({ c })} className="flex w-full items-center gap-3 py-2 text-left hover:bg-accent">
                         <CategoryIcon category={c} />
                         <span className="min-w-0 flex-1"><span className="block truncate text-sm">{c.name}</span>
-                          <span className="text-xs text-muted-foreground">{u ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"}` : "ikke brugt"}{c.monthly_budget ? ` · budget ${c.monthly_budget.toLocaleString("da-DK")} kr.${c.budget_week ? "/uge" : ""}` : ""}</span></span>
+                          <span className="text-xs text-muted-foreground">{u ? `${u.n} ${u.n === 1 ? "postering" : "posteringer"}` : "ikke brugt"}{c.monthly_budget ? ` · budget ${formatKr(c.monthly_budget)}${c.budget_week ? "/uge" : ""}` : ""}</span></span>
                         {u && <Money value={Math.abs(u.sum)} className="text-sm text-muted-foreground" />}
                       </button>
                     </li>

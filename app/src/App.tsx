@@ -6,10 +6,12 @@ import { FinanceProvider, type FinanceServices } from "@/features/finance-store"
 import { ServicesProvider, type UiServices } from "@/features/services-context";
 import type { BootParams } from "@/lib/boot-params";
 import { useDemoMode } from "@/lib/demo-mode";
+import { useHideAmounts } from "@/lib/privacy";
 import { withDemo } from "@/services/demo";
 import { makeRouter } from "./router";
 
 function Routed({ signOut, history, bank }: { signOut: () => void; history?: RouterHistory; bank: BootParams["bank"] }) {
+  useHideAmounts();   // gentegn alle sider, når beløb skjules/vises
   const router = useMemo(() => {
     // Et login-token/fejl i hashen er ikke en side – start på forsiden
     if (!history && /access_token|error=/.test(location.hash)) window.history.replaceState(null, "", location.pathname);

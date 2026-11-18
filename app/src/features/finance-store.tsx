@@ -12,6 +12,7 @@ import { daysInMonth, matchesRule, shiftMonth } from "@/lib/finance-engine";
 import { getServices, type AuthUser, RepositoryError } from "@/services";
 import { friendly } from "./friendly-error";
 import { extraActions } from "./finance-extra-actions";
+import { useHideAmounts } from "@/lib/privacy";
 import { deriveFinance } from "./finance-selectors";
 import { financeReducer, initialState, type Toast, type TxEditable } from "./finance-state";
 import type { FinanceActions, FinanceContextValue, FinanceServices } from "./finance-types";
@@ -159,9 +160,10 @@ export function FinanceProvider({ children, services, today = isoToday, historyM
   }), [refresh, patchTx, svc, toast]);
 
   // ---------- Beregnede værdier ----------
+  const hideAmounts = useHideAmounts();   // tekster med beløb (fx indsigter) beregnes igen, når beløb skjules/vises
   const derived = useMemo(
     () => (state.data ? deriveFinance(state.data, state.period, state.filters, today()) : null),
-    [state.data, state.period, state.filters, today],
+    [state.data, state.period, state.filters, today, hideAmounts],   // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const value = useMemo<FinanceContextValue>(() => ({ state, derived, user: userRef.current, actions }), [state, derived, actions]);

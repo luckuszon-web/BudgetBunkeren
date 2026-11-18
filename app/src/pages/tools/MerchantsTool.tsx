@@ -5,7 +5,7 @@ import { Money } from "@/components/ui/Money";
 import { useFinance } from "@/features/finance-store";
 import { merchantSummaries } from "@/features/merchants";
 import { useShowTransactions } from "@/features/use-show-transactions";
-import { shiftMonth } from "@/lib/finance-engine";
+import { formatKr, shiftMonth } from "@/lib/finance-engine";
 import { currentMonth } from "@/lib/today";
 
 const short = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("da-DK", { month: "narrow", timeZone: "UTC" });
@@ -38,7 +38,7 @@ export function MerchantsTool() {
                     <div className="mt-2 rounded-xl bg-surface p-3 text-sm">
                       <div className="flex h-20 items-end gap-1" role="img" aria-label={`Forbrug hos ${m.name} pr. måned`}>
                         {m.perMonth.map((v, j) => (
-                          <div key={months[j]} className="flex flex-1 flex-col items-center gap-1" title={`${months[j]}: ${Math.round(v)} kr.`}>
+                          <div key={months[j]} className="flex flex-1 flex-col items-center gap-1" title={`${months[j]}: ${formatKr(v)}`}>
                             <div className="w-full rounded-t" style={{ height: `${Math.max(v > 0 ? 4 : 0, (v / max) * 64)}px`, background: "var(--color-chart-1)" }} />
                             <span className="text-[10px] text-muted-foreground">{short(months[j]!)}</span>
                           </div>

@@ -7,6 +7,7 @@ import { Money } from "@/components/ui/Money";
 import { useAction, useServices } from "@/features/services-context";
 import { monthName, todayIso } from "@/lib/today";
 import type { PotData } from "@/types/plan";
+import { formatKr } from "@/lib/finance-engine";
 import { parseKr } from "@/pages/plan/plan-labels";
 
 /** Månedens fordeling (hvem har betalt, pr. kategori) + listen og en hurtig "tilføj udgift". */
@@ -41,7 +42,7 @@ export function PotItems({ data, me, onChanged }: { data: PotData; me: string; o
         {data.members.map((m) => <span key={m.user_id} className="rounded-full bg-background px-3 py-1">{name(m.user_id)} betalte <Money value={paid.get(m.user_id) ?? 0} /></span>)}
       </div>
       {byCat.size > 0 && (
-        <p className="mb-3 text-xs text-muted-foreground">{[...byCat].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c} ${Math.round(v).toLocaleString("da-DK")} kr.`).join(" · ")}</p>
+        <p className="mb-3 text-xs text-muted-foreground">{[...byCat].sort((a, b) => b[1] - a[1]).map(([c, v]) => `${c} ${formatKr(v)}`).join(" · ")}</p>
       )}
       <ul className="divide-y divide-border">
         {inMonth.map((i) => (

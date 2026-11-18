@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { formatKr } from "@/lib/finance-engine";
+import { amountsHidden, formatKr } from "@/lib/finance-engine";
 
 export interface BarSeries { name: string; color: string; values: number[] }
 export interface RefLine { name: string; color: string; value: number; dash: string }
@@ -10,7 +10,7 @@ function niceStep(max: number, ticks = 3) {
   const raw = max / ticks, p = 10 ** Math.floor(Math.log10(raw || 1)), m = raw / p;
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
 }
-const short = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)));
+const short = (v: number) => (amountsHidden() ? "•••" : v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v)));
 /** Søjle med 4 px afrundet top, stående på nullinjen. */
 function bar(x: number, y: number, w: number, h: number) {
   const r = Math.min(4, w / 2, h);

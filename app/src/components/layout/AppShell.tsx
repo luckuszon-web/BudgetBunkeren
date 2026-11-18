@@ -5,6 +5,7 @@ import type { BootParams } from "@/lib/boot-params";
 import { BankCallback } from "./BankCallback";
 import { LoadState } from "./LoadState";
 import { Logo } from "./Logo";
+import { HideAmountsToggle } from "./HideAmountsToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { DemoBar } from "./DemoBar";
 import { UpdateBar } from "./UpdateBar";
@@ -48,7 +49,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
         </nav>
         <div className="mt-auto flex items-center justify-between rounded-lg bg-surface p-3">
           <span className="text-xs text-muted-foreground">BudgetBunkeren</span>
-          <ThemeToggle />
+          <span className="flex items-center gap-1"><HideAmountsToggle /><ThemeToggle /></span>
         </div>
       </aside>
 
@@ -56,6 +57,7 @@ export function AppShell({ bank = null }: { onSignOut?: () => void; bank?: BootP
       <header className="pt-safe sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/85 px-4 py-3 backdrop-blur md:hidden">
         <Logo />
         <div className="flex items-center gap-1">
+          <HideAmountsToggle />
           <Link to="/indstillinger" aria-label="Indstillinger"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             activeProps={{ className: "!text-primary" }}><Settings className="h-4 w-4" /></Link>

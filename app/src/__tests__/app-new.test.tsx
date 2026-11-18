@@ -1,11 +1,25 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { setHideAmounts } from "@/lib/privacy";
 import { setup } from "./app-setup";
 
-afterEach(() => { cleanup(); localStorage.clear(); });
+afterEach(() => { cleanup(); setHideAmounts(false); localStorage.clear(); });
 
 describe("Nye funktioner", () => {
+  it("Skjul beløb: øjet erstatter alle beløb med ••• og viser dem igen", async () => {
+    setup("/");
+    expect(await screen.findByText("Til rådighed resten af måneden")).toBeTruthy();
+    const before = document.body.textContent!;
+    expect(before).toMatch(/\d\.\d{3} kr\./);
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Skjul beløb" })[0]!); });
+    const hidden = document.body.textContent!;
+    expect(hidden).not.toMatch(/\d\.\d{3} kr\./);
+    expect(hidden).toContain("••• kr.");
+    expect(localStorage.getItem("bb-hide-amounts")).toBe("1");
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Vis beløb" })[0]!); });
+    expect(document.body.textContent).toMatch(/\d\.\d{3} kr\./);
+  });
   it("Postering: viser kvittering og kan uploade en ny", async () => {
     const { receipts } = setup("/posteringer");
     fireEvent.change(await screen.findByLabelText("Søg i posteringer"), { target: { value: "netflix" } });

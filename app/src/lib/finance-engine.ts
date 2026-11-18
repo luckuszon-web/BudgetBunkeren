@@ -18,10 +18,15 @@ type TextOf = Pick<Transaction, "text" | "counterparty">;
 // Formatering og tal
 // ======================================================================
 const dkk = new Intl.NumberFormat("da-DK", { maximumFractionDigits: 0 });
+// "Skjul beløb": når den er slået til, vises alle beløb som "••• kr." (sættes af UI'et via setAmountsHidden)
+let hidden = false;
+export const setAmountsHidden = (v: boolean) => { hidden = v; };
+export const amountsHidden = () => hidden;
+export const MASK = "•••";
 /** "1.234 kr." – aldrig "-0 kr.". */
-export const formatKr = (n: number): string => `${dkk.format(Math.round(n) || 0)} kr.`;
+export const formatKr = (n: number): string => (hidden ? `${MASK} kr.` : `${dkk.format(Math.round(n) || 0)} kr.`);
 /** "+1.234 kr." / "−1.234 kr." (typografisk minus). */
-export const formatSignedKr = (n: number): string => `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatKr(Math.abs(n))}`;
+export const formatSignedKr = (n: number): string => (hidden ? formatKr(n) : `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatKr(Math.abs(n))}`);
 export const round2 = (n: number): number => Math.round(n * 100) / 100;
 export const sum = (xs: readonly number[]): number => xs.reduce((s, x) => s + x, 0);
 export const avg = (xs: readonly number[]): number => (xs.length ? sum(xs) / xs.length : 0);
