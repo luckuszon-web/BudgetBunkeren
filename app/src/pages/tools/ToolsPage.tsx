@@ -5,13 +5,19 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { AnnuityCalculator } from "./AnnuityCalculator";
 import { CalendarTool } from "./CalendarTool";
 import { CompareTool } from "./CompareTool";
+import { FeesTool } from "./FeesTool";
+import { MerchantsTool } from "./MerchantsTool";
 import { QuarterTool } from "./QuarterTool";
+import { TagsTool } from "./TagsTool";
 import { TaxCalculator } from "./TaxCalculator";
 import { WhatIfTool } from "./WhatIfTool";
 import { YearTool } from "./YearTool";
 
 const TOOLS = [
   { id: "cal", label: "Kalender", el: <CalendarTool /> },
+  { id: "tags", label: "#Rejser og projekter", el: <TagsTool /> },
+  { id: "shops", label: "Butikker", el: <MerchantsTool /> },
+  { id: "fees", label: "Gebyr-jæger", el: <FeesTool /> },
   { id: "whatif", label: "Hvad nu hvis", el: <WhatIfTool /> },
   { id: "year", label: "Årsprognose", el: <YearTool /> },
   { id: "quarter", label: "Kvartal", el: <QuarterTool /> },
