@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { RepositoryError } from "@/services";
+import { AuthLayout } from "./AuthLayout";
 import { RegisterForm } from "./RegisterForm";
 
 /** Log ind med e-mail og adgangskode – og bagefter evt. 6-cifret kode (totrinsbekræftelse). */
@@ -31,12 +31,10 @@ export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa, onForgot, onRe
   }
 
   return (
-    <div className="pt-safe pb-safe grid min-h-dvh place-items-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-sm"><form onSubmit={submit}>
-        <div className="mb-5 flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary text-primary-foreground"><Lock size={18} /></div>
-          <div><h1 className="text-lg font-semibold">BudgetBunkeren</h1><p className="text-sm text-muted-foreground">{mode === "mfa" ? "Skriv koden fra din godkendelses-app" : "Log ind for at se din økonomi"}</p></div>
-        </div>
+    <AuthLayout subtitle="Dit personlige budget – overblik over hele din økonomi">
+      <form onSubmit={submit}>
+        <h2 className="text-lg font-semibold">{mode === "mfa" ? "Totrinsbekræftelse" : "Log ind"}</h2>
+        <p className="mb-4 text-sm text-muted-foreground">{mode === "mfa" ? "Skriv koden fra din godkendelses-app." : "Med din e-mail og adgangskode."}</p>
         <div className="grid gap-3">
           {mode === "password" ? (
             <>
@@ -63,8 +61,7 @@ export function LoginScreen({ mode, onSignIn, onMfa, onCancelMfa, onForgot, onRe
           </div>
         )}
       </form>
-        {mode === "password" && register && <RegisterForm initialCode={invite ?? ""} onRegister={onRegister} />}
-      </div>
-    </div>
+      {mode === "password" && register && <RegisterForm initialCode={invite ?? ""} onRegister={onRegister} />}
+    </AuthLayout>
   );
 }
