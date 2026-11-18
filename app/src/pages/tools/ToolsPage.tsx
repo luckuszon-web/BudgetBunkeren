@@ -5,16 +5,19 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { AnnuityCalculator } from "./AnnuityCalculator";
 import { CalendarTool } from "./CalendarTool";
 import { CompareTool } from "./CompareTool";
+import { DkCompareTool } from "./DkCompareTool";
 import { FeesTool } from "./FeesTool";
 import { MerchantsTool } from "./MerchantsTool";
 import { QuarterTool } from "./QuarterTool";
 import { TagsTool } from "./TagsTool";
 import { TaxCalculator } from "./TaxCalculator";
 import { WhatIfTool } from "./WhatIfTool";
+import { YearReviewTool } from "./YearReviewTool";
 import { YearTool } from "./YearTool";
 
 const TOOLS = [
   { id: "cal", label: "Kalender", el: <CalendarTool /> },
+  { id: "review", label: "Året der gik", el: <YearReviewTool /> },
   { id: "tags", label: "#Rejser og projekter", el: <TagsTool /> },
   { id: "shops", label: "Butikker", el: <MerchantsTool /> },
   { id: "fees", label: "Gebyr-jæger", el: <FeesTool /> },
@@ -22,6 +25,7 @@ const TOOLS = [
   { id: "year", label: "Årsprognose", el: <YearTool /> },
   { id: "quarter", label: "Kvartal", el: <QuarterTool /> },
   { id: "compare", label: "Sammenlign", el: <CompareTool /> },
+  { id: "dk", label: "Mod danskerne", el: <DkCompareTool /> },
   { id: "tax", label: "Løn og skat", el: <TaxCalculator /> },
   { id: "loan", label: "Afdrag", el: <AnnuityCalculator /> },
 ];

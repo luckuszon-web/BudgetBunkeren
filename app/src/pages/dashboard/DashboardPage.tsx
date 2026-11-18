@@ -18,6 +18,7 @@ import { SpendHeatmapCard } from "./SpendHeatmapCard";
 import { AlertBar } from "./AlertBar";
 import { DonutCard } from "./DonutCard";
 import { PaceCard } from "./PaceCard";
+import { PaydayCard } from "./PaydayCard";
 import { ReportCard } from "./ReportCard";
 import { SyncStatus } from "./SyncStatus";
 
@@ -45,8 +46,9 @@ export function DashboardPage() {
         <div className="lg:col-span-3"><KeyFiguresCard figures={extra.figures} /></div>
         <div className="lg:col-span-3"><IncomeExpenseCard /></div>
         <div className="lg:col-span-2"><InsightsCard insights={derived.insights} /></div>
-        <ForecastCard f={derived.forecast} month={shiftMonth(currentMonth(), 1)} />
+        <PaydayCard />
         <div className="lg:col-span-2"><PaceCard /></div>
+        <ForecastCard f={derived.forecast} month={shiftMonth(currentMonth(), 1)} />
         <DonutCard />
         <SpendHeatmapCard />
       </div>
