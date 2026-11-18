@@ -51,6 +51,22 @@ describe("Nye funktioner", () => {
     expect(repo.saveTransaction).toHaveBeenLastCalledWith({ id: expect.any(String), category_id: before });
     expect(screen.queryByRole("button", { name: "Fortryd" })).toBeNull();
   });
+  it("Træk ned for at opdatere på Overblik henter tallene igen", async () => {
+    const { repo } = setup("/");
+    await screen.findByText("Til rådighed resten af måneden");
+    const calls = repo.fetchAllUserData.mock.calls.length;
+    fireEvent.touchStart(window, { touches: [{ clientY: 10 }] });
+    fireEvent.touchMove(window, { touches: [{ clientY: 200 }] });
+    expect(screen.getByText("Slip for at opdatere")).toBeTruthy();
+    await act(async () => { fireEvent.touchEnd(window); });
+    expect(repo.fetchAllUserData.mock.calls.length).toBe(calls + 1);
+    expect(await screen.findByText("Opdateret med de nyeste tal.")).toBeTruthy();
+    // Et kort træk gør ingenting
+    fireEvent.touchStart(window, { touches: [{ clientY: 10 }] });
+    fireEvent.touchMove(window, { touches: [{ clientY: 60 }] });
+    await act(async () => { fireEvent.touchEnd(window); });
+    expect(repo.fetchAllUserData.mock.calls.length).toBe(calls + 1);
+  });
   it("Notifikationer: siger det, når browseren ikke kan", async () => {
     setup("/indstillinger/notifikationer");
     expect(await screen.findByText(/understøtter ikke notifikationer/)).toBeTruthy();

@@ -5,6 +5,7 @@ export const CHANGELOG: { id: string; date: string; title: string; items: string
     "Hent en kopi af alle dine data – eller slet din konto – under Indstillinger → Data.",
     "\"Fortryd\" efter ændret kategori, engangskøb og ændringer på flere posteringer.",
     "Hurtigere start og grå pladsholdere, mens data hentes.",
+    "Træk ned for at opdatere på Overblik og Posteringer.",
   ] },
   { id: "2026-11-18-2", date: "2026-11-18", title: "Velkommen og varsler", items: [
     "Ny login-side med logo, og nyt app-ikon.",
