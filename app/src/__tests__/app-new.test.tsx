@@ -30,6 +30,15 @@ describe("Nye funktioner", () => {
     await act(async () => { fireEvent.change(within(dlg).getByLabelText("Vælg billede af kvittering"), { target: { files: [file] } }); });
     expect(receipts.upload).toHaveBeenCalledWith("me", expect.any(String), expect.any(Blob));
   });
+  it("Bankadgang: bjælke med Forny, når adgangen snart udløber", async () => {
+    setup("/", { sessions: [{ id: "x", bank: "Nordea", valid_until: new Date(Date.now() + 5 * 864e5 - 3600e3).toISOString() }] });
+    expect(await screen.findByText(/Adgangen til Nordea udløber om 5 dage/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Forny" })).toBeTruthy();
+    cleanup();
+    setup("/", { sessions: [{ id: "y", bank: "Nordea", valid_until: new Date(Date.now() - 864e5).toISOString() }] });
+    expect(await screen.findByText(/er udløbet/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Luk for i dag" })).toBeNull();   // kan ikke lukkes, når den er udløbet
+  });
   it("Notifikationer: siger det, når browseren ikke kan", async () => {
     setup("/indstillinger/notifikationer");
     expect(await screen.findByText(/understøtter ikke notifikationer/)).toBeTruthy();

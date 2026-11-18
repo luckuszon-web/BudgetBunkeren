@@ -10,7 +10,7 @@ window.scrollTo = (() => {}) as typeof window.scrollTo;
 window.confirm = () => true;
 
 /** Hele appen med falske services (ingen Supabase) og en hukommelses-historik. */
-export function setup(path = "/", { signedIn = true, mfa = false, boot }: { signedIn?: boolean; mfa?: boolean; boot?: BootParams } = {}) {
+export function setup(path = "/", { signedIn = true, mfa = false, boot, sessions = [] }: { signedIn?: boolean; mfa?: boolean; boot?: BootParams; sessions?: { id: string; bank: string; valid_until: string }[] } = {}) {
   let user = signedIn ? { id: "me", email: "me@example.com" } : null;
   const auth = {
     currentUser: vi.fn(async () => user),
@@ -52,7 +52,7 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot }: { sign
     advisor: vi.fn(async () => "Du har brugt **mere** på restaurant.\n- Spar på Wolt"), syncNow: vi.fn(async () => ({})), finishBank: vi.fn(async () => 2), register: vi.fn(async () => ({})), recategorize: vi.fn(async () => ({ result: { updated: 3 } })), advisorPing: vi.fn(),
     pushKey: vi.fn(async () => "BPUBKEY"), pushTest: vi.fn(async () => 1),
   };
-  const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn(),
+  const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => sessions), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn(),
     pushPrefs: vi.fn(async () => ({ salary: true, budget: true, unknown: true, digest: "off" })), setPushPrefs: vi.fn(async () => {}), savePushSubscription: vi.fn(async () => {}), deletePushSubscription: vi.fn(async () => {}) };
   const receipts = { list: vi.fn(async () => [{ path: "me/t1/1.jpg", url: "blob:kvittering", created: null }]), upload: vi.fn(async () => {}), remove: vi.fn(async () => {}) };
   const history = createMemoryHistory({ initialEntries: [path] });

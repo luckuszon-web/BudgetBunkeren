@@ -3,6 +3,7 @@
 // eller fra siden via knappen "Opdater nu" (med dit login).
 import { admin, categorize, cors, json, syncAll, userFromRequest } from "../_shared/common.ts";
 import { dkHour, sendDigests } from "../_shared/digest.ts";
+import { sendRenewalReminders } from "../_shared/renewal.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -15,7 +16,10 @@ Deno.serve(async (req) => {
         if (dkHour() !== 12) return json({ ok: true, skipped: "ikke kl. 12 i Danmark" });
         return json({ ok: true, digests: await sendDigests(admin()) });
       }
-      return json({ ok: true, report: await syncAll() });
+      // Påmindelse om at forny bankadgangen (før hentningen, så en fejl i hentningen ikke stopper den)
+      let renewals: unknown = null;
+      try { renewals = await sendRenewalReminders(admin()); } catch (e) { console.warn("Fornyelsespåmindelse fejlede", e); }
+      return json({ ok: true, renewals, report: await syncAll() });
     }
     const user = await userFromRequest(req);
     if (!user) return json({ error: "Ikke logget ind" }, 401);
