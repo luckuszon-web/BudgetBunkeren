@@ -4,6 +4,7 @@ import { getServices } from "@/services";
 import { readBootParams } from "@/lib/boot-params";
 import { listenForInstall } from "@/lib/install";
 import { App } from "./App";
+import { ErrorBoundary } from "@/components/layout/ErrorScreen";
 import "./index.css";
 
 const el = document.getElementById("root")!;
@@ -16,7 +17,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:" && !navigator
 }
 
 try {
-  createRoot(el).render(<StrictMode><App services={getServices()} boot={boot} /></StrictMode>);
+  createRoot(el).render(<StrictMode><ErrorBoundary><App services={getServices()} boot={boot} /></ErrorBoundary></StrictMode>);
 } catch (e) {
   // Fx manglende/ugyldig Supabase-opsætning – vis en forståelig besked i stedet for en hvid side.
   el.innerHTML = `<p style="padding:2rem;font-family:system-ui">Appen kunne ikke starte: ${String((e as Error).message ?? e).replace(/</g, "&lt;")}</p>`;

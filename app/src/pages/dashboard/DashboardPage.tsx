@@ -9,6 +9,7 @@ import { useResource } from "@/features/services-context";
 import { shiftMonth } from "@/lib/finance-engine";
 import { currentMonth } from "@/lib/today";
 import { ForecastCard } from "./ForecastCard";
+import { GettingStartedCard } from "./GettingStartedCard";
 import { HeroCard } from "./HeroCard";
 import { KeyFiguresCard } from "./KeyFiguresCard";
 import { IncomeExpenseCard } from "./IncomeExpenseCard";
@@ -38,6 +39,7 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title="Overblik" subtitle={<SyncStatus />} action={<PeriodPicker />} />
+      <GettingStartedCard />
       <AlertBar />
       <ReportCard />
       <div className="grid gap-4 lg:grid-cols-3">

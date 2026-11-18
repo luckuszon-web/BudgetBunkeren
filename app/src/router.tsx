@@ -1,5 +1,6 @@
 import { createHashHistory, createRootRouteWithContext, createRoute, createRouter, type RouterHistory } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
+import { ErrorScreen } from "@/components/layout/ErrorScreen";
 import type { BootParams } from "@/lib/boot-params";
 import { BudgetPage } from "@/pages/budget/BudgetPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
@@ -34,6 +35,8 @@ const routes = [
 
 /** Hash-routing (#/budget), så GitHub Pages ikke skal kende undersiderne. */
 export function makeRouter(signOut: () => void, history: RouterHistory = createHashHistory(), bank: BootParams["bank"] = null) {
-  return createRouter({ routeTree: root.addChildren(routes), history, context: { signOut, bank } });
+  return createRouter({ routeTree: root.addChildren(routes), history, context: { signOut, bank },
+    // Fejl i en side: venlig dansk fejlside inde i appens ramme (menuen virker stadig)
+    defaultErrorComponent: ({ error, reset }) => <ErrorScreen error={error} onRetry={reset} /> });
 }
 declare module "@tanstack/react-router" { interface Register { router: ReturnType<typeof makeRouter> } }
