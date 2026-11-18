@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { BarChart3, Calculator, CalendarDays, ChevronLeft, Coins, Flag, Hash, Landmark, MessageCircle, PartyPopper, Scale, ShoppingBag, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
+import { BadgePercent, BarChart3, Calculator, CalendarDays, ChevronLeft, Coins, Flag, Hash, Landmark, MessageCircle, PartyPopper, Scale, ShoppingBag, Sparkles, TrendingUp, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AnnuityCalculator } from "./AnnuityCalculator";
 import { CalendarTool } from "./CalendarTool";
 import { CompareTool } from "./CompareTool";
+import { DeductionsTool } from "./DeductionsTool";
 import { DkCompareTool } from "./DkCompareTool";
 import { FeesTool } from "./FeesTool";
 import { MerchantsTool } from "./MerchantsTool";
@@ -32,6 +33,7 @@ const GROUPS: { title: string; tools: Tool[] }[] = [
     { id: "quarter", label: "Kvartal", text: "Kvartalet i tal", icon: BarChart3, el: <QuarterTool /> },
   ] },
   { title: "Beregnere", tools: [
+    { id: "fradrag", label: "Penge tilbage fra Skat", text: "Fradrag i dine posteringer", icon: BadgePercent, el: <DeductionsTool /> },
     { id: "tax", label: "Løn og skat", text: "Fra brutto til netto", icon: Landmark, el: <TaxCalculator /> },
     { id: "loan", label: "Afdrag", text: "Ydelse og afdragsplan", icon: Calculator, el: <AnnuityCalculator /> },
   ] },

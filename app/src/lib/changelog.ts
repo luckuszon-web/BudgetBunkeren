@@ -1,5 +1,10 @@
 /** "Nyt i appen" – nyeste først. `id` stiger (dato + løbenummer); nye punkter vises én gang efter en opdatering. */
 export const CHANGELOG: { id: string; date: string; title: string; items: string[] }[] = [
+  { id: "2026-11-18-4", date: "2026-11-18", title: "Penge tilbage fra Skat", items: [
+    "Nyt værktøj finder fradrag i dine posteringer: service, håndværker, fitness og musik (nyt i 2026), fagforening, gaver m.m.",
+    "Beregner til kørselsfradrag med de forhøjede satser for 2026.",
+    "Påmindelse den 24. november og i marts, når forskuds- og årsopgørelsen er klar.",
+  ] },
   { id: "2026-11-18-3", date: "2026-11-18", title: "Mere gennemført", items: [
     "Hjælp og ofte stillede spørgsmål under Indstillinger.",
     "Hent en kopi af alle dine data – eller slet din konto – under Indstillinger → Data.",

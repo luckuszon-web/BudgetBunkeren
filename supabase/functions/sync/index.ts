@@ -4,6 +4,7 @@
 import { admin, categorize, cors, json, syncAll, userFromRequest } from "../_shared/common.ts";
 import { dkHour, sendDigests } from "../_shared/digest.ts";
 import { sendRenewalReminders } from "../_shared/renewal.ts";
+import { sendTaxReminders } from "../_shared/tax-reminder.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -19,6 +20,7 @@ Deno.serve(async (req) => {
       // Påmindelse om at forny bankadgangen (før hentningen, så en fejl i hentningen ikke stopper den)
       let renewals: unknown = null;
       try { renewals = await sendRenewalReminders(admin()); } catch (e) { console.warn("Fornyelsespåmindelse fejlede", e); }
+      try { await sendTaxReminders(admin()); } catch (e) { console.warn("Fradragspåmindelse fejlede", e); }
       return json({ ok: true, renewals, report: await syncAll() });
     }
     const user = await userFromRequest(req);

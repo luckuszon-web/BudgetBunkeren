@@ -21,3 +21,12 @@ describe("fornyelse af bankadgang", () => {
     expect(renewalMessages([{ user_id: "u", aspsp_name: "Nordea", valid_until: at(3) }, { user_id: "u", aspsp_name: "Nordea", valid_until: at(180) }], now).size).toBe(0);
   });
 });
+
+import { taxReminder } from "../../../../supabase/functions/_shared/tax-reminder";
+describe("påmindelse om fradrag", () => {
+  it("kun 24. november og 16. marts", () => {
+    expect(taxReminder("2026-11-24")!.body).toContain("2027");
+    expect(taxReminder("2027-03-16")!.title).toMatch(/Årsopgørelsen/);
+    expect(taxReminder("2026-11-23")).toBeNull();
+  });
+});

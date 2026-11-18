@@ -73,7 +73,7 @@ describe("Nye funktioner", () => {
   });
   it("Værktøjer: #tags, butikker, gebyrer, året og danskerne kan åbnes", async () => {
     setup("/vaerktoejer");
-    for (const [tab, text] of [["#Projekter", /Skriv et/], ["Butikker", /uden faste regninger/], ["Gebyr-jæger", /Gebyr/], ["Mod danskerne", /Danmarks Statistik/], ["Året der gik", /Året der gik/]] as const) {
+    for (const [tab, text] of [["#Projekter", /Skriv et/], ["Butikker", /uden faste regninger/], ["Gebyr-jæger", /Gebyr/], ["Mod danskerne", /Danmarks Statistik/], ["Året der gik", /Året der gik/], ["Penge tilbage fra Skat", /Kørselsfradrag/]] as const) {
       fireEvent.click(await screen.findByRole("button", { name: tab }));
       expect((await screen.findAllByText(text)).length).toBeGreaterThan(0);
       fireEvent.click(screen.getByRole("button", { name: "Alle værktøjer" }));
