@@ -8,7 +8,11 @@ import { useAction, useResource, useServices } from "@/features/services-context
 import { currentSubscription, isIos, isStandalone, pushSupported, subscribe, unsubscribe } from "@/lib/push";
 import type { PushPrefs } from "@/services";
 
-const TYPES: { k: keyof PushPrefs; label: string; text: string }[] = [
+const DIGEST: { v: PushPrefs["digest"]; label: string }[] = [
+  { v: "off", label: "Fra" }, { v: "daily", label: "Dagligt – forbrug i går" }, { v: "weekly", label: "Ugentligt – hver mandag" },
+  { v: "monthly", label: "Månedligt – den 1. i måneden" }, { v: "all", label: "Alle tre" },
+];
+const TYPES: { k: "salary" | "budget" | "unknown"; label: string; text: string }[] = [
   { k: "salary", label: "Lønnen er gået ind", text: "Når der kommer en indbetaling i kategorien Løn." },
   { k: "budget", label: "Budget passeret", text: "Første gang en kategori går over budgettet i måneden." },
   { k: "unknown", label: "Ny ukendt trækning", text: "Udgifter på 1.000 kr. eller mere uden kategori." },
@@ -32,7 +36,7 @@ export function NotificationsSection() {
 
   const enable = () => act.run(async () => { const sub = await subscribe(key.data!); await settings.savePushSubscription(sub); setOn(true); setMsg("Notifikationer er slået til på denne enhed."); });
   const disable = () => act.run(async () => { const ep = await unsubscribe(); if (ep) await settings.deletePushSubscription(ep); setOn(false); setMsg("Slået fra på denne enhed."); });
-  const setPref = (k: keyof PushPrefs, v: boolean) => act.run(async () => { const p = { ...prefs.data!, [k]: v }; prefs.setData(p); await settings.setPushPrefs(user!.id, p); });
+  const setPref = <K extends keyof PushPrefs>(k: K, v: PushPrefs[K]) => act.run(async () => { const p = { ...prefs.data!, [k]: v }; prefs.setData(p); await settings.setPushPrefs(user!.id, p); });
 
   return (
     <div className="grid gap-4">
@@ -54,6 +58,16 @@ export function NotificationsSection() {
             </li>
           ))}
         </ul>
+      </Card>
+      <Card title="Forbrugsoversigt">
+        <label className="block text-sm">
+          <span className="mb-1 block text-muted-foreground">Få en kort besked om dit forbrug hver dag kl. 12.</span>
+          <select value={prefs.data?.digest ?? "off"} onChange={(e) => void setPref("digest", e.target.value as PushPrefs["digest"])} aria-label="Forbrugsoversigt"
+            className="mt-1 w-full rounded-lg border border-border bg-card px-2 py-2">
+            {DIGEST.map((d) => <option key={d.v} value={d.v}>{d.label}</option>)}
+          </select>
+        </label>
+        <p className="mt-2 text-xs text-muted-foreground">Dagligt viser gårsdagens forbrug (banken bogfører mange kortkøb først dagen efter). Ugentligt kommer mandag med sidste uge, månedligt den 1. med sidste måned – alle kl. 12.</p>
       </Card>
     </div>
   );

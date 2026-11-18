@@ -1,13 +1,20 @@
 // Henter nye posteringer.
 // Kaldes hver nat af databasens planlægger (med x-sync-secret),
 // eller fra siden via knappen "Opdater nu" (med dit login).
-import { categorize, cors, json, syncAll, userFromRequest } from "../_shared/common.ts";
+import { admin, categorize, cors, json, syncAll, userFromRequest } from "../_shared/common.ts";
+import { dkHour, sendDigests } from "../_shared/digest.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const secret = Deno.env.get("SYNC_SECRET");
     if (secret && req.headers.get("x-sync-secret") === secret) {
+      const body = await req.json().catch(() => ({}));
+      // Forbrugsoversigt kl. 12 dansk tid (planlagt kl. 10 og 11 UTC – kun den, der rammer kl. 12 her, sender)
+      if (body.action === "digest") {
+        if (dkHour() !== 12) return json({ ok: true, skipped: "ikke kl. 12 i Danmark" });
+        return json({ ok: true, digests: await sendDigests(admin()) });
+      }
       return json({ ok: true, report: await syncAll() });
     }
     const user = await userFromRequest(req);

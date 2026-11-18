@@ -10,9 +10,10 @@ import { AccountNameInput, SessionRow } from "./schemas-plan";
 import { z } from "zod";
 
 export const PushSubInput = z.object({ endpoint: z.string().url().max(1000), p256dh: z.string().min(20).max(200), auth: z.string().min(10).max(100) });
-export const PushPrefs = z.object({ salary: z.boolean(), budget: z.boolean(), unknown: z.boolean() });
+export const DIGEST_MODES = ["off", "daily", "weekly", "monthly", "all"] as const;
+export const PushPrefs = z.object({ salary: z.boolean(), budget: z.boolean(), unknown: z.boolean(), digest: z.enum(DIGEST_MODES).catch("off").default("off") });
 export type PushPrefs = z.infer<typeof PushPrefs>;
-const DEFAULT_PREFS: PushPrefs = { salary: true, budget: true, unknown: true };
+const DEFAULT_PREFS: PushPrefs = { salary: true, budget: true, unknown: true, digest: "off" };
 
 const isId = (s: string | null) => s === null || /^\d{1,18}$/.test(s);
 

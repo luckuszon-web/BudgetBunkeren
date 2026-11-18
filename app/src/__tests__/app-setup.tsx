@@ -53,7 +53,7 @@ export function setup(path = "/", { signedIn = true, mfa = false, boot }: { sign
     pushKey: vi.fn(async () => "BPUBKEY"), pushTest: vi.fn(async () => 1),
   };
   const settings = { subMarks: vi.fn(async () => ({})), markSub: vi.fn(async () => {}), sessions: vi.fn(async () => []), renameAccount: vi.fn(), setAccountHidden: vi.fn(), deleteCategory: vi.fn(async () => 2), deleteRule: vi.fn(),
-    pushPrefs: vi.fn(async () => ({ salary: true, budget: true, unknown: true })), setPushPrefs: vi.fn(async () => {}), savePushSubscription: vi.fn(async () => {}), deletePushSubscription: vi.fn(async () => {}) };
+    pushPrefs: vi.fn(async () => ({ salary: true, budget: true, unknown: true, digest: "off" })), setPushPrefs: vi.fn(async () => {}), savePushSubscription: vi.fn(async () => {}), deletePushSubscription: vi.fn(async () => {}) };
   const receipts = { list: vi.fn(async () => [{ path: "me/t1/1.jpg", url: "blob:kvittering", created: null }]), upload: vi.fn(async () => {}), remove: vi.fn(async () => {}) };
   const history = createMemoryHistory({ initialEntries: [path] });
   const authAll = Object.assign(auth, { userInfo: vi.fn(async () => ({ email: "me@example.com", lastSignIn: null })), mfaEnabled: vi.fn(async () => false),

@@ -29,6 +29,7 @@
     "src"
   ],
   "exclude": [
-    "src/services/__tests__/notify.test.ts"
+    "src/services/__tests__/notify.test.ts",
+    "src/services/__tests__/digest.test.ts"
   ]
 }
